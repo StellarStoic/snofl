@@ -18,535 +18,11 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <link rel="stylesheet" href="searchNostr.css">
+
+
     <title>snofl discovery client</title>
-    <style>
-        @import url(https://fonts.bunny.net/css?family=athiti:200);
-        /* Root font-size scaling based on viewport width */
-        html {
-            font-size: calc(1vw + 1vh + 0.5vmin); /* Adjusts base font size based on the viewport */
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            font-family: 'Athiti', sans-serif;
-            background-color: black;
-            color: rgb(255, 255, 255);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .container {
-            width: 99vw;
-            max-width: 800px;
-            height: 100vh;
-            overflow-y: scroll;
-            scrollbar-width: none;  /* For Firefox */
-            -ms-overflow-style: none;  /* For Internet Explorer/Edge */
-            border: 1px solid transparent;  /* Default no border */
-            transition: border-color 0.3s, box-shadow 0.3s;  /* Smooth transitions */
-            padding: 20px;
-            box-sizing: border-box;
-            position: relative;
-        }
 
-        .container::-webkit-scrollbar {
-            display: none;  /* For Chrome, Safari, and Opera */
-        }
-
-        .fetch-status {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 24px;
-            font-weight: bold;
-            color: yellow;
-            display: none;  /* Hidden by default */
-            text-shadow: 0 0 10px rgba(255, 255, 0, 0.8);
-        }
-
-        .container.fetching {
-            border-color: yellow;
-            box-shadow: 0 0 15px rgba(255, 255, 0, 0.8);  /* Glowing yellow border */
-        }
-
-        .container.success {
-            border-color: green;
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.8);  /* Green glow when successful */
-        }
-
-        .container.error {
-            border-color: red;
-            box-shadow: 0 0 15px rgba(255, 0, 0, 0.8);  /* Red glow on error */
-        }
-
-        #notes {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            margin-bottom: 40px;
-        }
-
-        .note {
-            background-color: #333;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            position: relative;
-        }
-
-        .highlight {
-            font-weight: bold;
-            color: rgb(216, 101, 255);
-        }
-
-        .hashtag {
-            font-weight: bold;
-            color: rgb(46, 233, 46);
-        }
-
-        .note-header {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 5px;
-        }
-        .note-header img {
-            width: 30px;
-            height: 30px;
-            border-radius: 3px;
-            margin-right: 10px;
-        }
-        .note-content {
-            word-wrap: break-word;
-            margin-top: 10px;
-            text-align: left;
-        }
-        .title {
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 1rem;
-        }
-        .nip05 {
-            font-size: 0.6rem;
-            color: #aaa;
-            margin-left: 40px;
-        }
-
-        .profile-img:hover {
-            cursor: pointer;
-            opacity: 0.8;
-        }
-
-        .note-content img {
-            max-width: 100px;
-            max-height: 100px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        .fullscreen {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .fullscreen img {
-            max-width: 90%;
-            max-height: 90%;
-        }
-        .fullscreen.active {
-            display: flex;
-        }
-        .copy-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: transparent;
-            border: none;
-            cursor: pointer;
-            color: green;
-        }
-        .copy-button img {
-            width: 20px;
-            height: 20px;
-        }
-        .new-notes-button {
-            position: sticky;
-            top: 7px;
-            right: 13px;
-            background-color: green;
-            color: black;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-            z-index: 99999;
-            display: none;
-        }
-
-        .note-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 10px;
-        }
-
-        .note-icons {
-            display: flex;
-            gap: 15px;
-            font-size: 0.5rem;
-        }
-
-        .icon:hover {
-            cursor: pointer;
-            opacity: 0.7;
-        }
-
-        .note-timestamp {
-            font-size: 0.5rem;
-            color: #aaa;
-            text-align: right;
-        }
-
-        .keyword {
-            margin: 0 5px;
-            cursor: pointer;
-            border-bottom: 1px dashed transparent;
-            transition: all 0.3s ease;
-        }
-
-        .keyword.active {
-            color: green;
-            /* border-bottom: 1px dashed green; */
-        }
-
-        .keyword.toggled {
-            color: rgb(157, 157, 157);
-            font-style: italic;
-        }
-
-        .highlight {
-            color: rgb(222, 0, 222);
-            font-weight: bold;
-        }
-
-        .inactive {
-            color: rgb(157, 157, 157);
-            font-style: italic;
-        }
-
-
-        .search-bar {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
-            width: 100%;
-        }
-
-        .search-bar input {
-            width: 60%;
-            padding: 10px;
-            font-size: 1rem;
-            border: 1px solid green;
-            background-color: black;
-            color: purple;
-            border-radius: 5px;
-            outline: none;
-        }
-
-        .search-bar button {
-            margin-left: 10px;
-            padding: 10px 15px;
-            font-size: 0.7rem;
-            background-color: green;
-            color: black;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .search-bar button:hover {
-            opacity: 0.9;
-        }
-
-        /* <!-- Slider Styles --> */
-        #timeFilterButton {
-            padding: 10px 15px;
-            font-size: 0.7rem;
-            background-color: green;
-            color: black;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.8);
-        }
-
-        .modal-content {
-            background-color: #222;
-            margin: 15% auto;
-            padding: 20px;
-            border-radius: 10px;
-            width: 60%;
-            text-align: center;
-            color: white;
-        }
-
-        .close {
-            float: right;
-            font-size: 1.5rem;
-            font-weight: bold;
-            cursor: pointer;
-            color: green;
-        }
-
-        .slider {
-            -webkit-appearance: none;
-            width: 90%;
-            height: 12px;
-            background: #444;
-            outline: none;
-            border-radius: 10px;
-            margin-top: 20px;
-        }
-
-        .slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 40px;
-            height: 40px;
-            background: green;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-
-        .slider-labels {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-            font-size: 0.7rem;
-        }
-
-
-        .apply-btn:hover {
-            opacity: 0.9;
-        }
-
-        /* sroll to top btn */
-        .scroll-top-btn {
-            position: fixed;  /* Ensure it's fixed to viewport */
-            bottom: 4%;
-            background-color: rgba(240, 255, 240, 0.552);
-            right: 4%;
-            border: none;
-            border-radius: 5px;
-            font-size: 1.3rem;
-            cursor: pointer;
-            z-index: 999;
-            display: none;  /* Hidden by default */
-
-        }
-
-        .scroll-top-btn:hover {
-            background-color: rgba(86, 168, 86, 0.798);
-            transform: scale(1.1);
-        }
-
-        /* Counters container */
-        #counters {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.557);
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            z-index: 1000;
-            border: 1px solid #666;
-            gap: 15px;
-            display: none; /* Single display property */
-            flex-direction: row; /* Add this to specify flex layout */
-        }
-
-
-        /* Matches counter */
-        #matchesCounter {
-            color: #FF9900;  /* Light blue */
-        }
-
-        .filters {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            font-size: 0.5rem;
-            margin-bottom: 10px;
-        }
-
-        .filter-toggle-btn {
-            padding: 5px 10px;
-            border: none;
-            font-size: 0.5rem;
-            background-color: rgba(128, 128, 128, 0.414);
-            color: white;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-
-        .filter-toggle-btn.active {
-            background-color: green; /*  FORCE Green when active */
-        }
-
-        .magnetButton {
-            padding: 5px 10px;
-            border: none;
-            font-size: 0.5rem;
-            background-color: rgba(128, 128, 128, 0.414);
-            color: white;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-
-        /*  Specific Fix for Magnet Button */
-        #magnetButton {
-            background-color: rgba(128, 128, 128, 0.414); /* Default Gray */
-        }
-
-        #magnetButton.active {
-            background-color: green !important; /*  Ensure Green when Active */
-        }
-
-
-        /* long notes truncation */
-        /* Truncated note content */
-        .truncated {
-            position: relative;
-            max-height: 100px; /* Adjust for a better preview size */
-            overflow: hidden;
-            display: block;
-            text-overflow: ellipsis;
-            white-space: normal;
-            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0));
-            -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0));
-            transition: max-height 0.3s ease-in-out;
-        }
-
-        /* Expand button */
-        .expand-note {
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            font-size: 14px;
-            padding: 3px 8px;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: opacity 0.2s ease-in-out;
-        }
-
-        /* Expanded note (removes blur effect) */
-        .note-content:not(.truncated) {
-            max-height: none;
-            mask-image: none;
-            -webkit-mask-image: none;
-        }
-
-        /* Hide button styling */
-        .hide-eye-button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            transition: opacity 0.2s ease-in-out;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto; /*  Center the button */
-            position: relative;
-        }
-
-        .hide-eye-button img {
-            width: 24px;
-            height: 24px;
-            transition: opacity 0.2s ease-in-out;
-        }
-
-        .hide-eye-button:hover {
-            opacity: 0.7;
-        }
-
-        /* Initially hide collapsed notes */
-        .collapsed-note {
-            display: none;
-            font-weight: bold;
-            font-size: 14px;
-            text-align: center;
-            padding: 8px 0;
-            cursor: pointer;
-        }
-
-        /* Hide the full note when toggled */
-        .note.hidden .note-content,
-        .note.hidden .note-footer,
-        .note.hidden .note-header {
-            display: none; /* Hide everything related to the note */
-        }
-
-        /* Show the collapsed version */
-        .note.hidden .collapsed-note {
-            display: block;
-            font-weight: bold;
-            font-size: 14px;
-            text-align: center;
-            padding: 8px 0;
-            cursor: pointer;
-        }
-
-
-/* Bomb icon styling */
-.ban-profile-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    width: 35px;
-    height: 35px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: 5px; /*  Space it from the left edge */
-}
-
-.ban-profile-button img {
-    width: 35px;
-    height: 35px;
-    transition: opacity 0.2s ease-in-out;
-}
-
-.ban-profile-button:hover img {
-    opacity: 0.7;
-}
-
-    </style>
 </head>
 <body>
     <div class="container">
@@ -557,26 +33,14 @@
             <button id="timeFilterButton">⏳</button>
                 <input type="text" id="keywordSearch" placeholder="Search keywords">
             <button id="searchButton">🔍</button>
-            <button id="sortButton" onclick="toggleSort()">Sort: Newest</button>
+            <button id="sortButton" onclick="toggleSort()">Newest first</button>
         </div>
 
         <div class="filters">
             <label>Combine</label>
             <button id="magnetButton" title="Require ALL keywords in results">🧲</button>
-
-            <label>Sentiment:</label>
-            <button class="filter-toggle-btn" id="sentiment-negative" data-value="negative">🟥 Negative</button>
-            <button class="filter-toggle-btn" id="sentiment-neutral" data-value="neutral">🟨 Neutral</button>
-            <button class="filter-toggle-btn" id="sentiment-positive" data-value="positive">🟩 Positive</button>
-        
-            <label>NSFW:</label>
-            <button class="filter-toggle-btn" id="nsfw-toggle" data-value="true">🔞 Allow NSFW</button>
         </div>
-        
 
-        <button class="new-notes-button" id="newNotesButton" onclick="showNewNotes()">Show 0 New Notes</button>
-
-        <div class="fetch-status" id="fetchStatus">Searching...</div>
         <button id="scrollToTopBtn" class="scroll-top-btn" onclick="scrollToTop()">▲</button>
 
         <div id="notes">
@@ -610,7 +74,8 @@
     </div>
 
     <script>
-        
+
+
 const fallbackRelays = [
     "wss://relay.damus.io",
     "wss://nos.lol",
@@ -624,32 +89,45 @@ const fallbackRelays = [
 ];
 
 const NIP50Relays = [
-    "wss://rsrelay.235421.xyz/",
-    // "wss://relay.roli.social", X
-    "wss://bostr.bitcointxoko.com/",
-    "wss://satellite.hzrd149.com/",
+    "wss://rsrelay.235421.xyz",
+    "wss://feeds.nostr.band",
+    "wss://bostr.bitcointxoko.com",
+    "wss://nostr.polyserv.xyz",
+    "wss://satellite.hzrd149.com",
     "wss://poster.place/relay",
-    "wss://relay.bostr.online/",
-    "wss://relay.nostpy.lol/",
+    "wss://relay.bostr.online",
+    "wss://prl.plus",
+    "wss://relay.nostpy.lol",
+    "wss://relay.azzamo.net",
+    "wss://us.azzamo.net",
     "wss://social.protest.net/relay",
-    "wss://bostr.lightningspore.com/",
-    "wss://relay.nostr.band/",
+    "wss://bostr.lightningspore.com",
+    "wss://relay.nostr.band",
+    "wss://relay.davidebtc.me",
     "wss://eclipse.pub/relay",
     "wss://ditto.pub/relay",
-    "wss://relay.cxplay.org"
+    "wss://relay.cxplay.org",
+    "wss://relay.noswhere.com"
 ];
 
+let timeRange = 0; // Default is "Now"
+// Map time ranges to maxNotes dynamically
+const timeToMaxNotes = {
+    // 0: 50000,  // Now - fewer notes
+    0: 33333, // 24h
+    1: 66666, // Week
+    2: 111111, // Month
+    3: 555555, // Year
+    4: 1111111, // All time (🦕)
+};
 
 let profileCache = {}; // Store fetched profiles to avoid duplicates
 const profileImageFailures = new Map();// Track profile image retry attempts per pubkey
 const keywords = [""]; //default keyword
 // Maintain keywords with their toggle state
 let keywordStates = {}; // Maintain keywords with their toggle state. e.g., { dog: true, cat: true, potato: true }
-let maxNotes = 100; // Default value, will adjust dynamically
-let notes = [];
+let maxNotes = timeToMaxNotes[timeRange]; // Default value, will adjust dynamically
 let fetchedNoteIds = new Set();
-let newNotes = [];
-let timeRange = 0; // Default is "Now"
 let matchCount = 0;
 // let activeRelays = 0;
 let isInitialFetch = false; // Add this flag to track initial fetch state
@@ -658,9 +136,17 @@ let isFetching = false; // Prevents multiple fetches at once and Track ongoing s
 let activeWebSockets = new Map(); // Store active WebSocket connections
 let abortController = new AbortController(); // Store controller to cancel searches
 let requireAllKeywords = false; //  Default: Search for any keyword (OR mode)
-let sentimentFilter = ""; // Store user-selected filters
-let nsfwFilter = "true"; // Default is to allow NSFW
 
+let currentPage = 1;
+const NOTES_PER_PAGE = 69;
+let allNotes = []; // Store ALL fetched notes
+let displayedNotes = []; // Notes currently shown on page
+let lastPaginationState = null;
+
+
+
+let sortOrder = "desc"; // Default to 'newest first'
+let hiddenNotes = new Set(JSON.parse(localStorage.getItem("hiddenNotes") || "[]")); //  Load stored hidden notes
 
 // Convert Unix timestamp to human-readable format
 function formatTimestamp(timestamp) {
@@ -704,24 +190,8 @@ observer.observe(notesContainer, { childList: true, subtree: true });
 
 // Trigger visual feedback when fetching starts
 function startFetching(relay = "") {
-    const container = document.querySelector(".container");
-    const fetchStatus = document.getElementById("fetchStatus");
-
-    container.classList.remove("error", "success");
-    container.classList.add("fetching");
-
-    fetchStatus.style.display = "block"; 
-    fetchStatus.style.color = "yellow";
-
-    //  If relay is provided, add to active list
-    if (relay && !activeRelays.includes(relay)) {
-        activeRelays.push(relay);
-    }
-
-    //  Display all active relays
-    fetchStatus.textContent = activeRelays.length > 0
-        ? `Searching... \nActive Relays:\n ${activeRelays.join("\n")}`
-        : "Searching...";
+    // Do nothing - status removed
+    console.log("🔍 Searching... (status removed)");
 }
 
 // Update the title dynamically
@@ -729,52 +199,25 @@ document.querySelector(".title").textContent = `${keywords}`;
 
 // Stop fetching - Show success (Green glow)
 function fetchingSuccess() {
-    const container = document.querySelector(".container");
-    const fetchStatus = document.getElementById("fetchStatus");
-
-    container.classList.remove("fetching", "error");
-    container.classList.add("success");
-    fetchStatus.textContent = `Found ${matchCount} matches!`; // Display match count
-    fetchStatus.style.color = "green"; // Update to green
-    fetchStatus.style.display = "none"; // Hide "searching..."
-
-    // Only hide counters if no matches were found
-    if (matchCount === 0) {
-        document.getElementById("counters").style.display = "none";
-    }
+    // Do nothing - status removed
+    console.log("✅ Search complete");
 }
 
 let noMatchesShown = false;
 
 function fetchingNoMatches() {
-    if (noMatchesShown) return;
-    noMatchesShown = true;
-
-    const container = document.querySelector(".container");
-    const fetchStatus = document.getElementById("fetchStatus");
-
-    container.classList.remove("fetching", "success", "error");
-    container.classList.add("fetching"); // Keep yellow border
-    fetchStatus.textContent = "No matches found"; // Update message
-    fetchStatus.style.color = "yellow"; // Ensure the text is yellow
-    fetchStatus.style.display = "block"; // Ensure the status is visible
-
-    console.warn("No matches found, stopping counter updates.");
-    //  Hide counters when no matches exist
-    updateCounters();
+    // Do nothing - status removed
+    console.log("⚠️ No matches found");
 }
 
 // Stop fetching - Show error (Red glow)
 function fetchingError() {
-    const container = document.querySelector(".container");
-    const fetchStatus = document.getElementById("fetchStatus");
+    // Do nothing - status removed
+    console.error("❌ Search failed");
+}
 
-    container.classList.remove("fetching", "success");
-    container.classList.add("error");
-    fetchStatus.textContent =
-        "Error: Failed to fetch data!\nCheck your internet connection"; // Update message
-    fetchStatus.style.color = "red"; // Make it visually distinct
-    fetchStatus.style.display = "block"; // Show error status
+function hideFetchStatus() {
+    // Do nothing - status removed
 }
 
 // Function to update the title dynamically with clickable keywords
@@ -806,30 +249,76 @@ function updateTitleWithKeywords() {
 // Function to toggle keyword state
 function toggleKeyword(keyword) {
     keywordStates[keyword] = !keywordStates[keyword]; // Toggle the state
-    updateTitleWithKeywords(); // Update styles in the title
-    updateNotes(); // Filter results based on active keywords
+    
+    console.log(`🔑 Toggled keyword "${keyword}" to: ${keywordStates[keyword] ? 'ACTIVE' : 'INACTIVE'}`);
+    console.log(`🔑 Active keywords:`, Object.keys(keywordStates).filter(k => keywordStates[k]));
+    
+    updateTitleWithKeywords();
+    updateNotes(); // Re-filter results based on active keywords
+    
+    // Show filtering stats
+    const activeCount = Object.keys(keywordStates).filter(k => keywordStates[k]).length;
+    const totalKeywords = Object.keys(keywordStates).length;
+    console.log(`📊 Filtering: ${activeCount}/${totalKeywords} keywords active`);
 }
 
+// Enhanced WebSocket cleanup
+function cleanupWebSockets() {
+    console.log(`🔌 Cleaning up ${activeWebSockets.size} WebSocket connections`);
+    
+    activeWebSockets.forEach((ws, relay) => {
+        // Remove all event listeners to prevent memory leaks
+        ws.onopen = null;
+        ws.onmessage = null;
+        ws.onerror = null;
+        ws.onclose = null;
+        
+        // Only close if connection is open or connecting
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+            console.log(`🔌 Closing WebSocket for ${relay}`);
+            try {
+                ws.close(1000, "Search cancelled"); // Normal closure
+            } catch (error) {
+                console.warn(`⚠️ Error closing WebSocket for ${relay}:`, error);
+            }
+        }
+    });
+    
+    activeWebSockets.clear();
+    activeRelays = [];
+}
 
-
-// Trigger fetch when user searches
 function triggerSearch() {
+        console.log("🚀 Starting new search...");
         resetCounters();
-    //  Cancel previous search if it is still running
-    if (abortController) {
+        console.log("Resetting counters...");
+
+        // Reset pagination on new search
+        currentPage = 1;
+        allNotes = [];
+        displayedNotes = [];
+
+    // Cancel previous search if running
+    if (isFetching && abortController) {
         console.warn("⚠️ Canceling previous search...");
         abortController.abort();
     }
 
+    // Clean up ALL WebSocket connections before starting new search
+    cleanupWebSockets();
+
     abortController = new AbortController();
     const signal = abortController.signal;
 
-    //  Close all previous WebSockets before new search
-    activeWebSockets.forEach((ws, relay) => {
-        console.warn(`⚠️ Closing WebSocket for ${relay} due to new search.`);
-        ws.close();
-    });
-    activeWebSockets.clear(); //  Clear previous WebSocket connections
+    // Reset search state
+    resetSearchState();
+
+    // //  Close all previous WebSockets before new search
+    // activeWebSockets.forEach((ws, relay) => {
+    //     console.warn(`⚠️ Closing WebSocket for ${relay} due to new search.`);
+    //     ws.close();
+    // });
+    // activeWebSockets.clear(); //  Clear previous WebSocket connections
 
 
     const input = document.getElementById("keywordSearch").value.trim();
@@ -840,17 +329,9 @@ function triggerSearch() {
         return;
     }
 
-    // //  Cancel previous search if it is still running
-    // if (isFetching && abortController) {
-    //     console.warn("⚠️ Canceling previous search...");
-    //     abortController.abort(); //  Stops previous search instantly
-    // }
-
     //  Reset feed BEFORE fetching new results
     console.log("🚀 Clearing previous results before new search...");
-    notes = [];
-    newNotes = [];
-    fetchedNoteIds.clear();
+
 
     //  Clear previous notes in UI immediately
     document.getElementById("notes").innerHTML = ""; // 🚀 This ensures old results disappear instantly!
@@ -860,8 +341,6 @@ function triggerSearch() {
 
     // Full reset logic
     matchCount = 0;
-    // document.getElementById("matchesCounter").textContent = "M: 0";
-    // document.getElementById("counters").style.display = "none";
 
     keywords.length = 0; // Clear the existing array
     keywordStates = {}; // Reset keyword toggle states
@@ -870,26 +349,19 @@ function triggerSearch() {
     });
     // isInitialFetch = true; // Set flag for initial fetch
     if (input) {
-        keywords.push(...input.split(" ")); // Push keywords only if input exists
-
-        // Initialize all keywords as active
+        keywords.push(...input.split(" "));
         keywords.forEach((keyword) => {
             keywordStates[keyword] = true;
         });
 
-        // console.log("Searching for keywords:", keywords);
+        console.log("Searching for keywords:", keywords);
 
-        // Start fetching feedback
         startFetching();
-        updateTitleWithKeywords(); // Update title dynamically
+        updateTitleWithKeywords();
 
-        // Handle fetch result with conditional status updates
-
-        //  Start new search with fresh state
-        fetchNotes(signal).then(() => {
-            if (matchCount > 0) {
+        fetchNotes().then(() => {
+            if (allNotes.length > 0) {
                 fetchingSuccess();
-                updateNotes();
             } else {
                 fetchingNoMatches();
             }
@@ -950,6 +422,20 @@ async function getOnlineRelays() {
         console.log("Using fallback relays instead.");
         return fallbackRelays;
     }
+}
+
+function resetSearchState() {
+    // Reset pagination on new search
+    currentPage = 1;
+    allNotes = [];
+    displayedNotes = [];
+    fetchedNoteIds.clear();
+    matchCount = 0;
+    
+    // Clear UI immediately
+    document.getElementById("notes").innerHTML = "";
+    // updateNotes();
+    updateCounters();
 }
 
 
@@ -1111,16 +597,6 @@ function truncateNip05(nip05) {
     return nip05;
 }
 
-// Map time ranges to maxNotes dynamically
-const timeToMaxNotes = {
-    // 0: 50000,  // Now - fewer notes
-    0: 33333, // 24h
-    1: 66666, // Week
-    2: 111111, // Month
-    3: 555555, // Year
-    4: 1111111, // All time (🦕)
-};
-
 // Open the modal
 function openTimeModal() {
     document.getElementById("timeModal").style.display = "block";
@@ -1191,12 +667,39 @@ function updateCounters() {
     const counters = document.getElementById("counters");
     const matchesCountText = document.getElementById("matchesCounter");
 
-    //  Count only UNIQUE notes currently displayed in the feed
-    const displayedNotesCount = notes.length;
-    matchesCountText.textContent = `Matches: ${displayedNotesCount}`;
+    if (!counters || !matchesCountText) return;
 
-    //  Hide counter if no matches exist
-    if (displayedNotesCount === 0) {
+    // Get active keywords for filtering
+    const activeKeywords = Object.keys(keywordStates).filter(k => keywordStates[k]);
+    
+    // Calculate filtered notes count
+    const filteredNotes = allNotes.filter(note => {
+        if (activeKeywords.length === 0) return true;
+        const content = note.content.toLowerCase();
+        
+        if (requireAllKeywords) {
+            return activeKeywords.every(keyword => 
+                new RegExp(`\\b${keyword}\\b`, "gi").test(content)
+            );
+        } else {
+            return activeKeywords.some(keyword => 
+                new RegExp(`\\b${keyword}\\b`, "gi").test(content)
+            );
+        }
+    });
+
+    const displayedCount = displayedNotes.length;
+    const filteredCount = filteredNotes.length;
+    const totalCount = allNotes.length;
+    
+    // Show different messages based on pagination state
+    if (totalCount <= NOTES_PER_PAGE) {
+        matchesCountText.textContent = `Showing all ${totalCount} notes`;
+    } else {
+        matchesCountText.textContent = `Showing ${displayedCount} of ${filteredCount} filtered notes (${totalCount} total)`;
+    }
+
+    if (totalCount === 0) {
         counters.style.display = "none";
     } else {
         counters.style.display = "flex";
@@ -1210,58 +713,36 @@ function resetCounters() {
 }
 
 
-function updateFetchStatus() {
-    const fetchStatus = document.getElementById("fetchStatus");
-
-    if (activeRelays.length > 0) {
-        fetchStatus.textContent = `Searching... \nActive Relays:\n ${activeRelays.join("\n")}`;
-    } else {
-        fetchStatus.textContent = "✅ Search completed.";
-        document.querySelector(".container").classList.remove("fetching");
-    }
-}
-
-
-function updateNewNotesButton() {
-    //  Filter only unique notes that are NOT already in the feed
-    const uniqueNewNotes = newNotes.filter(n => !notes.some(existingNote => existingNote.id === n.id));
-
-    // console.log(`🆕 "New Notes" Button Updated: ${uniqueNewNotes.length} notes ready to be added.`);
-
-    if (uniqueNewNotes.length > 0) {
-        document.getElementById("newNotesButton").textContent = `Show ${uniqueNewNotes.length} New Notes`;
-        document.getElementById("newNotesButton").style.display = "block";
-    } else {
-        document.getElementById("newNotesButton").style.display = "none"; //  Hide if no valid new notes
-    }
-}
-
-
-
-
-
-
-let sortOrder = "desc"; // Default to 'newest first'
-
 // Toggle the sorting order and re-render notes
 function toggleSort() {
     sortOrder = sortOrder === "desc" ? "asc" : "desc";
-    document.getElementById("sortButton").textContent = `Sort: ${
+    document.getElementById("sortButton").textContent = `${
         sortOrder === "desc" ? "Newest" : "Oldest"
-    }`;
+    } first`;
     sortNotes();
     updateNotes();
+    applyPagination();
 }
 
 // Sort notes based on timestamp
 function sortNotes() {
-    notes.sort((a, b) => {
+    if (allNotes.length === 0) {
+        console.warn("⚠️ No notes to sort!");
+        return;
+    }
+
+    console.log(`🔄 Sorting ${allNotes.length} notes: ${sortOrder === 'desc' ? 'Newest first' : 'Oldest first'}`);
+    
+    allNotes.sort((a, b) => {
         if (sortOrder === "desc") {
             return b.created_at - a.created_at; // Newest first
         } else {
             return a.created_at - b.created_at; // Oldest first
         }
     });
+
+    // console.log(`📊 First note after sort: ${allNotes[0]?.created_at}`);
+    // console.log(`📊 Last note after sort: ${allNotes[allNotes.length - 1]?.created_at}`);
 }
 
 function noteMatchesKeywords(content, activeKeywords) {
@@ -1270,212 +751,271 @@ function noteMatchesKeywords(content, activeKeywords) {
         : activeKeywords.some(keyword => new RegExp(`\\b${keyword}\\b`, "gi").test(content));  //  OR mode (ANY keyword can match)
 }
 
+// The issue: NIP-50 relays default to AND search for multiple keywords
+// Solution: For OR mode, we need to send individual search queries for each keyword
 
 async function fetchNotes() {
-    if (isFetching) {
-        console.log("⚠️ Fetch already in progress. Skipping...");
-        abortController.abort();
-    }
-    abortController = new AbortController();
-    isFetching = true;
+    return new Promise(async (resolve, reject) => {
+        if (isFetching) {
+            console.log("⚠️ Fetch already in progress. Skipping...");
+            abortController.abort();
+            resolve();
+            return;
+        }
+        
+        abortController = new AbortController();
+        isFetching = true;
 
-    console.log("🚀 Clearing previous results before new search...");
-    
-    //  Ensure UI is cleared before fetching new notes
-    notes = [];
-    newNotes = [];
-    fetchedNoteIds.clear();
-    updateNotes();
-    updateCounters();
+        // Reset for new search
+        if (currentPage === 1) {
+            allNotes = [];
+            fetchedNoteIds.clear();
+        }
 
-    const searchQuery = document.getElementById("keywordSearch").value.trim();
-    if (!searchQuery && keywords.length === 0) {
-        console.error("❌ No keywords available for search. Stopping fetch.");
-        isFetching = false;
-        return;
-    }
+        console.log("🚀 Fetching notes with NIP-50 search...");
 
-    console.log("🔍 Searching with keywords:", keywords);
-    matchCount = 0;
-    document.getElementById("matchesCounter").textContent = `Fetching...`;
+        // Clear UI
+        document.getElementById("notes").innerHTML = "";
+        updateCounters();
 
-    const urlParams = new URLSearchParams(window.location.search);
-    let selectedRelays = [];
+        const searchQuery = document.getElementById("keywordSearch").value.trim();
+        
+        // Process keywords for UI
+        keywords.length = 0;
+        keywordStates = {};
+        if (searchQuery) {
+            keywords.push(...searchQuery.split(" "));
+            keywords.forEach((keyword) => {
+                keywordStates[keyword] = true;
+            });
+        }
 
-    if (urlParams.has("r")) {
-        //  Use only relays from `r=` parameter
-        selectedRelays = decodeURIComponent(urlParams.get("r")).split(",");
-        console.log("✅ Using custom relays from URL:", selectedRelays);
-    } else {
-        //  Use random relays if `r=` is not set
-        selectedRelays = getRandomRelays(NIP50Relays, 15);
-        console.log("🔍 Selected random NIP-50 relays:", selectedRelays);
-    }
+        console.log("🔍 Keywords:", keywords);
+        console.log("🧲 Mode:", requireAllKeywords ? "AND" : "OR");
 
-    if (selectedRelays.length === 0) {
-        console.error("❌ No relays available. Cannot proceed.");
-        fetchingError();
-        isFetching = false;
-        return;
-    }
+        const urlParams = new URLSearchParams(window.location.search);
+        let selectedRelays = [];
 
-    console.log("🚀 Starting search on relays:", selectedRelays);
+        if (urlParams.has("r")) {
+            selectedRelays = decodeURIComponent(urlParams.get("r")).split(",");
+        } else {
+            selectedRelays = getRandomRelays(NIP50Relays, 20);
+        }
 
-    const filter = {
-        // search: searchQuery,
-        kinds: [1],
-        limit: maxNotes,
-        since: calculateSinceTime(timeRange), //  Apply time filter dynamically
-    };
+        startFetching();
 
-    // When in AND mode, pass the search query to the relay.
-    // When in OR mode, omit it so the relay doesn’t pre-filter the results.
-    if (requireAllKeywords && searchQuery) {
-        filter.search = searchQuery;
-    }
+        // FIXED: Different search strategies for AND vs OR modes
+        const fetchPromises = selectedRelays.map(async (relay) => {
+            if (activeWebSockets.has(relay)) {
+                console.log(`⏩ Skipping ${relay} - already connected`);
+                return;
+            }
 
-    startFetching();
+            try {
+                const ws = new WebSocket(relay);
+                activeWebSockets.set(relay, ws);
 
-    //  Fetch notes & metadata in parallel
-    const fetchPromises = selectedRelays.map(async (relay) => {
-        try {
-            const ws = new WebSocket(relay);
-            activeWebSockets.set(relay, ws); // Track active WebSocket
-            let resultsReceived = false;
-            let receivedCount = 0;
-            let matchedCount = 0;
+                let resultsReceived = false;
+                let receivedCount = 0;
+                let timeoutCheckInterval;
+                let lastResultTime = Date.now();
+                const SEARCH_TIMEOUT = 3000;
 
-            console.log(`🌍 Connecting to ${relay}`);
+                const connectionTimeout = setTimeout(() => {
+                    if (ws.readyState === WebSocket.CONNECTING) {
+                        console.warn(`⏰ Connection timeout for ${relay}`);
+                        ws.close();
+                    }
+                }, 5000);
 
-            ws.onopen = () => {
-                console.log(`✅ Connected to ${relay}, sending search request.`);
-                ws.send(JSON.stringify(["REQ", "nip50_search", filter]));
-            };
+                console.log(`🌍 Connecting to ${relay}`);
 
-            ws.onmessage = (event) => {
-                if (abortController.signal.aborted) {
-                    console.warn(`⚠️ Fetch aborted. Closing WebSocket for ${relay}`);
-                    ws.close();
-                    return;
+                ws.onopen = () => {
+                    console.log(`✅ Connected to ${relay}`);
+                    
+                // ✅ Use your excellent timeToMaxNotes limits
+                const dynamicLimit = timeToMaxNotes[timeRange];
+                console.log(`🎯 Using limit: ${dynamicLimit} notes for ${getTimeRangeLabel(timeRange)}`);
+                
+                if (requireAllKeywords) {
+                    // AND mode: Single search with full dynamic limit
+                    const filter = {
+                        kinds: [1],
+                        limit: dynamicLimit, // ✅ Fixed!
+                        since: calculateSinceTime(timeRange),
+                        search: keywords.join(" ")
+                    };
+                    ws.send(JSON.stringify(["REQ", "nip50_search", filter]));
+                } else {
+                    // OR mode: Multiple searches with distributed limits
+                    const individualLimit = Math.floor(dynamicLimit / keywords.length);
+                    keywords.forEach((keyword, index) => {
+                        const filter = {
+                            kinds: [1],
+                            limit: individualLimit, // ✅ Fixed!
+                            since: calculateSinceTime(timeRange),
+                            search: keyword
+                        };
+                        ws.send(JSON.stringify(["REQ", `nip50_or_${index}`, filter]));
+                    });
                 }
+                    
+                    timeoutCheckInterval = setInterval(() => {
+                        if (Date.now() - lastResultTime > SEARCH_TIMEOUT && ws.readyState === WebSocket.OPEN) {
+                            console.log(`⏰ No new results from ${relay} for ${SEARCH_TIMEOUT}ms, closing connection`);
+                            clearInterval(timeoutCheckInterval);
+                            ws.close();
+                        }
+                    }, 500);
+                };
 
-                const data = JSON.parse(event.data);
-                if (!data || data.length < 3 || data[0] !== "EVENT") return;
-
-                const note = data[2];
-                const noteId = note.id;
-                receivedCount++;
-
-                //  Ignore banned profiles
-                const bannedProfiles = JSON.parse(localStorage.getItem("clientBannedProfiles")) || [];
-                if (bannedProfiles.includes(note.pubkey)) {
-                    console.warn(`🚫 Ignoring note from banned profile: ${note.pubkey}`);
-                    return;
-                }
-
-                if (!fetchedNoteIds.has(noteId) && !notes.some(n => n.id === noteId) && !newNotes.some(n => n.id === noteId)) {
-                    fetchedNoteIds.add(noteId);
-
-                    if (!note.content) {
-                        console.warn(`⚠️ Note is missing content. Skipping.`);
+                ws.onmessage = (event) => {
+                    if (abortController.signal.aborted) {
+                        console.warn(`⚠️ Fetch aborted. Closing WebSocket for ${relay}`);
+                        clearInterval(timeoutCheckInterval);
+                        ws.close();
                         return;
                     }
 
-                    //  Check if the note matches the search keywords
-                    const content = note.content.toLowerCase();
-                    const activeKeywords = Object.keys(keywordStates).filter(k => keywordStates[k]);
+                    const data = JSON.parse(event.data);
+                    if (!data || data.length < 3 || data[0] !== "EVENT") return;
 
-                    if (activeKeywords.length === 0) {
-                        console.warn("⚠️ No active keywords! Search cannot work.");
+                    const note = data[2];
+                    const noteId = note.id;
+                    receivedCount++;
+
+                    lastResultTime = Date.now();
+
+                    // Ignore banned profiles
+                    const bannedProfiles = JSON.parse(localStorage.getItem("clientBannedProfiles")) || [];
+                    if (bannedProfiles.includes(note.pubkey)) {
+                        console.warn(`🚫 Ignoring note from banned profile: ${note.pubkey}`);
                         return;
                     }
 
-                    //  Apply AND/OR logic
-                    const isMatch = requireAllKeywords
-                        ? activeKeywords.every(keyword => new RegExp(`\\b${keyword}\\b`, "gi").test(content)) // AND Mode
-                        : activeKeywords.some(keyword => new RegExp(`\\b${keyword}\\b`, "gi").test(content)); // OR Mode
+                    // Add to allNotes if not already present
+                    if (!fetchedNoteIds.has(noteId)) {
+                        fetchedNoteIds.add(noteId);
 
-                    if (isMatch) {
-                        matchedCount++;
+                        if (!note.content) {
+                            console.warn(`⚠️ Note is missing content. Skipping.`);
+                            return;
+                        }
 
-                        if (selectedRelays[0] === relay) {
-                            //  Show first relay's matches immediately in feed
-                            notes.push(note);
-                            updateNotes();
-                            fetchProfilesForNotesParallel(notes);
-                            updateCounters();
-                        } else {
-                            //  Store other relay results in "New Notes"
-                            newNotes.push(note);
-                            updateNewNotesButton();
+                        if (!allNotes.some(n => n.id === note.id)) {
+                            allNotes.push(note);
+                            console.log("📝 Added note to allNotes:", {
+                                id: note.id.slice(0, 8),
+                                created_at: note.created_at,
+                                content_length: note.content?.length || 0
+                            });
                         }
 
                         resultsReceived = true;
-                        updateNotes();
-                        fetchProfilesForNotesParallel(notes);
-                        updateCounters();
+                        
+                        // Update UI with current pagination
+                        applyPagination();
+                        fetchProfilesForNotesParallel(displayedNotes);
                     }
-                }
-            };
+                };
 
-            ws.onclose = () => {
-                console.warn(`❌ Disconnected from ${relay}`);
+                ws.onclose = () => {
+                    console.warn(`❌ Disconnected from ${relay}`);
+                    activeWebSockets.delete(relay);
+                    clearInterval(timeoutCheckInterval);
+                    clearTimeout(connectionTimeout);
+
+                    console.log(`📊 Relay: ${relay}`);
+                    console.log(`📩 Total notes received: ${receivedCount}`);
+                    console.log(`📢 Notes currently in allNotes: ${allNotes.length}`);
+
+                    activeRelays = activeRelays.filter(r => r !== relay.replace("wss://", "").replace("/", ""));
+                };
+
+                ws.onerror = (error) => {
+                    console.error(`⚠️ Connection error on ${relay}:`, error);
+                    activeWebSockets.delete(relay);
+                    activeRelays = activeRelays.filter(r => r !== relay.replace("wss://", "").replace("/", ""));
+                };
+
+                setTimeout(() => {
+                    if (resultsReceived && ws.readyState === WebSocket.OPEN) {
+                        console.log(`Closing WebSocket after receiving results from ${relay}`);
+                        clearInterval(timeoutCheckInterval);
+                        ws.close();
+                    }
+                }, 5000);
+
+                setTimeout(() => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        console.warn(`Closing WebSocket due to timeout: ${relay}`);
+                        clearInterval(timeoutCheckInterval);
+                        ws.close();
+                    }
+                }, 10000);
+            } catch (error) {
+                console.error(`❌ Failed to fetch from relay: ${relay}`, error);
                 activeWebSockets.delete(relay);
+            }
+        });
+        
+        await Promise.allSettled(fetchPromises);
 
-                console.log(`📊 Relay: ${relay}`);
-                console.log(`📩 Total notes received: ${receivedCount}`);
-                console.log(`✅ Total matching notes: ${matchedCount}`);
-                console.log(`🆕 "New Notes" stored: ${newNotes.length}`);
-                console.log(`📢 Notes currently displayed: ${notes.length}`);
-                console.log(`🎯 Expected "Matches" Counter: ${notes.length}`);
+        console.log(`✅ Search complete. Fetched ${allNotes.length} notes.`);
+        
+        // Debug: Check what keywords were actually found
+        console.log("🔍 SEARCH RESULTS ANALYSIS:");
+        keywords.forEach(keyword => {
+            const count = allNotes.filter(note => 
+                new RegExp(`\\b${keyword}\\b`, "gi").test(note.content)
+            ).length;
+            console.log(`  - "${keyword}": ${count} notes`);
+        });
 
-                activeRelays = activeRelays.filter(r => r !== relay.replace("wss://", "").replace("/", ""));
-                updateFetchStatus();
-            };
+        if (allNotes.length > 0) {
+            fetchingSuccess();
+        } else {
+            fetchingNoMatches();
+        }
 
-            ws.onerror = (error) => {
-                console.error(`⚠️ Connection error on ${relay}:`, error);
-                activeWebSockets.delete(relay);
-                activeRelays = activeRelays.filter(r => r !== relay.replace("wss://", "").replace("/", ""));
-                updateFetchStatus();
-            };
+        // Apply pagination to display current page
+        applyPagination();
 
-            setTimeout(() => {
-                if (resultsReceived && ws.readyState === WebSocket.OPEN) {
-                    console.log(`Closing WebSocket after receiving results from ${relay}`);
-                    ws.close();
-                }
-            }, 5000);
+        // Fetch profiles for displayed notes only
+        await fetchProfilesForNotesParallel(displayedNotes);
 
-            setTimeout(() => {
-                if (ws.readyState === WebSocket.OPEN) {
-                    console.warn(`Closing WebSocket due to timeout: ${relay}`);
-                    ws.close();
-                }
-            }, 8000);
-        } catch (error) {
-            console.error(`❌ Failed to fetch from relay: ${relay}`, error);
+        updateCounters();
+
+        isFetching = false;
+        resolve();
+    });
+}
+
+// Connection health monitoring
+function checkConnectionHealth() {
+    const now = Date.now();
+    let healthyConnections = 0;
+    
+    activeWebSockets.forEach((ws, relay) => {
+        // Check if connection is stuck or unhealthy
+        if (ws.readyState === WebSocket.CONNECTING && (now - ws._createdAt > 10000)) {
+            console.warn(`🩺 Unhealthy connection to ${relay} - closing`);
+            ws.close();
+        } else if (ws.readyState === WebSocket.OPEN) {
+            healthyConnections++;
         }
     });
-
-    await Promise.all(fetchPromises);
-
-    console.log(`✅ Search complete. Fetched ${newNotes.length} new notes.`);
-    if (matchCount > 0) {
-        fetchingSuccess();
-        updateNewNotesButton();
-    } else {
-        fetchingNoMatches();
-    }
-
-    // ✅ Fetch metadata for all pubkeys in notes
-    await fetchProfilesForNotesParallel(notes);
-    updateCounters();
-    sortNotes();
-    updateNotes();
-
-    isFetching = false;
+    
+    console.log(`🩺 Connection health: ${healthyConnections} healthy, ${activeWebSockets.size} total`);
+    return healthyConnections;
 }
+
+// Call this periodically during searches
+setInterval(() => {
+    if (isFetching) {
+        checkConnectionHealth();
+    }
+}, 5000);
 
 let interval;
 
@@ -1542,42 +1082,91 @@ function highlightContent(content) {
     return content;
 }
 
+// Add this debug function
+function debugSearchComparison(content, activeKeywords, requireAllKeywords) {
+    console.log("🔍=== SEARCH DEBUG ===");
+    console.log(`📝 Content preview: "${content.substring(0, 100)}..."`);
+    console.log(`🎯 Mode: ${requireAllKeywords ? 'AND' : 'OR'}`);
+    console.log(`🔑 Active keywords:`, activeKeywords);
+    
+    let andResults = [];
+    let orResults = [];
+    
+    activeKeywords.forEach(keyword => {
+        const regex = new RegExp(`\\b${keyword}\\b`, "gi");
+        const matches = regex.test(content);
+        andResults.push(matches);
+        orResults.push(matches);
+        console.log(`- "${keyword}": ${matches ? '✅' : '❌'}`);
+    });
+    
+    const andMatch = andResults.every(result => result);
+    const orMatch = orResults.some(result => result);
+    
+    console.log(`📊 AND result: ${andMatch ? '✅ MATCH' : '❌ NO MATCH'}`);
+    console.log(`📊 OR result: ${orMatch ? '✅ MATCH' : '❌ NO MATCH'}`);
+    console.log(`🎯 Final (using ${requireAllKeywords ? 'AND' : 'OR'}): ${requireAllKeywords ? andMatch : orMatch}`);
+    console.log("🔍=== END DEBUG ===");
+    
+    return requireAllKeywords ? andMatch : orMatch;
+}
+
 
 function updateNotes() {
     const notesContainer = document.getElementById("notes");
 
-    //  Ensure feed is never empty when notes exist
-    if (notes.length === 0) {
+    // Debug logging - only log what's available now
+    console.log("🔄 updateNotes called");
+    console.log("📊 allNotes length:", allNotes.length);
+    console.log("📊 displayedNotes length:", displayedNotes.length);
+    console.log(`🧲 Magnet Mode: ${requireAllKeywords ? 'AND' : 'OR'}`);
+
+    // ✅ DEBUG: Check actual order of displayedNotes
+    console.log("🔍 Displayed notes timestamps:", displayedNotes.map(n => n.created_at));
+    console.log("🔍 Displayed notes order:", displayedNotes.map(n => `${n.id.slice(0,4)}...@${n.created_at}`));
+
+    // Use displayedNotes instead of notes
+    if (displayedNotes.length === 0) {
         console.warn("⚠️ No notes available to display!");
+        notesContainer.innerHTML = '<div class="no-notes">No notes found for current page.</div>';
         return;
     }
 
-    // Filter notes based on active keywords
-    const activeKeywords = Object.keys(keywordStates).filter(
-        (k) => keywordStates[k]
-    );
+    // Get active keywords
+    const activeKeywords = Object.keys(keywordStates).filter(k => keywordStates[k]);
+    console.log("🔑 Active keywords:", activeKeywords);
 
-    const filteredNotes = notes.filter((note) => {
-        const content = note.content.toLowerCase();
-        if (requireAllKeywords) {
-        // AND logic: every active keyword must match
-        return activeKeywords.every(keyword =>
-            new RegExp(`\\b${keyword}\\b`, "gi").test(content)
-        );
-        } else {
-        // OR logic: at least one active keyword must match
-        return activeKeywords.some(keyword =>
-            new RegExp(`\\b${keyword}\\b`, "gi").test(content)
-        );
+    // Filter notes based on active keywords
+    const filteredNotes = displayedNotes.filter((note) => {
+        if (activeKeywords.length === 0) {
+            return true; // Show all notes if no active keywords
         }
 
-        // if (!isActive) return false;
+        const content = note.content.toLowerCase();
+        
+            if (requireAllKeywords) {
+                // AND mode: ALL keywords must match
+                const matchesAll = activeKeywords.every(keyword => {
+                    const keywordLower = keyword.toLowerCase();
+                    const regex = new RegExp(`\\b${keywordLower}\\b`, "gi");
+                    return regex.test(content);
+                });
+                console.log(`🔍 Note "${note.id.slice(0,8)}" AND match: ${matchesAll}`);
+                return matchesAll;
+            } else {
+                // OR mode: ANY keyword can match
+                const matchesAny = activeKeywords.some(keyword => {
+                    const keywordLower = keyword.toLowerCase();
+                    const regex = new RegExp(`\\b${keywordLower}\\b`, "gi");
+                    return regex.test(content);
+                });
+                console.log(`🔍 Note "${note.id.slice(0,8)}" OR match: ${matchesAny}`);
+                return matchesAny;
+            }
+        });
 
-            // Regex to match only whole words, not inside other words
-            const wordBoundaryRegex = new RegExp(`\\b${keyword}\\b`, "gi");
-            return wordBoundaryRegex.test(content);
+    console.log("📊 Filtered notes:", filteredNotes.length, "out of", displayedNotes.length);
 
-    });
 
     // Render all notes (hide notes with only toggled-off keywords)
     notesContainer.innerHTML = filteredNotes
@@ -1623,7 +1212,7 @@ function updateNotes() {
                     normalRegex,
                     `<span class="${style}">$1</span>`
                 );
-            });
+            })
 
             // Ensure image click opens in fullscreen
             const imageRegex = /(https?:\/\/\S+\.(?:jpg|jpeg|gif|png|webp))/gi;
@@ -1688,18 +1277,18 @@ function updateNotes() {
         <!-- Icons and timestamp container -->
         <div class="note-footer">
             <div class="note-icons">
-                <span class="icon" title="Thumbs Up" onclick="handleIconClick('upvote', '${
+                <!-- <span class="icon" title="Thumbs Up" onclick="handleIconClick('upvote', '${
                     note.id
                 }')">👍</span>
-                <!-- <span class="icon" title="Thumbs Down" onclick="handleIconClick('downvote', '${
+                <span class="icon" title="Thumbs Down" onclick="handleIconClick('downvote', '${
                     note.id
-                }')">👎</span> -->
+                }')">👎</span>
                 <span class="icon" title="Repost" onclick="handleIconClick('repost', '${
                     note.id
                 }')">🔁</span>
                 <span class="icon" title="Reply" onclick="handleIconClick('reply', '${
                     note.id
-                }')">💬</span>
+                }')">💬</span> -->
             </div>
             <div class="note-timestamp">
                 ${readableTime}
@@ -1712,7 +1301,7 @@ function updateNotes() {
         // console.log("✅ Feed updated with new notes.");
 
             //  Ensure profile pictures update when metadata arrives
-        notes.forEach(note => {
+        displayedNotes.forEach(note => {
             updateProfileInUI(note.pubkey);
         });
 
@@ -1723,8 +1312,6 @@ function updateNotes() {
         attachCopyListeners();
         attachImageClickListeners(); // Attach image event listeners every time updateNotes() runs
 }
-
-let hiddenNotes = new Set(JSON.parse(localStorage.getItem("hiddenNotes") || "[]")); //  Load stored hidden notes
 
 function toggleHide(noteId) {
     const noteElement = document.querySelector(`.note-content[data-note-id="${noteId}"]`).parentElement;
@@ -1914,38 +1501,6 @@ document.getElementById("fullscreen").addEventListener("click", (event) => {
 });
 
 
-// Show new notes when the button is clicked
-function showNewNotes() {
-    if (newNotes.length === 0) {
-        console.warn("⚠️ No new notes to show!");
-        return;
-    }
-
-    //  Merge only UNIQUE new notes into the feed
-    const uniqueNewNotes = newNotes.filter(n => !notes.some(existingNote => existingNote.id === n.id));
-    notes = [...uniqueNewNotes, ...notes];
-
-    console.log(`📢 Added ${uniqueNewNotes.length} new notes to the feed.`);
-    console.log(`📊 Total notes now in feed: ${notes.length}`);
-
-    //  Clear new notes array
-    newNotes = [];
-
-    //  Refresh the UI
-    sortNotes();
-    updateNotes();
-    fetchProfilesForNotesParallel(notes);
-    updateNewNotesButton();
-    updateCounters();
-}
-
-
-
-
-// Attach event listener for the "New Notes" button
-document.getElementById("newNotesButton").addEventListener("click", showNewNotes);
-
-
 function copyToClipboard(noteId) {
     if (!noteId || noteId === "null") {
         console.error("❌ Error: Trying to copy an invalid Note ID.");
@@ -1979,80 +1534,308 @@ function handleIconClick(action, noteId) {
 document.getElementById("magnetButton").addEventListener("click", function () {
     requireAllKeywords = !requireAllKeywords; // Toggle AND/OR mode
 
-    //  Ensure proper class toggling
+    // Ensure proper class toggling
     if (requireAllKeywords) {
         this.classList.add("active");  // Force Green (AND Mode)
+        this.title = "Showing notes with ALL keywords";
     } else {
         this.classList.remove("active"); // Force Grey (OR Mode)
-    }
-
-    // Clear the feed data:
-    notes = [];
-    newNotes = [];
-    fetchedNoteIds.clear();
-
-    // Clear the feed UI.
-    document.getElementById("notes").innerHTML = "";
-    updateCounters();
-
-        //  Force a search refresh when toggling the Magnet button
-    if (!isFetching) {
-        console.log("🚀 Magnet mode changed, triggering a fresh search...");
-        fetchNotes(); // 🔄 Ensures the search actually updates to OR when toggled OFF
-    } else {
-        console.warn("⚠️ Fetch already in progress. Skipping...");
+        this.title = "Showing notes with ANY keyword";
     }
 
     console.log(`🧲 Magnet Mode: ${requireAllKeywords ? "ON (AND Search)" : "OFF (OR Search)"}`);
+    // Show immediate feedback
+    const activeKeywords = Object.keys(keywordStates).filter(k => keywordStates[k]);
+    console.log(`🔍 Active keywords: ${activeKeywords.join(', ')}`);
+    console.log(`🎯 Mode: ${requireAllKeywords ? 'AND (all must match)' : 'OR (any can match)'}`);
 
-    //  Check if `h=` exists in the URL
+    // Check if we have existing notes to filter
+    const hasExistingNotes = allNotes.length > 0;
+    
+    // Check URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const hasSearchParams = urlParams.has("h");
-
-    //  Check if the user has manually typed something
+    
+    // Check if user has manually typed something
     const inputBox = document.getElementById("keywordSearch");
     const inputNotEmpty = inputBox.value.trim() !== "";
 
-    // 🔄 If `h=` exists but no manual input, trigger an immediate search
-    if (hasSearchParams && !inputNotEmpty) {
-        console.log("🔎 Re-triggering search due to Magnet Mode change (from `h=` parameters)...");
+    console.log(`📊 State: ${hasExistingNotes ? 'Has notes' : 'No notes'}, ${hasSearchParams ? 'URL params' : 'No URL params'}, ${inputNotEmpty ? 'Manual input' : 'No manual input'}`);
+
+    // DECISION LOGIC: When to filter vs when to search
+    if (hasExistingNotes) {
+        // Case 1: We already have notes - just filter them
+        console.log("🔄 Re-filtering existing notes with new mode...");
+        applyPagination(); // Re-filter existing notes
+        
+    } else if (hasSearchParams && !inputNotEmpty) {
+        // Case 2: URL parameters but no manual input - trigger search with current mode
+        console.log("🔎 URL parameters detected, triggering search with current mode...");
         if (!isFetching) {
-            console.log("🚀 Triggering search...");
-            fetchNotes();
+            triggerSearch(); // Use triggerSearch to handle the search properly
         } else {
             console.warn("⚠️ Fetch already in progress. Skipping...");
         }
+        
+    } else if (inputNotEmpty) {
+        // Case 3: Manual input - trigger search with current mode
+        console.log("🔎 Manual input detected, triggering search with current mode...");
+        if (!isFetching) {
+            triggerSearch(); // Use triggerSearch to handle the search properly
+        } else {
+            console.warn("⚠️ Fetch already in progress. Skipping...");
+        }
+        
+    } else {
+        // Case 4: No notes, no URL params, no manual input - just update UI
+        console.log("ℹ️ No search criteria available");
+        updateCounters();
     }
 });
 
-
-// Toggle button behavior for filters (Sentiment, NSFW)
-document.querySelectorAll(".filter-toggle-btn").forEach(btn => {
-    btn.addEventListener("click", function () {
-        // Toggle active state
-        this.classList.toggle("active");
-
-        // Set values based on selection
-        if (this.id.startsWith("sentiment")) {
-            // Remove active state from other sentiment buttons
-            document.querySelectorAll(".toggle-btn[id^='sentiment']").forEach((b) => {
-                if (b !== this) b.classList.remove("active");
-            });
-
-            // Update sentiment filter
-            sentimentFilter = this.classList.contains("active") ? this.dataset.value : "";
-            console.log(`Sentiment Filter Set: ${sentimentFilter}`);
+// Apply pagination to display current page
+function applyPagination() {
+    console.log("🔄 applyPagination called");
+    console.log("📊 allNotes length:", allNotes.length);
+    console.log("📊 NOTES_PER_PAGE:", NOTES_PER_PAGE);
+    console.log("📊 currentPage:", currentPage);
+    
+    // Sort all notes first
+    sortNotes();
+    
+    // Get active keywords for filtering
+    const activeKeywords = Object.keys(keywordStates).filter(k => keywordStates[k]);
+    
+    // DEBUG: Check what's happening with filtering
+    console.log("🔍 FILTERING DEBUG:");
+    console.log("🔑 Active keywords:", activeKeywords);
+    console.log("🧲 Magnet mode:", requireAllKeywords ? "AND (ALL must match)" : "OR (ANY can match)");
+    
+    // Filter allNotes based on keywords (BEFORE pagination)
+    const filteredNotes = allNotes.filter((note) => {
+        if (activeKeywords.length === 0) {
+            console.log("🔍 No active keywords - showing all notes");
+            return true; // Show all notes if no active keywords
         }
-
-        if (this.id === "nsfw-toggle") {
-            // Toggle NSFW filter
-            nsfwFilter = this.classList.contains("active") ? "false" : "true";
-            console.log(`NSFW Filter Set: ${nsfwFilter}`);
+        
+        const content = note.content.toLowerCase();
+        
+        // DEBUG: Check individual note matching
+        const keywordMatches = activeKeywords.map(keyword => {
+            const regex = new RegExp(`\\b${keyword}\\b`, "gi");
+            const matches = regex.test(content);
+            return { keyword, matches };
+        });
+        
+        if (requireAllKeywords) {
+            // AND mode: ALL keywords must match
+            const allMatch = keywordMatches.every(m => m.matches);
+            if (allMatch) {
+                console.log(`✅ Note matches ALL keywords:`, keywordMatches);
+            }
+            return allMatch;
+        } else {
+            // OR mode: ANY keyword can match
+            const anyMatch = keywordMatches.some(m => m.matches);
+            if (anyMatch) {
+                console.log(`✅ Note matches ANY keyword:`, keywordMatches);
+            }
+            return anyMatch;
         }
-
-        console.log("Filters Updated:", { sentimentFilter, nsfwFilter });
     });
-});
+
+    console.log("📊 Filtered notes:", filteredNotes.length, "out of", allNotes.length);
+    
+    // If no filtered notes but we have allNotes, debug why
+    if (filteredNotes.length === 0 && allNotes.length > 0) {
+        console.log("🔍 DEBUG: Why no filtered notes?");
+        console.log("🔑 Keywords:", activeKeywords);
+        console.log("🧲 Mode:", requireAllKeywords ? "AND" : "OR");
+        console.log("📝 Sample notes content:");
+        allNotes.slice(0, 3).forEach((note, i) => {
+            console.log(`  Note ${i}: ${note.content.substring(0, 100)}...`);
+        });
+    }
+    
+    // Apply pagination to filtered results
+    const startIndex = (currentPage - 1) * NOTES_PER_PAGE;
+    const endIndex = startIndex + NOTES_PER_PAGE;
+    
+    console.log("📊 startIndex:", startIndex, "endIndex:", endIndex);
+    
+    displayedNotes = filteredNotes.slice(startIndex, endIndex);
+    
+    console.log("📊 displayedNotes after pagination:", displayedNotes.length);
+    
+    // Update UI
+    updateNotes();
+    updateCounters();
+    updatePaginationControls(); // This handles hiding controls when fewer notes
+}
+
+// Remove pagination controls when using infinite scroll
+function updatePaginationControls() {
+    // Calculate filtered notes count
+    const activeKeywords = Object.keys(keywordStates).filter(k => keywordStates[k]);
+    const filteredNotes = allNotes.filter((note) => {
+        if (activeKeywords.length === 0) return true;
+        const content = note.content.toLowerCase();
+        
+        if (requireAllKeywords) {
+            return activeKeywords.every(keyword => 
+                new RegExp(`\\b${keyword}\\b`, "gi").test(content)
+            );
+        } else {
+            return activeKeywords.some(keyword => 
+                new RegExp(`\\b${keyword}\\b`, "gi").test(content)
+            );
+        }
+    });
+
+    const filteredCount = filteredNotes.length;
+    const totalPages = Math.ceil(filteredCount / NOTES_PER_PAGE);
+    
+    // Only update if pagination state actually changed
+    const currentState = {
+        shouldShow: totalPages > 1 && filteredCount > NOTES_PER_PAGE,
+        totalPages: totalPages,
+        currentPage: currentPage,
+        filteredCount: filteredCount
+    };
+    
+    // Check if state changed
+    const stateChanged = JSON.stringify(currentState) !== JSON.stringify(lastPaginationState);
+    
+    if (!stateChanged) {
+        console.log("📄 Pagination state unchanged, skipping update");
+        return;
+    }
+    
+    lastPaginationState = currentState;
+    
+    // Remove ALL existing pagination controls
+    const allPaginationControls = document.querySelectorAll('#paginationControls, .pagination-controls');
+    allPaginationControls.forEach(control => control.remove());
+    
+    console.log(`🗑️ Removed ${allPaginationControls.length} old pagination controls`);
+    
+    if (currentState.shouldShow) {
+        const paginationHTML = `
+            <div id="paginationControls" class="pagination-controls">
+                <button onclick="goToPage(1)" ${currentPage === 1 ? 'disabled' : ''}>⏮ First</button>
+                <button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>◀ Previous</button>
+                <span class="page-info">Page ${currentPage} of ${totalPages}</span>
+                <button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next ▶</button>
+                <button onclick="goToPage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>Last ⏭</button>
+            </div>
+        `;
+        
+        const notesContainer = document.getElementById('notes');
+        if (notesContainer) {
+            notesContainer.insertAdjacentHTML('afterend', paginationHTML);
+            console.log("📄 Added pagination control:", totalPages, "pages,", filteredCount, "filtered notes");
+        }
+    } else {
+        console.log("📄 Pagination hidden:", filteredCount, "filtered notes");
+    }
+}
+
+// Also fix the immediate issue - remove all stacked controls
+function cleanupStackedPagination() {
+    const stackedControls = document.querySelectorAll('#paginationControls, .pagination-controls');
+    if (stackedControls.length > 1) {
+        console.warn(`⚠️ Found ${stackedControls.length} stacked pagination controls!`);
+        
+        // Keep only the last one
+        for (let i = 0; i < stackedControls.length - 1; i++) {
+            stackedControls[i].remove();
+        }
+        
+        console.log(`✅ Cleaned up ${stackedControls.length - 1} stacked controls`);
+    }
+}
+
+// Run cleanup immediately
+cleanupStackedPagination();
+
+
+// Navigate to specific page
+function goToPage(page) {
+    // Calculate filtered notes count (same logic as updatePaginationControls)
+    const activeKeywords = Object.keys(keywordStates).filter(k => keywordStates[k]);
+    const filteredNotes = allNotes.filter((note) => {
+        if (activeKeywords.length === 0) return true;
+        const content = note.content.toLowerCase();
+        
+        if (requireAllKeywords) {
+            return activeKeywords.every(keyword => 
+                new RegExp(`\\b${keyword}\\b`, "gi").test(content)
+            );
+        } else {
+            return activeKeywords.some(keyword => 
+                new RegExp(`\\b${keyword}\\b`, "gi").test(content)
+            );
+        }
+    });
+
+    const filteredCount = filteredNotes.length;
+    const totalPages = Math.ceil(filteredCount / NOTES_PER_PAGE);
+    
+    if (page < 1 || page > totalPages) return;
+    
+    currentPage = page;
+    applyPagination();
+    
+    // Scroll to top of notes
+    document.getElementById('notes').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Load more notes (infinite scroll alternative)
+function loadMoreNotes() {
+    if (isFetching) {
+        console.log('⏳ Already fetching, skipping load more...');
+        return;
+    }
+    
+    const totalPages = Math.ceil(allNotes.length / NOTES_PER_PAGE);
+    if (currentPage >= totalPages) {
+        console.log('📄 No more pages to load');
+        return;
+    }
+    
+    currentPage++;
+    console.log(`📄 Loading page ${currentPage} of ${totalPages}`);
+    applyPagination();
+}
+
+function setupInfiniteScroll() {
+    const notesContainer = document.getElementById('notes');
+    
+    if (!notesContainer) {
+        console.warn('Notes container not found for infinite scroll');
+        return;
+    }
+    
+    console.log('🔄 Setting up infinite scroll on notes container');
+    
+    // Remove existing scroll listener to prevent duplicates
+    notesContainer.removeEventListener('scroll', handleInfiniteScroll);
+    
+    function handleInfiniteScroll() {
+        const { scrollTop, scrollHeight, clientHeight } = notesContainer;
+        
+        // Load more when near bottom (80% scrolled)
+        if (scrollTop + clientHeight >= scrollHeight * 0.8) {
+            const totalPages = Math.ceil(allNotes.length / NOTES_PER_PAGE);
+            if (currentPage < totalPages && !isFetching) {
+                console.log('📜 Loading more notes via infinite scroll...');
+                loadMoreNotes();
+            }
+        }
+    }
+    
+    notesContainer.addEventListener('scroll', handleInfiniteScroll);
+}
 
 // Auto-fetch keywords and relays from URL and trigger search on page load
 window.addEventListener("DOMContentLoaded", () => {
@@ -2064,12 +1847,20 @@ window.addEventListener("DOMContentLoaded", () => {
     // Reset keywords array properly
     keywords.length = 0;
 
-    if (keywordsFromURL) {
+    setupInfiniteScroll();
 
+    if (keywordsFromURL) {
+        // URL parameters exist - set up the search but don't auto-trigger yet
+
+        // IMPORTANT: Don't automatically activate magnet for URL parameters
+        // Let the user decide if they want AND or OR mode
         console.log("🔄 `h=` detected, setting search mode to AND (ALL keywords required).");
-        requireAllKeywords = true; //  Start in AND mode
-        magnetButton.classList.add("active");  //  Ensure Green
+        requireAllKeywords = false; //  // Default to OR mode for URL parameters
+        magnetButton.classList.remove("active");  // Ensure Grey (OR mode)
         
+        console.log("🔄 `h=` detected, setting up search with OR mode by default.");
+        console.log("ℹ️ User can click magnet button to switch to AND mode if desired.");
+
         // Decode, remove hashtags (#), and replace commas with spaces
         let keywordArray = decodeURIComponent(keywordsFromURL)
             .replace(/%23/g, '')  // Remove encoded `#`
@@ -2092,57 +1883,43 @@ window.addEventListener("DOMContentLoaded", () => {
             });
 
             console.log("✅ Keywords Loaded for Search:", keywords);
+
+            // Set up for better search results
+            timeRange = 4; // Set slider to 'All Time'
+            maxNotes = timeToMaxNotes[timeRange];
+            document.getElementById("timeRangeSlider").value = 4;
+            
+            updateTitleWithKeywords();
+            
+            // FIXED: Don't auto-trigger search
+            // Show user that search is ready but let them control when to search
+            console.log("ℹ️ Search ready! Click the search button (🔍) to begin.");
+
         } else {
             console.warn("⚠️ No valid keywords found in URL.");
         }
-    //  If `h=` is present, trigger a search with AND mode
-    if (keywords.length > 0) {
-    console.log("🔄 `h=` detected, starting search in AND mode...");
-    if (!isFetching) {
-        console.log("🚀 Triggering search...");
-        fetchNotes();
     } else {
-        console.warn("⚠️ Fetch already in progress. Skipping...");
-    }
-    }
-
-    else {
-        //  If no `h=`, start in OR mode by default
-        requireAllKeywords = false; //  Default to OR mode
-        magnetButton.classList.remove("active"); //  Ensure Grey
-    }
+        // No URL parameters - default behavior
+        requireAllKeywords = false; // Default to OR mode
+        magnetButton.classList.remove("active"); // Ensure Grey
+        console.log("ℹ️ No URL parameters. Ready for manual search.");
     }
 
-
-//  Load relays if available
-if (relaysFromURL) {
-    const relayArray = decodeURIComponent(relaysFromURL).split(",");
-    if (relayArray.length > 0 && relayArray[0] !== "") {
-        fallbackRelays.length = 0;
-        fallbackRelays.push(...relayArray);
-        console.log("🔄 Using custom relays:", fallbackRelays);
+    // Load relays if available
+    if (relaysFromURL) {
+        const relayArray = decodeURIComponent(relaysFromURL).split(",");
+        if (relayArray.length > 0 && relayArray[0] !== "") {
+            fallbackRelays.length = 0;
+            fallbackRelays.push(...relayArray);
+            console.log("🔄 Using custom relays:", fallbackRelays);
+        }
     }
-}
 
-    // Only trigger search if valid keywords were found
-    if (keywords.length > 0) {
-        // Set max history (full slider)
-        timeRange = 4; // Set slider to 'All Time'
-        maxNotes = timeToMaxNotes[timeRange]; // Update max notes based on slider
-
-        // Adjust the slider visually
-        document.getElementById("timeRangeSlider").value = 4;
-
-        updateTitleWithKeywords();
-        startFetching();
-
-        fetchNotes()
-            .then(() => fetchingSuccess())
-            .catch(() => fetchingError());
-    } else {
-        console.log("No keywords provided, waiting for user input.");
-    }
+    // User must explicitly click search button to begin
+    console.log("🎯 Ready for search. Click the search button (🔍) to begin.");
 });
+
+
 </script>
 </body>
 </html>
