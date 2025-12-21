@@ -1,0 +1,544 @@
+        @import url(https://fonts.bunny.net/css?family=athiti:200);
+        /* Root font-size scaling based on viewport width */
+        html {
+            font-size: calc(1vw + 1vh + 0.5vmin); /* Adjusts base font size based on the viewport */
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Athiti', sans-serif;
+            background-color: black;
+            color: rgb(255, 255, 255);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            width: 99vw;
+            max-width: 800px;
+            height: 100vh;
+            overflow-y: scroll;
+            scrollbar-width: none;  /* For Firefox */
+            -ms-overflow-style: none;  /* For Internet Explorer/Edge */
+            border: 1px solid transparent;  /* Default no border */
+            transition: border-color 0.3s, box-shadow 0.3s;  /* Smooth transitions */
+            padding: 20px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .container::-webkit-scrollbar {
+            display: none;  /* For Chrome, Safari, and Opera */
+        }
+
+        #notes {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-bottom: 40px;
+        }
+
+        .note {
+            background-color: #333;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .highlight {
+            font-weight: bold;
+            color: rgb(216, 101, 255);
+        }
+
+        .hashtag {
+            font-weight: bold;
+            color: rgb(46, 233, 46);
+        }
+
+        .note-header {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 5px;
+        }
+        .note-header img {
+            width: 30px;
+            height: 30px;
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+        .note-content {
+            word-wrap: break-word;
+            margin-top: 10px;
+            text-align: left;
+        }
+        .title {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1rem;
+        }
+        .nip05 {
+            font-size: 0.6rem;
+            color: #aaa;
+            margin-left: 40px;
+        }
+
+        .profile-img:hover {
+            cursor: pointer;
+            opacity: 0.8;
+        }
+
+        .note-content img {
+            max-width: 100px;
+            max-height: 100px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .fullscreen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .fullscreen img {
+            max-width: 90%;
+            max-height: 90%;
+        }
+        .fullscreen.active {
+            display: flex;
+        }
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            color: green;
+        }
+        .copy-button img {
+            width: 20px;
+            height: 20px;
+        }
+        .new-notes-button {
+            position: sticky;
+            top: 7px;
+            right: 13px;
+            background-color: green;
+            color: black;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            z-index: 99999;
+            display: none;
+        }
+
+        .note-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .note-icons {
+            display: flex;
+            gap: 15px;
+            font-size: 0.5rem;
+        }
+
+        .icon:hover {
+            cursor: pointer;
+            opacity: 0.7;
+        }
+
+        .note-timestamp {
+            font-size: 0.5rem;
+            color: #aaa;
+            text-align: right;
+        }
+
+        .keyword {
+            margin: 0 5px;
+            cursor: pointer;
+            border-bottom: 1px dashed transparent;
+            transition: all 0.3s ease;
+        }
+
+        .keyword.active {
+            color: green;
+            /* border-bottom: 1px dashed green; */
+        }
+
+        .keyword.toggled {
+            color: rgb(157, 157, 157);
+            font-style: italic;
+        }
+
+        .highlight {
+            color: rgb(222, 0, 222);
+            font-weight: bold;
+        }
+
+        .inactive {
+            color: rgb(157, 157, 157);
+            font-style: italic;
+        }
+
+
+        .search-bar {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .search-bar input {
+            width: 60%;
+            padding: 10px;
+            font-size: 1rem;
+            border: 1px solid green;
+            background-color: black;
+            color: purple;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .search-bar button {
+            margin-left: 10px;
+            padding: 10px 15px;
+            font-size: 0.7rem;
+            background-color: green;
+            color: black;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .search-bar button:hover {
+            opacity: 0.9;
+        }
+
+        /* <!-- Slider Styles --> */
+        #timeFilterButton {
+            padding: 10px 15px;
+            font-size: 0.7rem;
+            background-color: green;
+            color: black;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-content {
+            background-color: #222;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 60%;
+            text-align: center;
+            color: white;
+        }
+
+        .close {
+            float: right;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: green;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 90%;
+            height: 12px;
+            background: #444;
+            outline: none;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 40px;
+            height: 40px;
+            background: green;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.7rem;
+        }
+
+
+        .apply-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* sroll to top btn */
+        .scroll-top-btn {
+            position: fixed;  /* Ensure it's fixed to viewport */
+            bottom: 4%;
+            background-color: rgba(240, 255, 240, 0.552);
+            right: 4%;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.3rem;
+            cursor: pointer;
+            z-index: 999;
+            display: none;  /* Hidden by default */
+
+        }
+
+        .scroll-top-btn:hover {
+            background-color: rgba(86, 168, 86, 0.798);
+            transform: scale(1.1);
+        }
+
+        /* Counters container */
+        #counters {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.557);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            z-index: 1000;
+            border: 1px solid #666;
+            gap: 15px;
+            display: none; /* Single display property */
+            flex-direction: row; /* Add this to specify flex layout */
+        }
+
+
+        /* Matches counter */
+        #matchesCounter {
+            color: #FF9900;  /* Light blue */
+        }
+
+        .filters {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            font-size: 0.5rem;
+            margin-bottom: 10px;
+        }
+
+        .filter-toggle-btn {
+            padding: 5px 10px;
+            border: none;
+            font-size: 0.5rem;
+            background-color: rgba(128, 128, 128, 0.414);
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .filter-toggle-btn.active {
+            background-color: green; /*  FORCE Green when active */
+        }
+
+        .magnetButton {
+            padding: 5px 10px;
+            border: none;
+            font-size: 0.5rem;
+            background-color: rgba(128, 128, 128, 0.414);
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        /*  Specific Fix for Magnet Button */
+        #magnetButton {
+            background-color: rgba(128, 128, 128, 0.414); /* Default Gray */
+        }
+
+        #magnetButton.active {
+            background-color: green !important; /*  Ensure Green when Active */
+        }
+
+
+        /* long notes truncation */
+        /* Truncated note content */
+        .truncated {
+            position: relative;
+            max-height: 100px; /* Adjust for a better preview size */
+            overflow: hidden;
+            display: block;
+            text-overflow: ellipsis;
+            white-space: normal;
+            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0));
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0));
+            transition: max-height 0.3s ease-in-out;
+        }
+
+        /* Expand button */
+        .expand-note {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 14px;
+            padding: 3px 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        /* Expanded note (removes blur effect) */
+        .note-content:not(.truncated) {
+            max-height: none;
+            mask-image: none;
+            -webkit-mask-image: none;
+        }
+
+        /* Hide button styling */
+        .hide-eye-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s ease-in-out;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto; /*  Center the button */
+            position: relative;
+        }
+
+        .hide-eye-button img {
+            width: 24px;
+            height: 24px;
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        .hide-eye-button:hover {
+            opacity: 0.7;
+        }
+
+        /* Initially hide collapsed notes */
+        .collapsed-note {
+            display: none;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+            padding: 8px 0;
+            cursor: pointer;
+        }
+
+        /* Hide the full note when toggled */
+        .note.hidden .note-content,
+        .note.hidden .note-footer,
+        .note.hidden .note-header {
+            display: none; /* Hide everything related to the note */
+        }
+
+        /* Show the collapsed version */
+        .note.hidden .collapsed-note {
+            display: block;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+            padding: 8px 0;
+            cursor: pointer;
+        }
+
+
+/* Bomb icon styling */
+.ban-profile-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 5px; /*  Space it from the left edge */
+}
+
+.ban-profile-button img {
+    width: 35px;
+    height: 35px;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.ban-profile-button:hover img {
+    opacity: 0.7;
+}
+
+/* Pagination Controls */
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 0;
+    padding: 15px;
+    background-color: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+    border: 1px solid #333;
+}
+
+.pagination-controls button {
+    padding: 8px 15px;
+    background-color: green;
+    color: black;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.pagination-controls button:disabled {
+    background-color: #555;
+    color: #999;
+    cursor: not-allowed;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+    background-color: #00cc00;
+}
+
+.page-info {
+    color: white;
+    font-size: 0.9rem;
+    margin: 0 15px;
+}
+
+.no-notes {
+    text-align: center;
+    color: #999;
+    padding: 40px;
+    font-style: italic;
+}
