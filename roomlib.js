@@ -107,8 +107,9 @@ export function leadingZeroBits(bytes) {
 // Page identity
 // ------------------------------------------------------------------------------------------------
 // Parameters that control the room itself rather than describe the page. They are left out of the
-// identity on purpose: turning a room's difficulty up must not split it into a different room.
-export const ROOM_CONTROL_PARAMS = new Set(['w']);
+// identity on purpose: turning a room's difficulty up must not split it into a different room, and
+// neither may a creator switching public notes off — the room is where the conversation already is.
+export const ROOM_CONTROL_PARAMS = new Set(['w', 'n']);
 
 /**
  * The page's identity string: every parameter that defines the page, in a canonical order.

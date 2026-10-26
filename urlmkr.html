@@ -251,6 +251,16 @@
     </div>
 
     <div class="form-group">
+        <label for="allow_notes">
+            Public notes <input type="checkbox" id="allow_notes" checked
+                title="On: visitors can post a note anyone can find. Off: they can only talk in the private room.">
+        </label>
+        <small style="display: block; opacity: 0.7; font-size: 0.45em;">
+            On: a visitor can post a note anyone can find. Off: the page offers only the private room.
+        </small>
+    </div>
+
+    <div class="form-group">
         <label for="custom_characters">
             Max Characters Limit (default is 280) <input type="checkbox" id="custom_characters">
         </label>
@@ -346,6 +356,12 @@
         const include_p_Checkbox = document.getElementById('include_p');
         const includeMessageCheckbox = document.getElementById('include_message');
         const includeRelaysCheckbox = document.getElementById('include_relays');
+        const allowNotesCheckbox = document.getElementById('allow_notes');
+        // every other control redraws the link on change; this one has to as well, or the output keeps
+        // offering public notes after the box is cleared
+        if (allowNotesCheckbox) {
+            allowNotesCheckbox.addEventListener('change', updateURL);
+        }
         const customCharactersCheckbox = document.getElementById('custom_characters');
         const h1Input = document.getElementById('h1_input');
         const h3Input = document.getElementById('h3_input');
@@ -1207,6 +1223,13 @@ function reverseString(str) {
                 currentBytes += `l=${charactersValue}&`.length;
             }
 
+            // Public notes off. The parameter is only written when they are off, so every link made
+            // before this existed keeps offering them.
+            if (allowNotesCheckbox && !allowNotesCheckbox.checked) {
+                url += `n=0&`;
+                currentBytes += `n=0&`.length;
+            }
+
             // // Add Prevent Reuse Parameter (p=1)
             // if (preventReuseCheckbox.checked) {
             //     url += `p=1&`;
@@ -1748,7 +1771,8 @@ document.addEventListener('DOMContentLoaded', function () {
         b: includeBackgroundCheckbox.checked ? selectedBackgroundIndex || "" : "", // background
         a: includeAvatarCheckbox.checked ? selectedAvatarIndex || "" : "", // avatar style (new visitors only)
         ln: includeLnCheckbox.checked ? lnInput.value : "", // lightning address for NIP-05
-        c: hintCheckbox.checked ? hintInput.value.trim() : "" // Add hint, a clue for the password
+        c: hintCheckbox.checked ? hintInput.value.trim() : "", // Add hint, a clue for the password
+        n: allowNotesCheckbox.checked ? "" : "0" // public notes off (empty values are dropped)
     };
 }
 })

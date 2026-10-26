@@ -70,6 +70,18 @@ test('difficulty comes from w, is clamped, and falls back to the default', () =>
   assert.equal(roomDifficulty('?t=x&w=3.7'), 3);
 });
 
+test('a creator switching public notes off does not split the room', () => {
+  // `n` is a page setting, not page content: the conversation must not fork when it is toggled, and the
+  // difficulty knob `w` is the same kind of thing.
+  const plain = pageId('?t=Same+page&w=8');
+  assert.equal(pageId('?t=Same+page&w=8&n=0'), plain, 'n=0 must not create a second room');
+  assert.equal(pageId('?t=Same+page&w=12&n=0'), plain, 'nor may w');
+  assert.deepEqual([...pageSecret('?t=Same+page&n=0')], [...pageSecret('?t=Same+page')],
+    'and the room key must stay the same too, or the same room would read as empty');
+  // anything a reader can actually see still counts
+  assert.notEqual(pageId('?t=Same+page2&w=8'), plain);
+});
+
 test('the room secret is 32 bytes from the link, and different for a different link', () => {
   const a = pageSecret('?t=Same');
   const b = pageSecret('?t=Same');

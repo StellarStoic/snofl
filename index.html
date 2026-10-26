@@ -94,6 +94,21 @@
 
     </details>
 
+    <script>
+        // The creator decides whether this page offers public notes at all. The block above is hidden
+        // rather than removed: the page's own scripts bind handlers to those elements by id, and a
+        // missing element turns every one of them into a TypeError.
+        (function () {
+            var params = new URLSearchParams(window.location.search);
+            var allowed = params.get('n') !== '0';
+            window.PUBLIC_NOTES_ALLOWED = allowed;
+            if (!allowed) {
+                var block = document.getElementById('publicNote');
+                if (block) block.hidden = true;
+            }
+        })();
+    </script>
+
     <footer class="footerDynamic">
         <a href="about.html">About</a> | 
         <a href="FAQ.html">FAQ</a> | 
@@ -1562,6 +1577,8 @@ function isDuplicateContent(hash) {
 
 document.getElementById("sendMessageBtn").onclick = async () => {
     const urlParams = new URLSearchParams(window.location.search);
+    // the creator turned public notes off for this page
+    if (urlParams.get('n') === '0') return;
     const { h, r = [] } = getQueryParams(); // Get hashtags and relay params safely
 
     // Block if no query parameters exist
