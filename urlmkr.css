@@ -740,3 +740,179 @@ body.mk .footerStatic a {
 body.mk .footerStatic a:hover {
     color: #ffffff;
 }
+
+/* ---------------------------------------------------------------- the terms gate */
+
+/* The shared sheet gives this modal a brown card and dims a disabled Accept to invisibility. It is the
+   first thing a new visitor meets, so it wears the same dark card as the rest of the maker. */
+body.mk .agreement-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 24px;
+}
+
+body.mk .agreement-modal[style*="display: block"] {
+    display: grid;
+    place-items: center;
+}
+
+body.mk .agreement-modal-content {
+    background: #121212;
+    border: 1px solid #262626;
+    border-radius: 16px;
+    padding: 22px;
+    width: min(760px, 94vw);
+    height: min(84vh, 760px);
+    margin: 0;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    gap: 12px;
+    text-align: left;
+}
+
+body.mk .agreement-modal-content h4 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: #f0f0f0;
+}
+
+body.mk .agreement-modal-text {
+    max-height: none;
+    height: auto;
+    overflow-y: auto;
+    margin: 0;
+    padding: 14px 16px;
+    background: #0d0d0d;
+    border: 1px solid #1e1e1e;
+    border-radius: 12px;
+    color: #b9b9b9;
+    font-size: 14px;
+    line-height: 1.65;
+}
+
+/* The terms arrive as raw <h1>/<h2>/<p> HTML, and the shared sheet sizes paragraphs at 1rem — which is
+   ~34px on this page. Inside the modal everything is body copy, whatever tag it came wrapped in. */
+body.mk .agreement-modal-text,
+body.mk .agreement-modal-text p,
+body.mk .agreement-modal-text h1,
+body.mk .agreement-modal-text h2,
+body.mk .agreement-modal-text h3,
+body.mk .agreement-modal-text li {
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.65;
+    width: auto;
+    text-align: left;
+}
+
+body.mk .agreement-modal-text p {
+    margin: 0 0 10px;
+}
+
+body.mk .agreement-modal-text h1 {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0 0 12px;
+    color: #f0f0f0;
+}
+
+body.mk .agreement-modal-text h2 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0;
+    margin: 20px 0 7px;
+    color: #e6e6e6;
+}
+
+body.mk .agreement-modal-text ul {
+    margin: 0 0 12px;
+    padding-left: 20px;
+}
+
+body.mk .agreement-modal-text::-webkit-scrollbar {
+    width: 8px;
+}
+
+body.mk .agreement-modal-text::-webkit-scrollbar-thumb {
+    background: #2e2e2e;
+    border-radius: 8px;
+}
+
+/* the read progress: how much is left, before the button will work */
+.mk__read {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+}
+
+.mk__read-track {
+    height: 6px;
+    border-radius: 999px;
+    background: #1e1e1e;
+    overflow: hidden;
+}
+
+.mk__read-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #00a844, #00e05c);
+    transition: width 0.12s linear;
+}
+
+.mk__read-track.is-done .mk__read-fill {
+    background: #00e05c;
+}
+
+.mk__read-label {
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #8a8a8a;
+    font-variant-numeric: tabular-nums;
+    min-width: 68px;
+    text-align: right;
+}
+
+body.mk .modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+/* Accept is the one control here that has to be seen. A thick red edge marks it out, and the disabled
+   state keeps that edge instead of fading to nothing — a greyed-out button explains nothing. */
+body.mk .modal-buttons #acceptAgreement {
+    background: #2e7d32;
+    color: #ffffff;
+    border: 3px solid #ff4d4d;
+    font-weight: 600;
+}
+
+body.mk .modal-buttons #acceptAgreement:disabled {
+    background: #1c1c1c;
+    color: #8f8f8f;
+    border: 3px solid rgba(255, 77, 77, 0.55);
+    opacity: 1;
+    cursor: not-allowed;
+}
+
+body.mk .modal-buttons #acceptAgreement:not(:disabled):hover {
+    background: #388e3c;
+    border-color: #ff6b6b;
+}
+
+body.mk .modal-buttons #acceptAgreement:not(:disabled) {
+    box-shadow: 0 0 0 1px rgba(255, 77, 77, 0.25);
+}
+
+body.mk .modal-buttons #declineAgreement {
+    background: #191919;
+    border: 1px solid #2b2b2b;
+    color: #cfcfcf;
+}

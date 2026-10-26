@@ -153,19 +153,38 @@ document.addEventListener('DOMContentLoaded', () => {
     agreementModal.style.display = 'block';
     acceptButton.disabled = true; // Start with Accept button disabled
 
-// Enable the accept button only after scrolling to the bottom of the terms
-agreementText.addEventListener('scroll', () => {
-    const scrollTop = agreementText.scrollTop; // Current scroll position
-    const scrollHeight = agreementText.scrollHeight; // Total height of the scrollable content
-    const clientHeight = agreementText.clientHeight; // Visible height of the container
+// How much of the terms has been seen, as a percentage, and Accept only once all of it has.
+// The bar is the honest version of the old rule: before, nothing told the reader why the button was
+// dead until they happened to reach the end.
+const readBar = document.getElementById('mk-read-bar');
+const readFill = document.getElementById('mk-read-fill');
+const readLabel = document.getElementById('mk-read-label');
 
-    // Check if user has scrolled to the bottom
-    if (scrollTop + clientHeight >= scrollHeight - 1) { // Use "-1" to handle rounding issues
-        acceptButton.disabled = false; // Enable the button
-    } else {
-        acceptButton.disabled = true; // Disable the button if they scroll back up
+function updateReadProgress() {
+    const scrollTop = agreementText.scrollTop;
+    const scrollHeight = agreementText.scrollHeight;
+    const clientHeight = agreementText.clientHeight;
+    const scrollable = scrollHeight - clientHeight;
+
+    // Content that fits needs no scrolling, and must not leave Accept disabled for ever.
+    const percent = scrollable <= 1
+        ? 100
+        : Math.min(100, Math.max(0, Math.round((scrollTop / scrollable) * 100)));
+
+    if (readFill) readFill.style.width = percent + '%';
+    if (readLabel) readLabel.textContent = percent + '% read';
+    if (readBar) {
+        readBar.setAttribute('aria-valuenow', String(percent));
+        readBar.classList.toggle('is-done', percent >= 100);
     }
-});
+    acceptButton.disabled = percent < 100;
+}
+
+agreementText.addEventListener('scroll', updateReadProgress);
+window.addEventListener('resize', updateReadProgress);
+// run once the text is laid out, so a screen that needs no scrolling starts at 100%
+requestAnimationFrame(updateReadProgress);
+setTimeout(updateReadProgress, 250);
 
     // Accept button logic
     acceptButton.addEventListener('click', () => {

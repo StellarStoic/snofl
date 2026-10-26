@@ -22,8 +22,8 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="urlmkr.css?v=3">
-    <script src="urlmkrAgreement.js"></script>
+    <link rel="stylesheet" href="urlmkr.css?v=5">
+    <script src="urlmkrAgreement.js?v=2"></script>
     <script src="backgroundImages.js"></script>
     <script src="crypto-js.min.js"></script>
     <script src="dec.js"></script>
@@ -45,6 +45,13 @@
     <div id="agreementModal" class="agreement-modal">
         <div class="agreement-modal-content">
             <h4>Terms and Conditions</h4>
+            <div class="mk__read">
+                <div class="mk__read-track" id="mk-read-bar" role="progressbar"
+                     aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="How much of the terms you have read">
+                    <div class="mk__read-fill" id="mk-read-fill"></div>
+                </div>
+                <span class="mk__read-label" id="mk-read-label">0% read</span>
+            </div>
             <div class="agreement-modal-text" id="agreementText">
             <!-- Text injected with irlmkrAgreement -->
             </div>
