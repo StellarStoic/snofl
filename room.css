@@ -1,0 +1,172 @@
+/* The room under a page.
+   Same materials as the page: monospace, the site's orange for anything that is a control, hairline
+   rules instead of boxes, and no animation that pretends to be progress. The mining indicator is text
+   because it is a number, not a mood. */
+
+.room {
+    margin: 2rem auto 0;
+    max-width: 46rem;
+    text-align: left;
+    color: var(--room-ink, #fff);
+}
+
+.room__header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--room-rule, #333);
+    padding-bottom: 0.5rem;
+}
+
+.room__title {
+    font-weight: bold;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+
+.room__meta,
+.room__count {
+    font-size: 0.72rem;
+    opacity: 0.65;
+}
+
+.room__count {
+    margin-left: auto;
+}
+
+.room__list {
+    padding: 0.75rem 0 0.25rem;
+}
+
+.room__empty,
+.room__error {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    padding: 0.5rem 0;
+}
+
+.room__error {
+    color: #ff6b6b;
+    opacity: 1;
+}
+
+.room__message {
+    padding: 0.55rem 0 0.65rem;
+    border-bottom: 1px dotted rgba(255, 255, 255, 0.12);
+}
+
+.room__message-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.05em;
+    opacity: 0.75;
+    margin-bottom: 0.25rem;
+}
+
+.room__author {
+    color: var(--room-accent, #ff6600);
+}
+
+.room__pow {
+    margin-left: auto;
+    opacity: 0.6;
+}
+
+.room__text {
+    font-size: 0.86rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.room__composer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    border-top: 1px solid var(--room-rule, #333);
+    padding-top: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.room__input {
+    width: 100%;
+    resize: vertical;
+    background: transparent;
+    color: inherit;
+    border: 1px solid var(--room-rule, #333);
+    border-radius: 0;
+    padding: 0.5rem 0.6rem;
+    font-family: inherit;
+    font-size: 0.86rem;
+    line-height: 1.45;
+}
+
+.room__input:focus-visible {
+    outline: 2px solid var(--room-accent, #ff6600);
+    outline-offset: 1px;
+}
+
+.room__send {
+    align-self: flex-start;
+    background: transparent;
+    color: var(--room-accent, #ff6600);
+    border: 1px solid var(--room-accent, #ff6600);
+    border-radius: 0;
+    padding: 0.4rem 0.9rem;
+    font-family: inherit;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.room__send:hover:not(:disabled),
+.room__send:focus-visible:not(:disabled) {
+    background: var(--room-accent, #ff6600);
+    color: #000;
+}
+
+.room__send:disabled {
+    opacity: 0.45;
+    cursor: progress;
+}
+
+.room__status {
+    font-size: 0.72rem;
+    min-height: 1.1em;
+    opacity: 0.8;
+    font-variant-numeric: tabular-nums;
+}
+
+/* The white theme, when the page is in it: the room follows the page, not the other way round. */
+[data-theme="light"] .room {
+    --room-ink: #000;
+    --room-rule: #d4d4d4;
+    --room-accent: #b34700;
+}
+
+[data-theme="light"] .room__message {
+    border-bottom-color: rgba(0, 0, 0, 0.12);
+}
+
+@media (max-width: 640px) {
+    .room {
+        margin-top: 1.25rem;
+    }
+
+    .room__meta {
+        flex-basis: 100%;
+    }
+
+    .room__count {
+        margin-left: 0;
+    }
+
+    .room__pow {
+        display: none;
+    }
+}

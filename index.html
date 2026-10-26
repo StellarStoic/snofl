@@ -27,6 +27,7 @@
     <script src="https://bundle.run/browserify-cipher@1.0.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="room.css?v=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="background.js"></script>
@@ -82,6 +83,10 @@
 
 
     
+    <!-- One encrypted thread per link, on the relays this page's creator chose. The section is empty
+         until room.js mounts it: everything inside is built from the URL, because the URL is the page. -->
+    <section id="snofl-room" class="room" aria-label="Room for this page"></section>
+
     <footer class="footerDynamic">
         <a href="about.html">About</a> | 
         <a href="FAQ.html">FAQ</a> | 
@@ -2321,6 +2326,7 @@ updateAvatar();
 </script>
 <script src="footer.js"></script>       
 
+    <script type="module" src="room.js?v=1"></script>
 </body>
 
 </html>
