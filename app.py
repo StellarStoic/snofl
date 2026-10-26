@@ -10,6 +10,7 @@ import string
 import urllib.parse
 from datetime import datetime, timedelta
 import logging
+import logging.handlers
 
 app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,10 +21,24 @@ BLOCKLIST_FILE = os.path.join(os.path.dirname(__file__), "blockedUrls.json")
 NOSTR_JSON_PATH = os.path.join(BASE_DIR, '.well-known', 'nostr.json')
 LNURLP_DIR = os.path.join(BASE_DIR, '.well-known', 'lnurlp')
 
-LOG_FILE = os.path.join(os.path.dirname(__file__), "blocked_urls.log")
+# The log used to live in the web root under a logger set to CRITICAL while every event in this file is
+# written at INFO — so it recorded nothing the app said, and grew to 102 MB on whatever the server
+# printed to stderr instead. Out of the web root, at a level that actually records, and self-rotating so
+# it cannot fill a disk again.
+LOG_DIR = os.environ.get("SNOFL_LOG_DIR", "/var/log/snofl")
+LOG_FILE = os.path.join(LOG_DIR, "blocked_urls.log")
+LOG_MAX_BYTES = 5 * 1024 * 1024
+LOG_BACKUPS = 3
 
-# **Setup logging**
-logging.basicConfig(filename=LOG_FILE, level=logging.CRITICAL, format="%(asctime)s - %(message)s")
+try:
+    os.makedirs(LOG_DIR, exist_ok=True)
+    _log_handler = logging.handlers.RotatingFileHandler(
+        LOG_FILE, maxBytes=LOG_MAX_BYTES, backupCount=LOG_BACKUPS)
+    _log_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+    logging.basicConfig(level=logging.INFO, handlers=[_log_handler])
+except OSError as exc:  # a log that cannot be opened must not stop the app from serving
+    logging.basicConfig(level=logging.INFO)
+    logging.warning("file logging unavailable (%s); events go to stderr", exc)
 
 def log_event(message):
     """Log events to the log file."""
