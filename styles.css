@@ -746,49 +746,79 @@ pre {
 }
 
 
-footer, .footerStatic {
+/* One footer for every page on this site — same type, same band, same link spacing. The only difference
+   is positional: the rendered pages carry `.footerDynamic`, which stays hidden until you scroll near the
+   bottom, so it is fixed; `.footerStatic` (maker, FAQ, about) ends the document, so it is absolute.
+   Two footers that looked almost the same is how they drifted to 2rem in one place and 13px in another. */
+footer,
+.footerStatic,
+.footerDynamic {
     font-family: var(--main-font);
-    position: absolute;  /* Change from fixed to absolute */
-    bottom: 0;
-    padding: 10px;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.03em;
+    line-height: 1.5;
+    padding: 7px 12px;
     background-color: #272727c2;
     backdrop-filter: blur(10px);
     color: #efefef;
     width: 100vw;
     left: 0;
-    font-size: 2rem;
+    bottom: 0;
     text-align: center;
-    box-sizing: border-box; /* Ensures padding doesn't add extra width */
+    box-sizing: border-box;
+}
+
+footer,
+.footerStatic {
+    position: absolute;
 }
 
 .footerDynamic {
-    font-family: var(--main-font);
     position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100vw;
-    padding: 10px;
-    background-color: #272727c2;
-    backdrop-filter: blur(10px);
-    color: #efefef;
-    font-size: 2rem;
-    text-align: center;
-    box-sizing: border-box;
     transition: opacity 0.5s ease-in-out;
-    opacity: 0;  /* Initially hidden */
-    pointer-events: none;  /* Disable interaction when hidden */
+    opacity: 0;               /* hidden until the reader nears the bottom, shown by footer.js */
+    pointer-events: none;
 }
 
-footer a {
+footer a,
+.footerStatic a,
+.footerDynamic a {
     color: #ffffff;
-    margin: 0 10px;
+    margin: 0 7px;
+    font-size: 12px;
+    font-weight: 400;
     text-decoration: none;
 }
 
-footer a:hover {
+footer a:hover,
+.footerStatic a:hover,
+.footerDynamic a:hover {
     text-decoration: underline;
 }
 
+/* The rendered pages carry one extra entry in the footer (the local history button). It is styled like a
+   link rather than left as a mono-coloured button, so every footer on the site is the same height and the
+   same weight — one footer, four classes, no exceptions. */
+footer #showHistoryBtn,
+.footerDynamic #showHistoryBtn {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.03em;
+    margin: 0 7px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #ffffff;
+    cursor: pointer;
+    vertical-align: baseline;
+}
+
+footer #showHistoryBtn:hover,
+.footerDynamic #showHistoryBtn:hover {
+    text-decoration: underline;
+}
 
 #showHistoryBtn {
     font-family: monospace;

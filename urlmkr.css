@@ -311,6 +311,37 @@ body.mk input[type="checkbox"]:disabled {
     cursor: not-allowed;
 }
 
+/* The shared sheet scales every checkbox and radio inside .form-group by 2.5 — a way to make native
+   controls clickable at 2010 sizes. With a 40px switch that is a 100x58 blob, and it hits the NTAG and
+   relay radios too. */
+body.mk .form-group input[type="checkbox"],
+body.mk .form-group input[type="radio"] {
+    transform: none;
+    margin: 0;
+    z-index: auto;
+}
+
+/* ...and it leaves 10px margins on every label in a group, which fights the row grid. */
+body.mk .mk__row > label,
+body.mk .form-group label {
+    margin: 0;
+}
+
+/* #toggle_encryption is styled by an id rule in the shared sheet: 1.5rem type (≈50px here), 300x120.
+   An id selector beats the button rule, so the override has to carry one too. */
+body.mk #toggle_encryption {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    width: auto;
+    height: auto;
+    margin: 6px 0 0;
+    padding: 11px 20px;
+    border-radius: 11px;
+    /* it is a grid child of .mk__lock, so without this it stretches the full card width */
+    justify-self: start;
+}
+
 /* ---------------------------------------------------------------- card types and relay rows */
 
 .ntag-group {
@@ -441,11 +472,29 @@ body.mk input[type="checkbox"]:disabled {
     opacity: 1;
 }
 
-.password-strength {
+/* The strength meter is empty until something is typed, and the shared sheet gives it 7px padding on a
+   dark background — an empty one is a stray black square floating in the card. */
+body.mk .password-strength {
     margin: 0;
+    padding: 0;
+    background: none;
+    max-width: none;
+    min-height: 0;
+    text-align: left;
     font-size: 13px;
     color: #8a8a8a;
-    min-height: 18px;
+}
+
+body.mk .password-strength:not(.weak):not(.moderate):not(.strong) {
+    display: none;
+}
+
+body.mk .password-container {
+    width: 100%;
+}
+
+body.mk .password-container input {
+    width: 100%;
 }
 
 /* ---------------------------------------------------------------- buttons */
@@ -721,25 +770,7 @@ body.mk .mk__preview[open] {
 }
 
 /* ---------------------------------------------------------------- footer */
-
-body.mk .footerStatic {
-    margin-top: 40px;
-    padding: 22px 20px 40px;
-    text-align: center;
-    color: #6d6d6d;
-    font-size: 13px;
-    border-top: 1px solid #1a1a1a;
-}
-
-body.mk .footerStatic a {
-    color: #9a9a9a;
-    text-decoration: none;
-    border-bottom: 1px dotted #3a3a3a;
-}
-
-body.mk .footerStatic a:hover {
-    color: #ffffff;
-}
+/* No footer metrics here on purpose: the shared rule in styles.css styles every footer on the site. */
 
 /* ---------------------------------------------------------------- the terms gate */
 
