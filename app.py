@@ -12,13 +12,13 @@ from datetime import datetime, timedelta
 import logging
 
 app = Flask(__name__)
-# DB_FILE = "/home/postanote.org/urls.db"
-DB_FILE = os.path.join(os.path.dirname(__file__), "urls.db")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_FILE = os.path.join(BASE_DIR, "urls.db")
 BLOCKLIST_FILE = os.path.join(os.path.dirname(__file__), "blockedUrls.json")
 
 # Paths to .well-known directories
-NOSTR_JSON_PATH = '/home/postanote.org/.well-known/nostr.json'
-LNURLP_DIR = '/home/postanote.org/.well-known/lnurlp'
+NOSTR_JSON_PATH = os.path.join(BASE_DIR, '.well-known', 'nostr.json')
+LNURLP_DIR = os.path.join(BASE_DIR, '.well-known', 'lnurlp')
 
 LOG_FILE = os.path.join(os.path.dirname(__file__), "blocked_urls.log")
 
