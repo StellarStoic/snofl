@@ -508,12 +508,15 @@ async function setDynamicContent() {
     userMessage.setAttribute("maxlength", l);
 
     if (m) {
+        // A suggested message, not a locked one: the note is published under the visitor's own key, so the
+        // visitor gets the last word. One press still sends it unchanged, which is what this was for.
         userMessage.value = m;
-        userMessage.disabled = true;
+        userMessage.disabled = false;
         document.getElementById("sendMessageBtn").disabled = false;
     }
 
-    document.getElementById("charCount").textContent = `0/${l}`;
+    // the counter must reflect what is actually in the box, prefilled text included
+    document.getElementById("charCount").textContent = `${userMessage.value.length}/${l}`;
 
     // Only a page with content has anything to subscribe to. The landing screen has no query string, so
     // it used to open five sockets to publish-nothing and then warn that none of them answered — with a
