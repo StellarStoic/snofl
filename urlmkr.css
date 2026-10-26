@@ -1075,3 +1075,118 @@ body.mk .mk__row.is-expanded > label::after {
     font-size: 12.5px;
     letter-spacing: 0.02em;
 }
+
+/* ---------------------------------------------------------------- phones */
+
+/* The maker had no viewport meta at all, so a phone rendered it at a 980px virtual width and shrank the
+   whole page — which is why it read as "very small". With a real viewport the layout below is what shows. */
+@media (max-width: 760px) {
+    .mk__wrap {
+        padding: 22px 14px 44px;
+    }
+
+    .mk__head h1 {
+        font-size: 22px;
+    }
+
+    .mk__lede {
+        font-size: 14px;
+    }
+
+    .mk__section {
+        padding: 22px 0 8px;
+    }
+
+    .mk__row {
+        padding: 14px;
+        gap: 10px 12px;
+    }
+
+    /* the pinned bar, condensed: one line of URL and three full-width-of-a-third buttons */
+    .mk__panel {
+        padding: 8px 0 10px;
+    }
+
+    .url-output-container {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+        padding: 10px 12px;
+    }
+
+    body.mk #url_output {
+        max-height: 46px;
+        font-size: 11.5px;
+        padding: 9px 10px;
+    }
+
+    body.mk #byte_counter {
+        display: none;   /* the byte count is a desktop nicety; on a phone it costs a row */
+    }
+
+    body.mk .mk__actions {
+        grid-column: 1 / -1;
+        grid-row: auto;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+    }
+
+    /* the desktop bar puts the preview on its own row; on a phone all three share one */
+    body.mk .mk__actions .mk__preview-open {
+        grid-column: auto;
+    }
+
+    body.mk .mk__actions button,
+    body.mk .mk__actions .copy-button {
+        padding: 10px 4px;
+        font-size: 12px;
+        white-space: normal;
+        line-height: 1.25;
+    }
+
+    /* iOS zooms the page when a field smaller than 16px takes focus */
+    body.mk input[type="text"],
+    body.mk input[type="password"],
+    body.mk input[type="number"],
+    body.mk textarea {
+        font-size: 16px;
+    }
+
+    .mk__trio {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* the full-view editor becomes nearly the whole phone screen, still with its switch on top */
+    body.mk .mk__row.is-expanded {
+        inset: 8px;
+        padding: 14px;
+    }
+
+    body.mk .mk__row.is-expanded > textarea {
+        font-size: 16px;
+        padding: 12px;
+    }
+
+    .mk__preview {
+        padding: 10px;
+    }
+
+    .mk__preview-bar,
+    .mk__preview-frame {
+        width: 100%;
+    }
+
+    .mk__preview-frame {
+        height: 74vh;
+    }
+
+    /* a thumb is not a mouse pointer */
+    body.mk button,
+    body.mk .copy-button {
+        min-height: 44px;
+    }
+
+    .ntag-group label {
+        padding: 10px 12px;
+    }
+}
