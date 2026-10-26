@@ -101,19 +101,11 @@ body.mk *::after {
 
 /* ---------------------------------------------------------------- layout */
 
+/* One column, with the link held above the form the way it was before the restyle: the URL is the work in
+   progress, so it sits at the top of the page and stays there while the form scrolls under it. */
 .mk__grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 316px;
-    gap: 36px;
-    align-items: start;
-    margin-top: 30px;
-}
-
-@media (max-width: 960px) {
-    .mk__grid {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 26px;
-    }
+    display: block;
+    margin-top: 22px;
 }
 
 .mk__section {
@@ -147,8 +139,8 @@ body.mk *::after {
     margin: 0 0 10px;
     padding: 18px 20px;
     font-size: inherit;
-    background: rgba(255, 255, 255, 0.025);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: #141414;
+    border: 1px solid #272727;
     border-radius: 14px;
     backdrop-filter: none;
 }
@@ -234,8 +226,10 @@ body.mk input[type="password"],
 body.mk input[type="number"],
 body.mk textarea {
     width: 100%;
-    background: #141414;
-    border: 1px solid #262626;
+    /* a field has to be visible as a field: the row card is nearly black, so the surface here is lighter
+       and the edge is a step up from it */
+    background: #1d1d1d;
+    border: 1px solid #3a3a3a;
     border-radius: 11px;
     color: #f1f1f1;
     font: inherit;
@@ -251,7 +245,7 @@ body.mk textarea {
 
 body.mk input::placeholder,
 body.mk textarea::placeholder {
-    color: #6a6a6a;
+    color: #868686;
 }
 
 body.mk input:focus,
@@ -333,7 +327,34 @@ body.mk .form-group input[type="radio"] {
     z-index: auto;
 }
 
-/* ...and it leaves 10px margins on every label in a group, which fights the row grid. */
+/* ...and 10px margins on the fields themselves, which double-spaces every row. */
+body.mk .form-group input,
+body.mk .form-group textarea,
+body.mk .form-group select {
+    margin: 0;
+}
+
+/* A field fills its row. The shared sheet pins text inputs to `width: 85%; max-width: 60vw`, which came
+   out at 840px inside a 1080px row — a field that stops short of the card it sits in looks broken. */
+body.mk .mk__row input[type="text"],
+body.mk .mk__row input[type="password"],
+body.mk .mk__row input[type="number"],
+body.mk .mk__row textarea,
+body.mk .password-container input,
+body.mk .relay-group input[type="text"] {
+    width: 100%;
+    max-width: none;
+}
+
+/* The three notice slots are empty until something happens; as grid rows they held 48px of dead space in
+   the link bar, which is pinned and therefore always costing that space. */
+body.mk #error_message:empty,
+body.mk #warning_message:empty,
+body.mk #info_message:empty {
+    display: none;
+}
+
+/* ...and 10px margins on every label in a group, which fights the row grid. */
 body.mk .mk__row > label,
 body.mk .form-group label {
     margin: 0;
@@ -356,9 +377,12 @@ body.mk #toggle_encryption {
 
 /* ---------------------------------------------------------------- card types and relay rows */
 
+/* the legacy rule sets flex-direction: column; a chip picker is a row that wraps */
 .ntag-group {
     display: flex;
+    flex-direction: row;
     flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
 }
 
@@ -406,7 +430,12 @@ body.mk #toggle_encryption {
 
 .mk__relays {
     display: grid;
-    gap: 8px;
+    gap: 10px;
+}
+
+/* the legacy relay rows carry their own margins, which stacked into ~87px between fields */
+body.mk .relay-group {
+    margin: 0;
 }
 
 .relay-group {
@@ -551,22 +580,17 @@ body.mk .mk__preview-open:hover:not(:disabled) {
 
 /* ---------------------------------------------------------------- the panel */
 
+/* The link bar: pinned to the top of the viewport, full width, over a blurred ground so the form slides
+   underneath instead of showing through. */
 .mk__panel {
     position: sticky;
-    /* the link is the one thing that must never scroll away: keep it pinned to the top of the viewport
-       while the form moves under it */
-    top: 20px;
-    align-self: start;
-    max-height: calc(100vh - 40px);
-    display: grid;
-    align-content: start;
-    gap: 0;
-}
-
-@media (max-width: 960px) {
-    .mk__panel {
-        position: static;
-    }
+    top: 0;
+    z-index: 60;
+    margin: 0 0 20px;
+    padding: 10px 0 12px;
+    background: rgba(12, 12, 12, 0.94);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid #1f1f1f;
 }
 
 .mk__panel-title {
@@ -581,19 +605,51 @@ body.mk .mk__preview-open:hover:not(:disabled) {
 /* The shared sheet pins this card to height:150px with max-height:30vw, which clipped the action
    buttons out of sight. The panel scrolls and sticks; the card itself is as tall as its content. */
 .url-output-container {
-    display: block;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 16px;
+    align-items: center;
     height: auto;
     max-height: none;
     position: static;
     inset: auto;
-    background: #111111;
-    border: 1px solid #232323;
-    border-radius: 16px;
-    padding: 20px;
+    background: #141414;
+    border: 1px solid #262626;
+    border-radius: 14px;
+    padding: 12px 14px;
     text-align: left;
     /* the shared sheet forces `overflow: hidden scroll`, which paints a bright stripe down a dark card
        and scrolls three buttons that already fit */
     overflow: visible;
+}
+
+body.mk #url_output {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    margin: 0;
+    /* two lines of URL and then it scrolls: the bar is pinned, so its height is paid on every screen */
+    max-height: 62px;
+    font-size: 12px;
+}
+
+body.mk #byte_counter {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: center;
+}
+
+body.mk #error_message,
+body.mk #warning_message,
+body.mk #info_message {
+    grid-column: 1 / -1;
+}
+
+body.mk .mk__actions {
+    grid-column: 2;
+    grid-row: 2;
+    display: flex;
+    gap: 8px;
+    margin: 0;
 }
 
 .url-output {
@@ -643,17 +699,9 @@ body.mk #byte_counter {
     margin-bottom: 6px;
 }
 
-/* three controls in a 316px card: two side by side, the preview on its own line */
-.mk__actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 12px;
-}
-
 .mk__actions button,
 .mk__actions .copy-button {
-    padding: 10px 8px;
+    padding: 9px 13px;
     font-size: 13px;
     white-space: nowrap;
 }
@@ -663,9 +711,7 @@ body.mk #byte_counter {
 }
 
 .mk__panel-note {
-    margin: 10px 2px 0;
-    font-size: 12.5px;
-    color: #777777;
+    display: none;
 }
 
 /* ---------------------------------------------------------------- pickers inside rows */
