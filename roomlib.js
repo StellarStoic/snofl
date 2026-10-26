@@ -188,7 +188,9 @@ export function nonceTag(tags) {
  * say what it is doing; `yieldEvery` keeps the main thread breathing.
  */
 export async function mineEvent(event, bits, options = {}) {
-  const { onProgress, yieldEvery = 4096, maxAttempts = Infinity, now = () => Date.now() } = options;
+  const {
+    onProgress, shouldStop, yieldEvery = 4096, maxAttempts = Infinity, now = () => Date.now(),
+  } = options;
   const tags = event.tags.filter((entry) => !(Array.isArray(entry) && entry[0] === 'nonce'));
   tags.push(['nonce', '0', String(bits)]);
   const candidate = { ...event, tags };
@@ -209,6 +211,13 @@ export async function mineEvent(event, bits, options = {}) {
     if (attempts % yieldEvery === 0) {
       if (onProgress) onProgress({ attempts, ms: now() - started });
       await new Promise((resolve) => setTimeout(resolve, 0));
+      // Checked only at the yield points, so the loop still runs a tight batch between them: a 20-bit
+      // search is stoppable within ~70ms of the reader pressing Cancel, and costs nothing when running.
+      if (shouldStop && shouldStop()) {
+        const cancelled = new Error('mining cancelled');
+        cancelled.cancelled = true;
+        throw cancelled;
+      }
     }
   }
 }

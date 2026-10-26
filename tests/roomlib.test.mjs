@@ -82,6 +82,26 @@ test('a creator switching public notes off does not split the room', () => {
   assert.notEqual(pageId('?t=Same+page2&w=8'), plain);
 });
 
+test('a mining run can be stopped, and stopping is not a result', async () => {
+  const draft = { pubkey: 'ab'.repeat(32), created_at: 1761600000, kind: 1, tags: [], content: 'x' };
+  let stop = false;
+  const progress = [];
+  // 40 bits cannot be found in this test's lifetime, so only the cancel can end it
+  const run = mineEvent(draft, 40, {
+    shouldStop: () => stop,
+    onProgress: ({ attempts }) => progress.push(attempts),
+    yieldEvery: 512,
+  });
+  setTimeout(() => { stop = true; }, 40);
+  await assert.rejects(run, (error) => error.cancelled === true);
+  assert.ok(progress.length > 0, 'it reported progress before it was stopped');
+
+  // and an uncancelled run is unaffected
+  const mined = await mineEvent(draft, 8, {});
+  assert.equal(mined.id.length, 64);
+  assert.ok(fromHex(mined.id).length === 32);
+});
+
 test('the room secret is 32 bytes from the link, and different for a different link', () => {
   const a = pageSecret('?t=Same');
   const b = pageSecret('?t=Same');

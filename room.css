@@ -178,3 +178,140 @@
         display: none;
     }
 }
+
+/* Sorting: New (chronological) or Top (most upvotes). Two small buttons rather than a dropdown, because
+   the room is a chat and a chat's order should be one press away from changing. */
+.room__sorting {
+    display: inline-flex;
+    gap: 2px;
+    margin-left: auto;
+}
+
+.room__sort {
+    background: none;
+    border: 1px solid transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 0.68em;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    opacity: 0.55;
+    cursor: pointer;
+}
+
+.room__sort:hover,
+.room__sort:focus-visible {
+    opacity: 1;
+}
+
+.room__sort.is-on {
+    opacity: 1;
+    color: #00ff55;
+    border-color: rgba(0, 255, 85, 0.45);
+}
+
+.room__count {
+    margin-left: 0.5em;
+}
+
+/* Votes on a note. The count is the number of people, not the sum: two up and one down reads "2 / 1",
+   which is what a reader can check, where "+1" hides how many disagreed. */
+.room__votes {
+    display: inline-flex;
+    gap: 4px;
+    margin-left: auto;
+}
+
+.room__vote {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 10px;
+    color: inherit;
+    font: inherit;
+    /* a thumb is an emoji and needs a font that has one, or the button shows a box */
+    font-family: inherit, "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", "Twemoji Mozilla", sans-serif;
+    font-size: 0.78em;
+    line-height: 1;
+    /* 34px tall: a thumb on a phone is a tap target, not a glyph */
+    min-width: 46px;
+    min-height: 30px;
+    padding: 5px 9px;
+    cursor: pointer;
+    opacity: 0.75;
+}
+
+.room__vote:hover,
+.room__vote:focus-visible {
+    opacity: 1;
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.room__vote.is-mine {
+    opacity: 1;
+    border-color: rgba(255, 102, 0, 0.75);
+    color: #ff6600;
+}
+
+/* The note's own id and text are copyable: a note is a Nostr event, and an event with no id to quote
+   is a dead end. */
+.room__note-id,
+.room__copy {
+    background: none;
+    border: 1px dashed rgba(255, 255, 255, 0.18);
+    border-radius: 3px;
+    color: inherit;
+    font: inherit;
+    font-size: 0.64em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.02em;
+    padding: 2px 5px;
+    opacity: 0.6;
+    cursor: pointer;
+}
+
+.room__note-id:hover,
+.room__copy:hover,
+.room__note-id:focus-visible,
+.room__copy:focus-visible {
+    opacity: 1;
+    border-color: rgba(255, 255, 255, 0.45);
+}
+
+.room__copy.is-done {
+    opacity: 1;
+    color: #00ff55;
+    border-color: rgba(0, 255, 85, 0.5);
+}
+
+.room__buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Mining is cancellable, and the cancel button says so in the same place the post button was. */
+.room__cancel {
+    background: none;
+    border: 1px solid rgba(255, 107, 107, 0.6);
+    border-radius: 3px;
+    color: #ff6b6b;
+    font: inherit;
+    font-size: 0.72em;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    cursor: pointer;
+}
+
+.room__cancel:hover,
+.room__cancel:focus-visible {
+    background: rgba(255, 107, 107, 0.12);
+}
+
+.room__cancel:disabled {
+    opacity: 0.45;
+    cursor: default;
+}

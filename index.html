@@ -27,7 +27,7 @@
     <script src="https://bundle.run/browserify-cipher@1.0.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=5">
-    <link rel="stylesheet" href="room.css?v=3">
+    <link rel="stylesheet" href="room.css?v=4">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="background.js"></script>
@@ -1061,13 +1061,23 @@ function npubToHex(npub) {
 // END - NPUB handling
 
 
+// Each call to setRelays starts a new round; a warning scheduled by an older round must never fire,
+// or the page shows "none of the relays are available" long after they answered.
+let relayAttempt = 0;
+
 function setRelays(customRelays) {
+    const attempt = ++relayAttempt;
     relaySubscriptions = [];
     sockets.forEach((socket) => socket.close());
     sockets = [];
-    let allRelaysFailed = true;
+    let attempted = 0;
+    let opened = 0;
+    const warning = document.getElementById("relayWarning");
+    // a fresh round clears a stale warning instead of leaving it up
+    if (attempt === relayAttempt && warning) warning.style.display = "none";
 
     customRelays.forEach((url) => {
+        attempted += 1;
         let socket = new WebSocket(url);
         socket.onmessage = async function (m) {
             var [, i, e] = JSON.parse(m.data),
@@ -1077,7 +1087,8 @@ function setRelays(customRelays) {
         };
         socket.onopen = async function (e) {
             console.log("connected to " + url);
-            allRelaysFailed = false;
+            opened += 1;
+            if (attempt === relayAttempt && warning) warning.style.display = "none";
             var i = b2h(utils.randomPrivateKey()).substring(0, 16),
                 f = { authors: [pub] },
                 sub = ["REQ", i, f];
@@ -1092,9 +1103,10 @@ function setRelays(customRelays) {
     });
 
     setTimeout(() => {
-        if (allRelaysFailed) {
-            document.getElementById("relayWarning").style.display = "block";
-        }
+        if (attempt !== relayAttempt) return;          // superseded by a later round
+        if (!attempted) return;                        // no relays to try: nothing failed
+        if (opened) return;                            // at least one answered
+        if (warning) warning.style.display = "block";
     }, 5000);
 }
 
@@ -2352,7 +2364,7 @@ updateAvatar();
 </script>
 <script src="footer.js"></script>       
 
-    <script type="module" src="room.js?v=2"></script>
+    <script type="module" src="room.js?v=3"></script>
 </body>
 
 </html>
