@@ -726,19 +726,32 @@ body.mk #byte_counter {
 
 /* ---------------------------------------------------------------- the picker modals */
 
+/* Each picker brings its own viewport rule in the shared sheet - .avatar-modal and .background-modal at
+   left:10vw/top:5vh with a fixed 80vw x 90vh box, .font-modal additionally carrying
+   transform: translate(-50%,-50%) - and the maker's JS shows them by setting inline display:block, which
+   beats any stylesheet rule without !important. The result is three differently placed cards, one of them
+   off-screen. One shell for all three: a full-viewport backdrop, and the card centred inside it. */
 body.mk .modal {
-    position: fixed;
-    inset: 0;
-    z-index: 9998;
-    background: rgba(0, 0, 0, 0.75);
-    display: none;
+    position: fixed !important;
+    inset: 0 !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    transform: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: rgba(0, 0, 0, 0.75) !important;
+    display: none !important;
+    place-items: center;
     padding: 24px;
+    z-index: 9998;
 }
 
 body.mk .modal[style*="display: block"],
 body.mk .modal[style*="display:block"] {
-    display: grid;
-    place-items: center;
+    display: grid !important;
 }
 
 body.mk .avatar-modal-content,
@@ -750,23 +763,43 @@ body.mk .background-modal-content {
     border-radius: 16px;
     padding: 22px;
     width: min(920px, 92vw);
+    height: auto;
     max-height: 84vh;
     overflow: auto;
     text-align: left;
 }
 
 body.mk .close-modal {
-    position: absolute;
-    top: 8px;
-    right: 14px;
-    font-size: 24px;
+    /* The shared sheet makes this a 5rem (~170px) glyph pinned at top:-30px, which the scrolling card clips:
+       a real button instead, and sticky so it cannot scroll out of reach behind 500 thumbnails. */
+    position: sticky;
+    top: 0;
+    right: auto;
+    float: none;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    margin: 0 0 8px auto;
+    padding: 0;
+    border: 2px solid #ff4d4d;
+    border-radius: 10px;
+    background: #1a1a1a;
+    color: #ff4d4d;
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 700;
     line-height: 1;
-    color: #9a9a9a;
     cursor: pointer;
+    z-index: 6;
 }
 
-body.mk .close-modal:hover {
-    color: #ffffff;
+body.mk .close-modal:hover,
+body.mk .close-modal:focus-visible {
+    background: #ff4d4d;
+    border-color: #ff4d4d;
+    color: #141414;
+    outline: none;
 }
 
 body.mk .avatar-grid,
@@ -776,6 +809,142 @@ body.mk .background-grid {
     grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
     gap: 10px;
     margin-top: 10px;
+}
+
+/* A font name needs a line to itself: at 76px the list reads as ten columns of truncated words over empty
+   boxes. Wider cells, a card each, and the sample stays in its own face (set inline when the grid is built). */
+body.mk .font-grid {
+    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+    gap: 10px;
+}
+
+body.mk .font-preview {
+    padding: 16px 12px;
+    border: 1px solid #242424;
+    border-bottom: 1px solid #242424;
+    border-radius: 10px;
+    background: #171717;
+    font-size: 15px;
+    line-height: 1.35;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+body.mk .font-preview:hover {
+    background: #1f1f1f;
+    border-color: #4caf50;
+}
+
+/* The shared sheet sizes every background thumbnail at 70vw with a 200px ceiling, so inside a 76px grid cell
+   each one blew the grid out to a single 896px column: 505 rows of one giant picture, and the colour picker
+   and URL field (also grid cells) stretched to 896x120 with no label beside them. Thumbnails now fill their
+   cell, and the two tools live in their own pinned row above the grid. */
+body.mk .background-grid {
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+    gap: 12px 10px;
+    margin-top: 4px;
+}
+
+body.mk .background-thumbnail {
+    width: 100%;
+    height: auto;
+    max-height: none;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    background: #1b1b1b;
+    cursor: pointer;
+}
+
+body.mk .background-thumbnail:hover {
+    transform: scale(1.03);
+    border-color: #4caf50;
+}
+
+body.mk .background-thumbnail.is-selected {
+    border-color: #4caf50;
+    box-shadow: 0 0 0 1px #4caf50 inset;
+}
+
+body.mk .bg-tools {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+    gap: 10px 14px;
+    align-items: center;
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    background: #171717;
+}
+
+body.mk .bg-tools .color-picker-item,
+body.mk .bg-tools .custom-url-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    text-align: left;
+    flex-direction: row;
+}
+
+body.mk .bg-tools label {
+    font-size: 12px;
+    font-weight: 400;
+    color: #a3a3a3;
+    white-space: nowrap;
+    margin: 0;
+}
+
+/* #color_picker_label and #custom_url_label are styled by *id* in the shared sheet - 1rem (≈34px here),
+   bold, on a black plate - so a class-level rule cannot reach them. */
+body.mk #color_picker_label,
+body.mk #custom_url_label {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.2;
+    color: #a3a3a3;
+    background: none;
+    padding: 0;
+    margin: 0;
+    max-width: none;
+    text-align: left;
+}
+
+body.mk #solid-color-picker {
+    width: 46px;
+    height: 32px;
+    padding: 0 2px;
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
+    background: #1d1d1d;
+    cursor: pointer;
+}
+
+body.mk #custom-background-url {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+    max-width: none;
+    height: 32px;
+    padding: 0 10px;
+    font-size: 13px;
+    color: #f0f0f0;
+    background: #1d1d1d;
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
+}
+
+body.mk #custom-background-url:focus {
+    border-color: #4caf50;
+    outline: none;
 }
 
 body.mk .avatar-grid img,
@@ -1146,6 +1315,25 @@ body.mk .mk__row.is-expanded > label::after {
 /* The maker had no viewport meta at all, so a phone rendered it at a 980px virtual width and shrank the
    whole page — which is why it read as "very small". With a real viewport the layout below is what shows. */
 @media (max-width: 760px) {
+    /* The pinned tools row stacks: a colour swatch and a URL field side by side leave the field too narrow
+       to read a URL in on a phone. */
+    body.mk .bg-tools {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 9px 10px;
+    }
+
+    body.mk .background-grid {
+        grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+        gap: 10px 8px;
+    }
+
+    body.mk .close-modal {
+        width: 44px;
+        height: 44px;
+        font-size: 22px;
+    }
+
     .mk__wrap {
         padding: 22px 14px 44px;
     }

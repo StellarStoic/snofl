@@ -23,7 +23,7 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=8">
-    <link rel="stylesheet" href="urlmkr.css?v=26">
+    <link rel="stylesheet" href="urlmkr.css?v=30">
     <script src="urlmkrAgreement.js?v=2"></script>
     <script src="backgroundImages.js"></script>
     <script src="crypto-js.min.js"></script>
@@ -80,7 +80,7 @@
     <div id="avatar-modal" class="modal avatar-modal" style="display: none;">
         <div class="avatar-modal-content">
             <h6 class="avatars-attribute">Avatars provided by <a href="https://www.dicebear.com" target="_blank">dicebear.com</a></h6>
-            <span class="close-modal">&times;</span>
+            <button type="button" class="close-modal" aria-label="Close style picker">&times;</button>
             <div id="avatar-grid" class="avatar-grid"></div>
         </div>
     </div>
@@ -88,7 +88,7 @@
     <!-- font modal -->
     <div id="font-modal" class="modal font-modal">
         <div class="font-modal-content">
-            <span class="close-modal">&times;</span>
+            <button type="button" class="close-modal" aria-label="Close style picker">&times;</button>
             <div id="font-grid" class="font-grid"></div>
         </div>
     </div>
@@ -96,7 +96,7 @@
     <!-- Background Modal -->
     <div id="background-modal" class="modal background-modal">
         <div class="background-modal-content">
-            <span class="close-modal">&times;</span>
+            <button type="button" class="close-modal" aria-label="Close style picker">&times;</button>
             <div class="background-grid" id="background-grid"></div>
             <!-- The color picker and URL input will be dynamically added here -->
         </div>
@@ -1077,13 +1077,23 @@ function reverseString(str) {
         function updateBackground() {
             backgroundGrid.innerHTML = '';  // Clear grid
 
+        // The colour picker and the URL field are tools, not two more backgrounds: they sit in their own
+        // row above the grid, pinned, so they stay reachable however far down the 500 thumbnails you are.
+        const backgroundContent = backgroundModal.querySelector('.background-modal-content');
+        const staleTools = backgroundContent.querySelector('.bg-tools');
+        if (staleTools) staleTools.remove();
+        const bgTools = document.createElement('div');
+        bgTools.classList.add('bg-tools');
+        backgroundContent.insertBefore(bgTools, backgroundGrid);
+
         // Add color picker at the top
         const colorPickerContainer = document.createElement('div');
         colorPickerContainer.classList.add('color-picker-item');
 
         const colorLabel = document.createElement('label');
-        colorLabel.textContent = 'Color Picker:';
+        colorLabel.textContent = 'Solid colour';
         colorLabel.id = 'color_picker_label';
+        colorLabel.htmlFor = 'solid-color-picker';
         colorPickerContainer.appendChild(colorLabel);
 
         const colorInput = document.createElement('input');
@@ -1100,24 +1110,26 @@ function reverseString(str) {
             document.body.style.backgroundImage = ''; // Clear image
             document.getElementById('dim-overlay').style.display = 'block'; // Show overlay
             localStorage.setItem('selectedBackgroundIndex', selectedColor);
+            markSelectedBackground();
             updateURL();
         });
 
-        backgroundGrid.appendChild(colorPickerContainer);
+        bgTools.appendChild(colorPickerContainer);
 
         // Add custom URL input below the color picker
         const customUrlContainer = document.createElement('div');
     customUrlContainer.classList.add('custom-url-item');
 
     const urlLabel = document.createElement('label');
-    urlLabel.textContent = 'img URL:';
+    urlLabel.textContent = 'Image URL';
     urlLabel.id = 'custom_url_label';
+    urlLabel.htmlFor = 'custom-background-url';
     customUrlContainer.appendChild(urlLabel);
 
     const urlInput = document.createElement('input');
     urlInput.type = 'text';
     urlInput.id = 'custom-background-url';
-    urlInput.placeholder = 'only use images with cuntinuous patterns';
+    urlInput.placeholder = 'https://example.com/pattern.png';
     customUrlContainer.appendChild(urlInput);
 
     // URL validation function
@@ -1140,6 +1152,7 @@ function reverseString(str) {
             document.body.style.backgroundColor = ''; // Clear solid color
             document.getElementById('dim-overlay').style.display = 'block'; // Show overlay
             localStorage.setItem('selectedBackgroundIndex', selectedBackgroundIndex);
+            markSelectedBackground();
             updateURL();
             warningMessage.textContent = ''; // Clear warnings
         } else {
@@ -1149,13 +1162,16 @@ function reverseString(str) {
         }
     });
 
-    backgroundGrid.appendChild(customUrlContainer);
+    bgTools.appendChild(customUrlContainer);
 
             // Add  background images from beckgroundImages.js
             for (const [index, image] of Object.entries(backgroundImages)) {
                 const imgElement = document.createElement('img');
                 imgElement.src = `img/background/${image}`;
                 imgElement.alt = `Background ${index}`;
+                imgElement.loading = 'lazy';
+                imgElement.decoding = 'async';
+                imgElement.dataset.index = index;
                 imgElement.classList.add('background-thumbnail');
 
             // Immediate selection on click
@@ -1165,11 +1181,21 @@ function reverseString(str) {
                 document.body.style.backgroundColor = ''; // Clear solid color
                 document.getElementById('dim-overlay').style.display = 'block'; // Show overlay
                 localStorage.setItem('selectedBackgroundIndex', index); // Store selection
+                markSelectedBackground();  // so reopening the picker shows which one is in force
                 backgroundModal.style.display = 'none';
                 updateURL();
             });
                 backgroundGrid.appendChild(imgElement);
             }
+
+            markSelectedBackground();
+        }
+
+        // Say which background is in force, so reopening the picker does not look like nothing is chosen.
+        function markSelectedBackground() {
+            backgroundGrid.querySelectorAll('.background-thumbnail').forEach(img => {
+                img.classList.toggle('is-selected', String(img.dataset.index) === String(selectedBackgroundIndex));
+            });
         }
 
         // Show modal on checkbox selection
@@ -1508,27 +1534,48 @@ function reverseString(str) {
 
 }
 
-        // Close modal X button
+        // One way out of a picker, used by all three: its own button, the dimmed area around the card, and Esc.
+        // Before this the only exit was toggling off the switch that opened it, which is also how a value is set.
+        function closePicker(modal) {
+            if (!modal) return;
+            modal.style.display = 'none';
+
+            // Nothing chosen means the switch goes back off, so the link does not carry an empty setting.
+            if (modal.id === 'avatar-modal' && !selectedAvatarIndex) {
+                includeAvatarCheckbox.checked = false;
+                avatarLabel.innerHTML = 'Avatar Styles';
+            }
+
+            if (modal.id === 'background-modal' && !selectedBackgroundIndex) {
+                includeBackgroundCheckbox.checked = false;
+            }
+
+            if (modal.id === 'font-modal' && !selectedFontIndex) {
+                includeFontCheckbox.checked = false;
+            }
+        }
+
+        // Close button
         document.querySelectorAll('.close-modal').forEach(button => {
             button.addEventListener('click', (event) => {
-                const modal = event.target.closest('.modal');  // Get the closest modal
-                if (modal) {
-                    modal.style.display = 'none';
-                    
-                    // Uncheck associated checkboxes if nothing is selected
-                    if (modal.id === 'avatar-modal' && !selectedAvatarIndex) {
-                        includeAvatarCheckbox.checked = false;  // Uncheck avatar checkbox
-                        avatarLabel.innerHTML = 'Avatar Styles';  // Reset label
-                    }
-                    
-                    if (modal.id === 'background-modal' && !selectedBackgroundIndex) {
-                        includeBackgroundCheckbox.checked = false;  // Uncheck background checkbox
-                    }
+                closePicker(event.target.closest('.modal'));
+            });
+        });
 
-                    if (modal.id === 'font-modal' && !selectedFontIndex) {
-                        includeFontCheckbox.checked = false;  // Uncheck font checkbox
-                    }
-                }
+        // A press on the dimmed area closes the picker; a press on the card itself does not.
+        ['avatar-modal', 'font-modal', 'background-modal'].forEach(id => {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) closePicker(modal);
+            });
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape') return;
+            ['avatar-modal', 'font-modal', 'background-modal'].forEach(id => {
+                const modal = document.getElementById(id);
+                if (modal && getComputedStyle(modal).display !== 'none') closePicker(modal);
             });
         });
 
