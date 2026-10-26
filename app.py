@@ -207,10 +207,19 @@ def redirect_short_url(short):
     conn.close()
     log_event(f"❌ Invalid short URL: {short}")
 
-    try:
-        return send_from_directory('.', short)
-    except FileNotFoundError:
-        pass
+    # A one-segment request that is not a known code lands here, and this used to try the docroot as a
+    # file name — which handed out whatever sits beside the pages: the SQLite database the redirects
+    # are read from, app.py itself, the log. nginx serves the real static files before Flask ever sees
+    # them, so the only thing this fallback can still usefully do is nothing. Judge it by the same
+    # allowlist as the catch-all route, and 404 everything else.
+    name = os.path.basename(short)
+    if (not name.startswith('.')
+            and os.path.splitext(name)[1].lower() in PUBLIC_EXTENSIONS
+            and os.path.isfile(os.path.join(BASE_DIR, name))):
+        try:
+            return send_from_directory(BASE_DIR, short)
+        except FileNotFoundError:
+            pass
 
     return jsonify({"error": "URL not found"}), 404
 
