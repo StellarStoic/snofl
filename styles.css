@@ -1707,3 +1707,34 @@ th, td {
 th {
     background-color: #f4f4f44b;
 }
+
+/* The public note sits below the room, collapsed. Same column as the room, quiet until opened: the
+   page's primary input is the encrypted room, and a 280-character white box above it read as a bug. */
+.public-note {
+    max-width: 720px;
+    width: calc(100% - 32px);
+    margin: 26px auto 0;
+    text-align: left;
+}
+
+.public-note > summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 10px 0;
+    font-size: clamp(13px, 0.42rem, 16px);
+    letter-spacing: 0.05em;
+    color: #ff6600;
+    opacity: 0.75;
+    border-top: 1px dotted rgba(255, 255, 255, 0.14);
+}
+
+.public-note > summary::-webkit-details-marker { display: none; }
+
+.public-note > summary::before { content: "+ "; }
+
+.public-note[open] > summary::before { content: "\2212 "; }
+
+.public-note > summary:hover,
+.public-note > summary:focus-visible { opacity: 1; }
+
+.public-note[open] .editor-container { margin-top: 10px; }

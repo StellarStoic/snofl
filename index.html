@@ -26,7 +26,7 @@
     <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
     <script src="https://bundle.run/browserify-cipher@1.0.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=5">
     <link rel="stylesheet" href="room.css?v=3">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -59,15 +59,6 @@
         <a href="urlmkr.html" style="color: rgb(30, 255, 0);  text-decoration: underline;">URLmkr</a>.
     </div>
     <!-- <textarea id="userMessage" maxlength="280" oninput="adjustHeight(this)"></textarea> -->
-    <div class="editor-container">
-        <textarea id="userMessage" maxlength="280" oninput="updateMarkdown()" placeholder="Type your message..."></textarea>
-        <div id="markdownPreview" class="overlay markdown-preview"></div>
-    </div>
-    <div id="charCount">0/280</div>
-    <button id="sendMessageBtn" disabled>send
-        <img src="https://user-images.githubusercontent.com/99301796/219719339-5eff628c-3470-4cc3-81eb-404f8902de9f.gif" id="animatedImg"/>
-    </button>
-
     <p id="statusMessage"></p>
 
     <p id="relayWarning" style="color:red; display:none; background-color: rgba(0, 0, 0, 0.672);">
@@ -86,6 +77,22 @@
     <!-- One encrypted thread per link, on the relays this page's creator chose. The section is empty
          until room.js mounts it: everything inside is built from the URL, because the URL is the page. -->
     <section id="snofl-room" class="room" aria-label="Room for this page"></section>
+
+    <!-- The public note: a plaintext kind-1 note anyone can find, where the room above is
+         encrypted to this link. Kept, collapsed, because it is the only way to make a page
+         discoverable — but not loud enough to be mistaken for the room's input. -->
+    <details id="publicNote" class="public-note">
+        <summary>or post this page publicly on Nostr</summary>
+        <div class="editor-container">
+        <textarea id="userMessage" maxlength="280" oninput="updateMarkdown()" placeholder="Type your message..."></textarea>
+        <div id="markdownPreview" class="overlay markdown-preview"></div>
+    </div>
+    <div id="charCount">0/280</div>
+    <button id="sendMessageBtn" disabled>send
+        <img src="https://user-images.githubusercontent.com/99301796/219719339-5eff628c-3470-4cc3-81eb-404f8902de9f.gif" id="animatedImg"/>
+    </button>
+
+    </details>
 
     <footer class="footerDynamic">
         <a href="about.html">About</a> | 
