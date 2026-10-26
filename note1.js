@@ -17,8 +17,13 @@ function decodeNote1(input) {
     // console.log("Decoding note1:", note1);
 
     try {
-        const { words } = bech32.decode(note1.replace(/^nostr:/, "")); // Remove "nostr:" prefix for decoding
-        const bytes = bech32.fromWords(words);
+        // bech32.decode returns a *string* instead of throwing when it refuses, and defaults to a 90-character
+        // limit — so the shape is checked before it is used, and the limit is raised for long references.
+        const decoded = bech32.decode(note1.replace(/^nostr:/, ""), 1000);
+        if (!decoded || typeof decoded !== "object" || !decoded.words) {
+            throw new Error(String(decoded));
+        }
+        const bytes = bech32.fromWords(decoded.words);
 
         if (bytes.length !== 32) {
             throw new Error("Invalid nostr:note1 string. Incorrect byte length.");
@@ -29,6 +34,57 @@ function decodeNote1(input) {
         return { eventId, note1String: note1 };
     } catch (error) {
         console.error("Failed to decode nostr:note1:", error);
+        return null;
+    }
+}
+
+/**
+ * Decode an `nevent1` reference (NIP-19): an event id together with the relays the person sharing it
+ * suggested, and optionally its author and kind.
+ *
+ * This is what most clients emit now, and the relay hints are the reason: a reader who is handed the
+ * relays does not have to hope that one of the page's own relays happens to hold the note, which is the
+ * slow path `note1` forces.
+ */
+function decodeNevent(input) {
+    const match = String(input).match(/nostr:nevent1\w+/) || String(input).match(/\bnevent1\w+/);
+    if (!match) return null;
+
+    const reference = match[0];
+    try {
+        // an nevent is longer than a note1 (it carries relays), and BIP-173's 90-character default rejects
+        // every one of them; the library reports that as a returned string, not an exception.
+        const decoded = bech32.decode(reference.replace(/^nostr:/, ""), 1000);
+        if (!decoded || typeof decoded !== "object" || !decoded.words) {
+            throw new Error(String(decoded));
+        }
+        const bytes = bech32.fromWords(decoded.words);
+        const decoder = new TextDecoder();
+
+        let eventId = null;
+        let author = null;
+        let kind = null;
+        const relays = [];
+
+        // NIP-19 nevent is TLV: type 0 = 32-byte id, 1 = relay url, 2 = 32-byte author, 3 = kind
+        let index = 0;
+        while (index + 1 < bytes.length) {
+            const type = bytes[index++];
+            const length = bytes[index++];
+            if (length === undefined || index + length > bytes.length) break;
+            const value = bytes.slice(index, index + length);
+            index += length;
+
+            if (type === 0 && length === 32) eventId = bytesToHex(value);
+            else if (type === 1) relays.push(decoder.decode(new Uint8Array(value)));
+            else if (type === 2 && length === 32) author = bytesToHex(value);
+            else if (type === 3) kind = value.reduce((total, byte) => (total << 8) | byte, 0);
+        }
+
+        if (!eventId) throw new Error("nevent carries no event id");
+        return { eventId, relays, author, kind, note1String: reference, format: "nevent" };
+    } catch (error) {
+        console.error("Failed to decode nevent1:", error);
         return null;
     }
 }

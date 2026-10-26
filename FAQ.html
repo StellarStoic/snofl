@@ -90,12 +90,16 @@
                 <p>
                     The "Your Content" section is where you present your content to the end user. You can type freely and structure it as you like.  
                     <br><br>
-                    You can embed Nostr notes and npub profiles by adding a prefix:
+                    You can embed a Nostr note by pasting its reference with the <code>nostr:</code> prefix:
                     <ul>
-                        <li><code>nostr:note1t9wfaksdutq0hlnvqpzud5cq4wm9574mey0ykg3ju65stgezvsds56fg9z</code></li>
-                        <li><code>nostr:npub1sg6plzptd64u62a878hep2kev88swjh3tw00gjsfl8f237lmu63q0uf63m</code></li>
+                        <li><code>nostr:nevent1…</code> — the id <em>and</em> the relays it was seen on, which is what
+                            most clients hand you when you copy a note's link</li>
+                        <li><code>nostr:note1…</code> — the bare id, still supported for older links</li>
                     </ul>
-                    Only the <code>note1...</code> format is supported—sorry!  
+                    Both <code>note1...</code> and <code>nevent1...</code> work. <code>nevent1</code> is what most
+                    clients give you when you copy a note's link, and it is the better choice here: it carries the
+                    relays the note was seen on, so the page fetches it from there instead of guessing.
+                    Profile references (<code>npub</code>, <code>nprofile</code>) are not embedded—sorry!  
                     <br><br>
                     You can also include links to images or videos to display them in your custom page. Both Vimeo and YouTube links are supported and will generate thumbnails.  
                     <br><br>

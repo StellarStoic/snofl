@@ -37,7 +37,7 @@
     <script src="crypto-js.min.js"></script>                                                                                                                   
     <script src="dec.js"></script>                                                                                                                   
     <script src="bech32.js"></script>                                                                                                                   
-    <script src="note1.js"></script>
+    <script src="note1.js?v=3"></script>
     <!-- <script src="footer.js"></script> // IS AT THE BOTTOM-->
 </head>
 
@@ -557,14 +557,23 @@ async function setDynamicContent() {
 
 // Helper function scans the paragraph for nostr:note1 strings and invokes fetchNote1Event function
 function fetchNote1Strings(content, relays) {
-    const note1Matches = content.match(/nostr:note1\w+/g) || [];
-    note1Matches.forEach(note1String => {
-        const { eventId } = decodeNote1(note1String) || {};
-        if (eventId) fetchNote1Event(eventId, relays, note1String); // Fetch event for nostr:note1
+    // Two reference formats point at a note: note1 is an id on its own, nevent1 is an id plus the relays the
+    // sharer suggested (what most clients emit now). nevent goes first in each case because its hints mean
+    // the note is found without guessing which relay holds it.
+    const referenceMatches = content.match(/nostr:(?:note1|nevent1)\w+/g) || [];
+    referenceMatches.forEach(reference => {
+        const decoded = /nevent1/.test(reference) ? decodeNevent(reference) : decodeNote1(reference);
+        if (!decoded || !decoded.eventId) return;
+        // the sharer's own relays first, then the page's list: a hint is the whole point of nevent
+        const hinted = (decoded.relays || []).filter(url => /^wss?:\/\//i.test(url));
+        const ordered = [...new Set([...hinted, ...(relays || [])])];
+        fetchNote1Event(decoded.eventId, ordered, reference);
     });
 
-    // Handle plain note1 strings by showing them as raw text
-    const plainNote1Matches = content.match(/\bnote1\w+\b(?!:)/g) || [];
+    // A bare reference stays text: a page should not open sockets for every id it merely mentions. The
+    // nostr: forms are removed from the scan so their tails are not greyed out twice.
+    const withoutReferences = content.replace(/nostr:(?:note1|nevent1)\w+/g, '');
+    const plainNote1Matches = withoutReferences.match(/\b(?:note1|nevent1)\w+\b(?!:)/g) || [];
     plainNote1Matches.forEach(note1String => {
         content = content.replace(
             note1String,
