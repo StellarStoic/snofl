@@ -54,15 +54,9 @@
         </div>
     </div>
 
-    <!-- The landing screen has no page behind it, so it says so and gets out of the way. A dry notice
-         here read like an error; this reads like someone answering the door. -->
-    <div id="warningMessage" style="display: none; margin: 20px auto 3%; max-width: 34ch; text-align: center; font-size: 1rem; line-height: 1.55;">
-        <p style="margin: 0 0 0.9em;">Yes, you're right to be confused &mdash; <strong>WTF is this?</strong></p>
-        <p style="margin: 0 0 0.9em;">If you found this page by accident, close it and forget you were ever here. No hard feelings.</p>
-        <p style="margin: 0;">But if you want a simple webpage that lives inside the URL itself, open
-            <a href="urlmkr.html" style="color: rgb(30, 255, 0); text-decoration: underline;">URLmkr</a>
-            and share it with your tribe.</p>
-    </div>
+    <!-- The landing screen has no page behind it, so it says so and gets out of the way. The copy is built
+         in JS (renderLandingNotice) because it addresses the visitor by the name their identity was given. -->
+    <div id="warningMessage" style="display: none; margin: 20px auto 3%; max-width: 34ch; text-align: left; font-size: 1rem; line-height: 1.55;"></div>
     <!-- <textarea id="userMessage" maxlength="280" oninput="adjustHeight(this)"></textarea> -->
     <p id="statusMessage"></p>
 
@@ -270,6 +264,65 @@ function updateNostrNameDisplay() {
         // If nostr_name doesn't exist, generate a fallback name
         nostrNameDisplay.textContent = generateRandomFallback();
     }
+
+    // The landing notice greets the visitor by this name, so it has to follow it: a name generated a moment
+    // after the notice appeared would otherwise leave it addressing "friend".
+    const notice = document.getElementById("warningMessage");
+    if (notice && notice.style.display === "block") renderLandingNotice();
+}
+
+/** The name this browser's identity was given — the same one shown under the avatar. */
+function landingNoticeName() {
+    const stored = localStorage.getItem("nostr_name");
+    if (stored && stored.trim()) return stored.trim();
+    const shown = document.getElementById("nostrNameDisplay");
+    const text = shown ? shown.textContent.trim() : "";
+    return text || "friend";
+}
+
+/**
+ * The landing screen's copy. It speaks to the visitor by name because the site gave them one the moment an
+ * identity was generated, and a stranger who is addressed can tell the difference from a banner.
+ * Rebuilt whenever the notice is shown or the name changes, so it never greets someone by a stale name.
+ */
+function renderLandingNotice() {
+    const box = document.getElementById("warningMessage");
+    if (!box) return;
+    const name = landingNoticeName();
+    box.textContent = "";
+
+    const nameNode = () => {
+        const strong = document.createElement("strong");
+        strong.textContent = name;
+        return strong;
+    };
+    const addParagraph = (parts, last) => {
+        const paragraph = document.createElement("p");
+        paragraph.style.margin = last ? "0" : "0 0 0.9em";
+        parts.forEach((part) => paragraph.append(part));
+        box.append(paragraph);
+        return paragraph;
+    };
+
+    addParagraph([
+        "Hi ", nameNode(), ". Not ", nameNode(), "? Well, fuck it \u2014 we're gonna call you ", nameNode(),
+        ", since that's the random ID you've been given.",
+    ]);
+    addParagraph([
+        "You're probably asking WTF is this? And yes, you're right to be confused, ", nameNode(), ".",
+    ]);
+    addParagraph([
+        "If you landed here by accident, close the tab and forget you were ever here. No hard feelings.",
+    ]);
+    const lastParagraph = addParagraph([
+        "But if you want a simple webpage that lives inside the URL itself, open ",
+    ], true);
+    const link = document.createElement("a");
+    link.href = "urlmkr.html";
+    link.textContent = "URLmkr";
+    link.style.color = "rgb(30, 255, 0)";
+    link.style.textDecoration = "underline";
+    lastParagraph.append(link, document.createTextNode(" and share it with your tribe."));
 }
 
 function applyRandomTiltForNostrName() {
@@ -2201,6 +2254,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // console.log("No URL attributes detected. Send button and avatar are disabled to avoid spam IDs and Notes.");
 
         // Show the warning message only if it's the homepage
+        renderLandingNotice();
         warningMessage.style.display = "block";
         // console.log("No URL attributes detected. Send button and avatar are disabled to avoid spam IDs and Notes.");
     } else {
