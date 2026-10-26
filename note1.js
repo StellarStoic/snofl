@@ -1,10 +1,10 @@
 // Default relays if none are specified
 const defaultRelays = [
-    "wss://relay.nostr.band",
     "wss://relay.damus.io",
-    "wss://njump.me",
+    "wss://relay.primal.net",
+    "wss://nos.lol",
     "wss://relay.snort.social",
-    "wss://nos.lol"
+    "wss://relay.nostr.band"
 ];
 
 // Decode note1 from a bech32 string (Based on NIP-19)

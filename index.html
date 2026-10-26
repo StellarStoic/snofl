@@ -37,7 +37,7 @@
     <script src="crypto-js.min.js"></script>                                                                                                                   
     <script src="dec.js"></script>                                                                                                                   
     <script src="bech32.js"></script>                                                                                                                   
-    <script src="note1.js?v=3"></script>
+    <script src="note1.js?v=4"></script>
     <!-- <script src="footer.js"></script> // IS AT THE BOTTOM-->
 </head>
 
@@ -975,158 +975,229 @@ function applyModalListenersToMedia(container) {
     });
 }
 
-// NPUB handling
+// NPUB / NPROFILE handling
+//
+// A profile reference on a page is a promise about a person, so the lookup behind it has to be as reliable
+// as the note lookup and no slower. What was here did neither: it tried exactly one relay (the `return` sat
+// inside the `for`), ignored the relays the page's creator chose, had no timeout, and injected the profile's
+// own metadata into the page's HTML unescaped.
 
+// The fallback list, used only after the reference's hints and the page's own relays.
 const npubDefaultRelays = [
-        "wss://relay.damus.io",
-        "wss://relay.primal.net",
-        "wss://nos.lol"
-    ];
+    "wss://relay.damus.io",
+    "wss://relay.primal.net",
+    "wss://nos.lol"
+];
 
+// A profile is decoration on someone else's page: it may never hold the page hostage.
+const PROFILE_TIMEOUT_MS = 4000;
+// Once one relay has answered, wait this much longer for a newer copy, then stop.
+const PROFILE_GRACE_MS = 700;
 
-    // Converts a `nostr:npub` string to a hexadecimal public key.
-function npubToHex(npub) {
-    // Remove the "nostr:" prefix if it exists
-    const bech32String = npub.replace("nostr:", "");
-
-    // Decode the Bech32 string
-    const decoded = bech32.decode(bech32String);
-
-    // Convert words to bytes (5-bit to 8-bit conversion)
-    const bytes = bech32.fromWords(decoded.words);
-
-    // Convert bytes to a hexadecimal string
-    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+/** Escape text that is about to become HTML — a profile's name is a stranger's string. */
+function escapeHtmlText(value) {
+    return String(value).replace(/[&<>"']/g, (character) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[character]));
 }
 
-
-    //  Searches metadata for a given hex public key using default relays.
-
-     async function searchMetadata(hex) {
-    for (const relay of defaultRelays) {
-        try {
-            const socket = new WebSocket(relay);
-
-            // Return a Promise to handle async WebSocket interactions
-            return new Promise((resolve, reject) => {
-                socket.onopen = () => {
-                    // Send a subscription request for kind 0 events for the given public key
-                    const subscriptionId = `sub_${Date.now()}`;
-                    const subscriptionMessage = JSON.stringify([
-                        "REQ", subscriptionId, { kinds: [0], authors: [hex] }
-                    ]);
-                    socket.send(subscriptionMessage);
-                };
-
-                socket.onmessage = (event) => {
-                    const message = JSON.parse(event.data);
-
-                    // Check if the message contains a kind 0 event
-                    if (message[0] === "EVENT" && message[2].kind === 0) {
-                        const metadata = JSON.parse(message[2].content);
-                        socket.close();
-                        resolve(metadata); // Resolve with the parsed metadata
-                    }
-                };
-
-                socket.onerror = (error) => {
-                    console.warn(`WebSocket error on relay: ${relay}`, error);
-                    socket.close();
-                    reject(`Failed to fetch metadata from relay: ${relay}`);
-                };
-
-                socket.onclose = () => {
-                    // Reject if the connection closes without metadata
-                    reject(`Connection closed before receiving metadata from relay: ${relay}`);
-                };
-            });
-        } catch (error) {
-            console.warn(`Failed to fetch metadata from relay: ${relay}`, error);
-        }
-    }
-
-    // Return a default empty metadata if no relay succeeds
-    return { name: null };
+/** hex pubkey -> npub, for the link a reader follows. */
+function pubkeyToNpub(hex) {
+    const bytes = hex.match(/.{2}/g).map((pair) => parseInt(pair, 16));
+    return bech32.encode("npub", bech32.toWords(Uint8Array.from(bytes)), 1000);
 }
 
+/**
+ * Decode `npub1…` (a bare key) or `nprofile1…` (a key plus the relays the sharer suggested).
+ * Returns null rather than throwing, so one bad reference cannot stop the rest of the content.
+ */
+function decodeProfileReference(reference) {
+    const match = String(reference).match(/nostr:(?:npub|nprofile)1\w+/i) || String(reference).match(/\b(?:npub|nprofile)1\w+/i);
+    if (!match) return null;
 
-
-    // Generates a profile link for a given hex public key.
-    function generateProfileLink(hex) {
-        return `https://njump.me/p/${hex}`;
-    }
-
-
-    //  Processes a single `nostr:npub` string into its replacement HTML.
-
-     async function processNpub(npub) {
+    const bech = match[0].replace(/^nostr:/i, "");
+    const isNprofile = /^nprofile1/i.test(bech);
     try {
-        const hex = npubToHex(npub);
-        const metadata = await searchMetadata(hex);
-        console.log("Metadata:", metadata); // Log metadata
+        // the bundled library refuses by *returning* a string and defaults to a 90-character limit
+        const decoded = bech32.decode(bech, 1000);
+        if (!decoded || typeof decoded !== "object" || !decoded.words) throw new Error(String(decoded));
+        const bytes = bech32.fromWords(decoded.words);
 
-        const userName = metadata.name
-            ? `@${metadata.name}` // Add "@" prefix if name exists
-            : `${npub.substring(0, 6)}...${npub.slice(-4)}`;
-
-        const nip05 = metadata.nip05 || npub; // Use NIP-05 or fallback to npub
-        const profileLink = generateProfileLink(hex); // Generate profile link
-
-        return `<a href="${generateProfileLink(hex)}" title="${nip05}">${userName}</a>`;
-    } catch (error) {
-        console.error(`Error processing npub: ${npub}`, error);
-        return `<span title="${npub}">${npub.substring(0, 6)}...${npub.slice(-4)}</span>`;
-    }
-}
-
-
-    //  Replaces all `nostr:npub` strings in the provided content with the processed HTML.
-
-     async function replaceNpubStrings(content) {
-    const matches = content.match(/nostr:npub\w+/g) || [];
-
-    // Use a Set to track processed npub strings to avoid duplicate replacements
-    const uniqueMatches = new Set(matches);
-
-    for (const npub of uniqueMatches) {
-        // Skip already replaced links
-        const alreadyProcessedRegex = new RegExp(
-            `<a [^>]*href=[^>]*>${npub.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
-            "g"
-        );
-        if (alreadyProcessedRegex.test(content)) continue;
-
-        const replacement = await processNpub(npub);
-
-        // Safely replace the original `nostr:npub` string in the content
-        const regex = new RegExp(npub.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g");
-        content = content.replace(regex, replacement);
-    }
-    // console.log("Original Content:", content);
-    // console.log("Matches Found:", matches);
-    // console.log("Processed Content:", content);
-    return content;
-}
-
-
-    // Updates the paragraph content dynamically, processing `nostr:npub` strings.
-
-    async function updateParagraphContentForNpubStrings() {
-        const paragraph = document.getElementById("customParagraph");
-        const readMoreLink = document.getElementById("readMoreLink");
-        const fullContent = paragraph.getAttribute("data-full-content");
-
-        if (fullContent) {
-            const processedContent = await replaceNpubStrings(fullContent);
-            paragraph.innerHTML = processedContent;
+        if (!isNprofile) {
+            if (bytes.length !== 32) throw new Error("npub is not a 32-byte key");
+            return { pubkey: bytesToHex(bytes), relays: [], reference: match[0], format: "npub" };
         }
+
+        // nprofile is TLV: type 0 = 32-byte pubkey, type 1 = relay (repeatable)
+        const decoder = new TextDecoder();
+        let pubkey = null;
+        const relays = [];
+        let index = 0;
+        while (index + 1 < bytes.length) {
+            const type = bytes[index++];
+            const length = bytes[index++];
+            if (length === undefined || index + length > bytes.length) break;
+            const value = bytes.slice(index, index + length);
+            index += length;
+            if (type === 0 && length === 32) pubkey = bytesToHex(value);
+            else if (type === 1) relays.push(decoder.decode(new Uint8Array(value)));
+        }
+        if (!pubkey) throw new Error("nprofile carries no pubkey");
+        return { pubkey, relays, reference: match[0], format: "nprofile" };
+    } catch (error) {
+        console.warn("Could not decode profile reference:", match[0], error);
+        return null;
     }
+}
 
-    // Run the function after the DOM is fully loaded
-    document.addEventListener("DOMContentLoaded", updateParagraphContentForNpubStrings);
+/** The relays to ask for a profile: the sharer's hints, then the creator's list, then the fallback. */
+function relaysForProfile(hinted) {
+    let pageRelays = [];
+    try {
+        pageRelays = getQueryParams().r || [];
+    } catch { /* the page has no parameters to read */ }
+    const ordered = [...(hinted || []), ...pageRelays, ...npubDefaultRelays]
+        .filter((url) => /^wss?:\/\//i.test(url));
+    return [...new Set(ordered)];
+}
 
+/**
+ * Ask every relay at once and resolve with the newest kind 0 seen.
+ *
+ * Every relay, not the first one: a profile usually lives on the relays its owner uses, and which of those
+ * answers is not something this page can know in advance.
+ */
+function fetchProfile(pubkey, relays, timeoutMs = PROFILE_TIMEOUT_MS) {
+    return new Promise((resolve) => {
+        if (!relays.length) {
+            resolve(null);
+            return;
+        }
 
-// END - NPUB handling
+        const sockets = [];
+        let newest = null;
+        let pending = relays.length;
+        let settled = false;
+        let graceTimer = null;
+
+        // What each relay did, readable from the console when a profile does not resolve. Without this a
+        // failed lookup is indistinguishable from a person who simply has no metadata.
+        window.__profileStats = [];
+
+        const finish = () => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(hardTimer);
+            if (graceTimer) clearTimeout(graceTimer);
+            sockets.forEach((socket) => { try { socket.close(); } catch { /* already closed */ } });
+            resolve(newest);
+        };
+
+        const hardTimer = setTimeout(finish, timeoutMs);
+
+        relays.forEach((url) => {
+            // One decrement per relay, whatever happens. Counting `onmessage` and `onclose` separately
+            // finished the lookup before any metadata had arrived — the failure looked exactly like a
+            // profile with no name.
+            let counted = false;
+            const settledForThisRelay = (reason) => {
+                if (counted) return;
+                counted = true;
+                window.__profileStats.push({ relay: url, outcome: reason, hadMetadata: !!newest });
+                pending -= 1;
+                if (pending <= 0) finish();
+            };
+
+            let socket;
+            try {
+                socket = new WebSocket(url);
+            } catch (error) {
+                settledForThisRelay("could not connect: " + error);
+                return;
+            }
+            sockets.push(socket);
+
+            socket.onopen = () => {
+                const subscriptionId = "profile-" + Math.random().toString(36).slice(2, 9);
+                socket.send(JSON.stringify(["REQ", subscriptionId, { kinds: [0], authors: [pubkey], limit: 1 }]));
+            };
+
+            socket.onmessage = (message) => {
+                let payload;
+                try { payload = JSON.parse(message.data); } catch { return; }
+
+                if (payload[0] === "EVENT" && payload[2] && payload[2].kind === 0) {
+                    try {
+                        const metadata = JSON.parse(payload[2].content || "{}");
+                        const createdAt = Number(payload[2].created_at) || 0;
+                        // relays serve historical metadata: keep the newest, not the first to arrive
+                        if (!newest || createdAt > newest.createdAt) newest = { metadata, createdAt };
+                        settledForThisRelay("event");
+                    } catch {
+                        settledForThisRelay("event with unparsable metadata");
+                    }
+
+                    // one answer is enough to draw with; a short grace lets a fresher copy win
+                    if (!graceTimer) graceTimer = setTimeout(finish, PROFILE_GRACE_MS);
+                } else if (payload[0] === "EOSE") {
+                    settledForThisRelay("eose");
+                } else if (payload[0] === "CLOSED" || payload[0] === "NOTICE") {
+                    settledForThisRelay("closed: " + String(payload[2] || payload[1] || "").slice(0, 60));
+                }
+            };
+
+            socket.onerror = () => settledForThisRelay("socket error");
+            socket.onclose = () => settledForThisRelay("closed by relay");
+        });
+    });
+}
+
+/** Build the mention markup: escaped, linked to the profile's npub on njump, with the NIP-05 as the title. */
+function renderProfileMention(decoded, profile) {
+    const npub = pubkeyToNpub(decoded.pubkey);
+    const metadata = (profile && profile.metadata) || {};
+    const displayName = String(metadata.display_name || metadata.name || "").trim();
+    const nip05 = String(metadata.nip05 || "").trim();
+
+    const label = displayName
+        ? "@" + displayName
+        : nip05 || npub.slice(0, 10) + "\u2026" + npub.slice(-4);
+    const title = nip05 || npub;
+
+    // njump addresses profiles by npub; the old hex form was a dead link
+    return '<a class="profile-mention" href="' + escapeHtmlText("https://njump.me/" + npub) + '"'
+        + ' title="' + escapeHtmlText(title) + '" target="_blank" rel="noopener noreferrer">'
+        + escapeHtmlText(label) + "</a>";
+}
+
+/**
+ * Replace every `nostr:npub1…` / `nostr:nprofile1…` in the content with a mention.
+ * Lookups run in parallel and are de-duplicated by pubkey, because one page usually names the same person
+ * more than once.
+ */
+async function replaceNpubStrings(content, relays) {
+    const matches = [...new Set(content.match(/nostr:(?:npub|nprofile)1\w+/gi) || [])];
+    if (!matches.length) return content;
+
+    const references = matches.map(decodeProfileReference).filter(Boolean);
+    if (!references.length) return content;
+
+    const profiles = new Map();
+    await Promise.all(references.map(async (reference) => {
+        if (profiles.has(reference.pubkey)) return;
+        profiles.set(reference.pubkey, null);
+        const hinted = relays && relays.length ? relays : reference.relays;
+        profiles.set(reference.pubkey, await fetchProfile(reference.pubkey, relaysForProfile(hinted)));
+    }));
+
+    let output = content;
+    for (const reference of references) {
+        output = output.split(reference.reference).join(renderProfileMention(reference, profiles.get(reference.pubkey)));
+    }
+    return output;
+}
+
+// END - NPUB / NPROFILE handling
 
 
 // Each call to setRelays starts a new round; a warning scheduled by an older round must never fire,
