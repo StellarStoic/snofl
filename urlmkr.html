@@ -22,7 +22,7 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=8">
-    <link rel="stylesheet" href="urlmkr.css?v=11">
+    <link rel="stylesheet" href="urlmkr.css?v=14">
     <script src="urlmkrAgreement.js?v=2"></script>
     <script src="backgroundImages.js"></script>
     <script src="crypto-js.min.js"></script>
@@ -133,93 +133,8 @@
 
         <div class="mk__grid">
             <main class="mk__form">
-                <section class="mk__section">
-                    <h2>The page</h2>
-
-                    <div class="form-group mk__row">
-                        <label for="include_h1">Title</label>
-                        <input type="checkbox" id="include_h1">
-                        <input type="text" id="h1_input" placeholder="Title" disabled>
-                    </div>
-
-                    <div class="form-group mk__row">
-                        <label for="include_h3">Subtitle</label>
-                        <input type="checkbox" id="include_h3">
-                        <input type="text" id="h3_input" placeholder="Subtitle" disabled>
-                    </div>
-
-                    <div class="form-group mk__row">
-                        <label for="include_p">Your content</label>
-                        <input type="checkbox" id="include_p">
-                        <textarea id="p_input" placeholder="Whatever you like — read the FAQ for what is supported" disabled></textarea>
-                    </div>
-
-                    <div class="form-group mk__row">
-                        <label for="include_message">Fixed message</label>
-                        <input type="checkbox" id="include_message">
-                        <textarea id="message_input" placeholder="A preset message, fixed and uneditable by the visitor" disabled></textarea>
-                    </div>
-                </section>
-
-                <section class="mk__section">
-                    <h2>How it looks</h2>
-
-                    <div class="form-group mk__row">
-                        <label for="include_font">Font</label>
-                        <input type="checkbox" id="include_font">
-                        <div id="font-container" class="font-container"></div>
-                    </div>
-
-                    <div class="form-group mk__row">
-                        <label for="include_background">Background</label>
-                        <input type="checkbox" id="include_background">
-                        <div id="background-container" class="background-container"></div>
-                    </div>
-
-                    <div class="form-group mk__row">
-                        <label for="include_avatar" class="avatar-label-container">
-                            <span id="avatar-preview-container"></span>
-                            <span id="avatar-label">Avatar style</span>
-                            <input type="checkbox" id="include_avatar">
-                        </label>
-                    </div>
-                </section>
-
-                <section class="mk__section">
-                    <h2>What visitors get</h2>
-
-                    <div class="form-group mk__row">
-                        <label for="allow_notes">Public notes</label>
-                        <input type="checkbox" id="allow_notes" checked
-                            title="On: visitors can post a note anyone can find. Off: they can only talk in the private room.">
-                        <p class="mk__hint">On: a visitor can post a note anyone can find. Off: the page offers only the private room.</p>
-                    </div>
-
-                    <div class="form-group mk__row">
-                        <label for="custom_characters">Max characters (default 280)</label>
-                        <input type="checkbox" id="custom_characters">
-                        <input type="number" id="characters_input" placeholder="1–5000" min="1" max="5000" disabled>
-                    </div>
-
-                    <div class="form-group mk__row">
-                        <label for="include_ln">Lightning address <span class="mk__tag">LUD-16</span></label>
-                        <input type="checkbox" id="include_ln">
-                        <input type="text" id="ln_input" placeholder="one@satoshi.si" disabled>
-                    </div>
-
-                    <div class="form-group mk__row">
-                        <label for="hashtag1">Hashtags</label>
-                        <span class="mk__spacer"></span>
-                        <div class="mk__trio">
-                            <input type="text" id="hashtag1" placeholder="first — no # needed">
-                            <input type="text" id="hashtag2" placeholder="second">
-                            <input type="text" id="hashtag3" placeholder="third">
-                        </div>
-                    </div>
-                </section>
-
-                <section class="mk__section">
-                    <h2>Where it lives</h2>
+<section class="mk__section">
+                    <h2>The card</h2>
 
                     <div class="form-group mk__row">
                         <label>Card type</label>
@@ -268,7 +183,92 @@
                     </div>
                 </section>
 
-                <section class="mk__section">
+<section class="mk__section">
+                    <h2>Styling</h2>
+
+                    <div class="form-group mk__row">
+                        <label for="include_font">Font</label>
+                        <input type="checkbox" id="include_font">
+                        <div id="font-container" class="font-container"></div>
+                    </div>
+
+                    <div class="form-group mk__row">
+                        <label for="include_background">Background</label>
+                        <input type="checkbox" id="include_background">
+                        <div id="background-container" class="background-container"></div>
+                    </div>
+
+                    <div class="form-group mk__row">
+                        <label for="include_avatar" class="avatar-label-container">
+                            <span id="avatar-preview-container"></span>
+                            <span id="avatar-label">Avatar style</span>
+                            <input type="checkbox" id="include_avatar">
+                        </label>
+                    </div>
+                </section>
+
+<section class="mk__section">
+                    <h2>The content</h2>
+
+                    <div class="form-group mk__row">
+                        <label for="include_h1">Title</label>
+                        <input type="checkbox" id="include_h1">
+                        <input type="text" id="h1_input" placeholder="Title" disabled>
+                    </div>
+
+                    <div class="form-group mk__row">
+                        <label for="include_h3">Subtitle</label>
+                        <input type="checkbox" id="include_h3">
+                        <input type="text" id="h3_input" placeholder="Subtitle" disabled>
+                    </div>
+
+                    <div class="form-group mk__row">
+                        <label for="include_p">Your content</label>
+                        <input type="checkbox" id="include_p">
+                        <textarea id="p_input" placeholder="Whatever you like — read the FAQ for what is supported" disabled></textarea>
+                    </div>
+
+                    <div class="form-group mk__row">
+                        <label for="include_message">Fixed message</label>
+                        <input type="checkbox" id="include_message">
+                        <textarea id="message_input" placeholder="A preset message, fixed and uneditable by the visitor" disabled></textarea>
+                    </div>
+                </section>
+
+<section class="mk__section">
+                    <h2>Visitor options</h2>
+
+                    <div class="form-group mk__row">
+                        <label for="allow_notes">Public notes</label>
+                        <input type="checkbox" id="allow_notes" checked
+                            title="On: visitors can post a note anyone can find. Off: they can only talk in the private room.">
+                        <p class="mk__hint">On: a visitor can post a note anyone can find. Off: the page offers only the private room.</p>
+                    </div>
+
+                    <div class="form-group mk__row">
+                        <label for="custom_characters">Max characters (default 280)</label>
+                        <input type="checkbox" id="custom_characters">
+                        <input type="number" id="characters_input" placeholder="1–5000" min="1" max="5000" disabled>
+                    </div>
+
+                    <div class="form-group mk__row">
+                        <label for="include_ln">Lightning address <span class="mk__tag">LUD-16</span></label>
+                        <input type="checkbox" id="include_ln">
+                        <input type="text" id="ln_input" placeholder="one@satoshi.si" disabled>
+                    </div>
+
+                    <div class="form-group mk__row">
+                        <label for="hashtag1">Hashtags</label>
+                        <span class="mk__spacer"></span>
+                        <div class="mk__trio">
+                            <input type="text" id="hashtag1" placeholder="first — no # needed">
+                            <input type="text" id="hashtag2" placeholder="second">
+                            <input type="text" id="hashtag3" placeholder="third">
+                        </div>
+                    </div>
+                </section>
+
+<section class="mk__section">
                     <h2>Lock it</h2>
 
                     <div class="form-group mk__row">
@@ -291,6 +291,7 @@
                         </div>
                     </div>
                 </section>
+
             </main>
 
             <aside class="mk__panel">
@@ -1888,6 +1889,7 @@ document.addEventListener('DOMContentLoaded', function () {
         updateURL();
     </script>
     <script src="urlmkrPreview.js?v=1" defer></script>
+    <script src="urlmkrContent.js?v=1" defer></script>
 </body>
 
 

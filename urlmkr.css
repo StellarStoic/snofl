@@ -103,7 +103,7 @@ body.mk *::after {
 
 .mk__grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 380px;
+    grid-template-columns: minmax(0, 1fr) 316px;
     gap: 36px;
     align-items: start;
     margin-top: 30px;
@@ -118,7 +118,7 @@ body.mk *::after {
 
 .mk__section {
     border-top: 1px solid #1e1e1e;
-    padding: 24px 0 8px;
+    padding: 30px 0 16px;
 }
 
 .mk__section:first-of-type {
@@ -127,7 +127,7 @@ body.mk *::after {
 }
 
 .mk__section > h2 {
-    margin: 0 0 14px;
+    margin: 0 0 6px;
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.16em;
@@ -137,12 +137,24 @@ body.mk *::after {
 
 /* ---------------------------------------------------------------- a row: name, switch, field */
 
+/* Every row also carries the legacy .form-group class, which brings a 20%-white fill, a 5% margin and
+   1.7rem type. Kept as a card, but a quiet one, with real space between the controls and its edge. */
 .mk__row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 8px 14px;
-    padding: 9px 0;
+    gap: 10px 16px;
+    margin: 0 0 10px;
+    padding: 18px 20px;
+    font-size: inherit;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    backdrop-filter: none;
+}
+
+.mk__row:hover {
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 .mk__row > label {
@@ -442,11 +454,10 @@ body.mk #toggle_encryption {
 
 .mk__lock {
     display: grid;
-    gap: 10px;
-    padding: 16px;
-    border: 1px solid #202020;
-    border-radius: 14px;
-    background: #101010;
+    gap: 12px;
+    padding: 6px 0 0;
+    border: 0;
+    background: none;
 }
 
 .password-container {
@@ -542,7 +553,14 @@ body.mk .mk__preview-open:hover:not(:disabled) {
 
 .mk__panel {
     position: sticky;
-    top: 26px;
+    /* the link is the one thing that must never scroll away: keep it pinned to the top of the viewport
+       while the form moves under it */
+    top: 20px;
+    align-self: start;
+    max-height: calc(100vh - 40px);
+    display: grid;
+    align-content: start;
+    gap: 0;
 }
 
 @media (max-width: 960px) {
@@ -571,8 +589,11 @@ body.mk .mk__preview-open:hover:not(:disabled) {
     background: #111111;
     border: 1px solid #232323;
     border-radius: 16px;
-    padding: 16px;
+    padding: 20px;
     text-align: left;
+    /* the shared sheet forces `overflow: hidden scroll`, which paints a bright stripe down a dark card
+       and scrolls three buttons that already fit */
+    overflow: visible;
 }
 
 .url-output {
@@ -622,11 +643,19 @@ body.mk #byte_counter {
     margin-bottom: 6px;
 }
 
+/* three controls in a 316px card: two side by side, the preview on its own line */
 .mk__actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
-    margin-top: 10px;
+    margin-top: 12px;
+}
+
+.mk__actions button,
+.mk__actions .copy-button {
+    padding: 10px 8px;
+    font-size: 13px;
+    white-space: nowrap;
 }
 
 .mk__actions .mk__preview-open {
@@ -946,4 +975,57 @@ body.mk .modal-buttons #declineAgreement {
     background: #191919;
     border: 1px solid #2b2b2b;
     color: #cfcfcf;
+}
+
+/* ---------------------------------------------------------------- the content editor, expanded */
+
+/* "Your content" is the one field people actually write in, and a 96px box is not where anyone writes a
+   page. Opening it takes the row to nearly the whole viewport — but the row itself carries the switch, so
+   the control that opened it is still under the cursor to close it. */
+body.mk .mk__row.is-expanded {
+    position: fixed;
+    inset: 3vh 3vw;
+    z-index: 9997;
+    margin: 0;
+    padding: 22px 26px;
+    background: #101010;
+    border: 1px solid #2a2a2a;
+    border-radius: 18px;
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.65);
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 14px;
+    overflow: hidden;
+}
+
+body.mk .mk__row.is-expanded::before {
+    /* dim the maker behind it without taking a new element in the markup */
+    content: "";
+    position: fixed;
+    inset: -6vh -6vw;
+    background: rgba(0, 0, 0, 0.72);
+    z-index: -1;
+}
+
+body.mk .mk__row.is-expanded > label {
+    font-size: 16px;
+    color: #f0f0f0;
+}
+
+body.mk .mk__row.is-expanded > textarea {
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    font-size: 16px;
+    line-height: 1.6;
+    padding: 16px 18px;
+    resize: none;
+}
+
+body.mk .mk__row.is-expanded > label::after {
+    content: " — writing in full view · click the switch to close";
+    color: #7a7a7a;
+    font-size: 12.5px;
+    letter-spacing: 0.02em;
 }
