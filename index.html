@@ -11,7 +11,7 @@
     <link rel="icon" href="/img/favicon_io/favicon.ico" type="image/x-icon">
 
     <!-- sec -->
-    <meta http-equiv="Content-Security-Policy" content="font-src 'self' https://fonts.bunny.net;">
+    <meta http-equiv="Content-Security-Policy" content="font-src 'self' https://fonts.bunny.net https://cdnjs.cloudflare.com;">
     
     <!-- PNG icons for better resolution -->
     <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon_io/favicon-32x32.png">
@@ -27,12 +27,12 @@
     <script src="https://bundle.run/browserify-cipher@1.0.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="room.css?v=1">
+    <link rel="stylesheet" href="room.css?v=3">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="background.js"></script>
     <script src="backgroundImages.js"></script>
-    <script src="font.js"></script>
+    <script src="font.js?v=2"></script>
     <script src="fontList.js"></script>  
     <script src="crypto-js.min.js"></script>                                                                                                                   
     <script src="dec.js"></script>                                                                                                                   
@@ -437,8 +437,8 @@ async function setDynamicContent() {
     } else {
         setRelays([
         "wss://relay.nostr.band",
-        "bostr.bitcointxoko.com",
-        "bostr.nokotaro.com",
+        "wss://bostr.bitcointxoko.com",
+        "wss://bostr.nokotaro.com",
         "wss://ditto.pub/relay",
         "wss://relay.bostr.online/",
         // "relay.roli.social",
@@ -889,7 +889,7 @@ function applyModalListenersToMedia(container) {
 
 const npubDefaultRelays = [
         "wss://relay.damus.io",
-        "wss://njump.me",
+        "wss://relay.primal.net",
         "wss://nos.lol"
     ];
 
@@ -1078,7 +1078,7 @@ function setRelays(customRelays) {
 
 var h2b = (h) =>
         Uint8Array.from(h.match(/.{1,2}/g).map((b) => parseInt(b, 16))),
-    b2h = (b) => b.reduce((s, b) => s + b.toString(16).padStart(2, "0"), ""),
+    b2h = (b) => (typeof b === "string" ? b : Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("")),
     { schnorr, utils } = nobleSecp256k1,
     sha256 = utils.sha256,
     pk,
@@ -1296,7 +1296,9 @@ async function updateNostrJson(name, pubkey) {
     const createdAt = Math.floor(Date.now() / 1000);
     const proofMessage = `snofl-nip05:${name}:${pubkey}:${createdAt}`;
     const proofHash = sha256(new TextEncoder().encode(proofMessage));
-    const proofSig = await schnorr.sign(proofHash, signingKey);
+    // noble's schnorr.sign takes the message as hex, not bytes: passing the Uint8Array threw
+    // "hexToBytes: expected string, got object" and the registration never happened.
+    const proofSig = await schnorr.sign(b2h(proofHash), signingKey);
 
     const wellKnownData = {
         names: {

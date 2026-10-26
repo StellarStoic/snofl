@@ -14,7 +14,7 @@ import { conversationKeyFromSecret, encryptPayload, decryptPayload, looksLikePay
 const DEFAULT_RELAYS = [
   'wss://relay.nostr.band',
   'wss://relay.damus.io',
-  'wss://njump.me',
+  'wss://relay.primal.net',
   'wss://relay.snort.social',
   'wss://nos.lol',
 ];
@@ -37,6 +37,14 @@ function unpackMessage(plaintext, event) {
   if (String(body.p).toLowerCase() !== String(event.pubkey).toLowerCase()) return null;
   if (Number(body.c) !== Number(event.created_at)) return null;
   return body.m;
+}
+
+/** How long this page's difficulty takes at the measured ~60k hashes/s, said plainly. */
+function estimateWork(bits) {
+  const seconds = 2 ** bits / 60000;
+  if (seconds < 1) return 'under a second';
+  if (seconds < 90) return '~' + Math.round(seconds) + 's of work';
+  return '~' + Math.round(seconds / 60) + ' min of work';
 }
 
 const MAX_MESSAGES = 300;
@@ -212,7 +220,7 @@ export async function mount(options = {}) {
   input.rows = 3;
   input.placeholder = 'Say something to whoever holds this link…';
   input.maxLength = 2000;
-  const send = element('button', 'room__send', `Post · ~${Math.round(2 ** difficulty / 60000)}s of work`);
+  const send = element('button', 'room__send', `Post · ${estimateWork(difficulty)}`);
   send.type = 'submit';
   const status = element('p', 'room__status', '');
   composer.append(input, send, status);
@@ -291,7 +299,7 @@ export async function mount(options = {}) {
     }
     send.disabled = true;
     input.readOnly = true;
-    status.textContent = `Working… (~${Math.round(2 ** difficulty / 60000)}s)`;
+    status.textContent = `Working… ${estimateWork(difficulty)}`;
     try {
       const createdAt = Math.floor(Date.now() / 1000);
       // a NIP-44 v2 payload: version, nonce, ChaCha20 over padded plaintext, HMAC — the protocol's own

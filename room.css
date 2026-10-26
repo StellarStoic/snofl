@@ -3,9 +3,17 @@
    rules instead of boxes, and no animation that pretends to be progress. The mining indicator is text
    because it is a number, not a mood. */
 
+/* This page scales its root font with the viewport — `html { font-size: calc(1vw + 1vh + 0.5vmin) }`,
+   which is ~34px on a desktop window. So `rem` here is not 16px, and a room sized in rem came out
+   1563px wide: a full-bleed strip instead of a column. Everything below is px on purpose. */
 .room {
-    margin: 2rem auto 0;
-    max-width: 46rem;
+    /* The column is fixed in px (see above) but the type is not: this page's body is ~34px, and a 16px
+       room beside it read like fine print. 0.58rem tracks the page's scale, clamped so it never gets
+       tiny on a phone or absurd on a television. */
+    font-size: clamp(15px, 0.58rem, 21px);
+    margin: 32px auto 0;
+    max-width: 720px;
+    width: calc(100% - 32px);
     text-align: left;
     color: var(--room-ink, #fff);
 }
@@ -13,22 +21,22 @@
 .room__header {
     display: flex;
     align-items: baseline;
-    gap: 0.75rem;
+    gap: 12px;
     flex-wrap: wrap;
     border-bottom: 1px solid var(--room-rule, #333);
-    padding-bottom: 0.5rem;
+    padding-bottom: 8px;
 }
 
 .room__title {
     font-weight: bold;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    font-size: 0.8rem;
+    font-size: 12.8px;
 }
 
 .room__meta,
 .room__count {
-    font-size: 0.72rem;
+    font-size: 11.52px;
     opacity: 0.65;
 }
 
@@ -37,14 +45,14 @@
 }
 
 .room__list {
-    padding: 0.75rem 0 0.25rem;
+    padding: 12px 0 4px;
 }
 
 .room__empty,
 .room__error {
-    font-size: 0.8rem;
+    font-size: 12.8px;
     opacity: 0.7;
-    padding: 0.5rem 0;
+    padding: 8px 0;
 }
 
 .room__error {
@@ -53,18 +61,18 @@
 }
 
 .room__message {
-    padding: 0.55rem 0 0.65rem;
+    padding: 8.8px 0 10.4px;
     border-bottom: 1px dotted rgba(255, 255, 255, 0.12);
 }
 
 .room__message-head {
     display: flex;
     align-items: baseline;
-    gap: 0.6rem;
-    font-size: 0.68rem;
+    gap: 9.6px;
+    font-size: 10.88px;
     letter-spacing: 0.05em;
     opacity: 0.75;
-    margin-bottom: 0.25rem;
+    margin-bottom: 4px;
 }
 
 .room__author {
@@ -77,7 +85,7 @@
 }
 
 .room__text {
-    font-size: 0.86rem;
+    font-size: 13.76px;
     line-height: 1.5;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
@@ -86,10 +94,10 @@
 .room__composer {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 8px;
     border-top: 1px solid var(--room-rule, #333);
-    padding-top: 0.75rem;
-    margin-top: 0.5rem;
+    padding-top: 12px;
+    margin-top: 8px;
 }
 
 .room__input {
@@ -99,9 +107,9 @@
     color: inherit;
     border: 1px solid var(--room-rule, #333);
     border-radius: 0;
-    padding: 0.5rem 0.6rem;
+    padding: 8px 9.6px;
     font-family: inherit;
-    font-size: 0.86rem;
+    font-size: 13.76px;
     line-height: 1.45;
 }
 
@@ -116,9 +124,9 @@
     color: var(--room-accent, #ff6600);
     border: 1px solid var(--room-accent, #ff6600);
     border-radius: 0;
-    padding: 0.4rem 0.9rem;
+    padding: 6.4px 14.4px;
     font-family: inherit;
-    font-size: 0.72rem;
+    font-size: 11.52px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     cursor: pointer;
@@ -136,7 +144,7 @@
 }
 
 .room__status {
-    font-size: 0.72rem;
+    font-size: 11.52px;
     min-height: 1.1em;
     opacity: 0.8;
     font-variant-numeric: tabular-nums;
@@ -155,7 +163,7 @@
 
 @media (max-width: 640px) {
     .room {
-        margin-top: 1.25rem;
+        margin-top: 20px;
     }
 
     .room__meta {

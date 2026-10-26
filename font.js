@@ -2,6 +2,13 @@ let isFontListLoaded = false;
 
 // Dynamically load fontList.js
 function loadFontList(callback) {
+    // index.html already loads fontList.js with a tag, so loading it again here threw
+    // "Identifier 'fontList' has already been declared" and left the console red on every visit.
+    if (typeof window.fontList !== 'undefined') {
+        isFontListLoaded = true;
+        callback();
+        return;
+    }
     if (isFontListLoaded) {
         console.log('fontList.js already loaded. Skipping...');
         callback();
