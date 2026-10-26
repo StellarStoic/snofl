@@ -23,7 +23,7 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=8">
-    <link rel="stylesheet" href="urlmkr.css?v=23">
+    <link rel="stylesheet" href="urlmkr.css?v=26">
     <script src="urlmkrAgreement.js?v=2"></script>
     <script src="backgroundImages.js"></script>
     <script src="crypto-js.min.js"></script>
@@ -443,40 +443,102 @@ const avatarStylesList = {
     27: 'thumbs',
     28: 'dylan',
     29: 'glass',
-    // 30: 'initials'
+    30: 'blobs',
+    31: 'cameo',
+    32: 'clay',
+    33: 'constellation',
+    34: 'critters',
+    35: 'cutouts',
+    36: 'disco',
+    37: 'gaze',
+    38: 'glyphs',
+    39: 'initial-face',
+    40: 'initials',
+    41: 'landscape',
+    42: 'line-face',
+    43: 'loops',
+    44: 'marbles',
+    45: 'moods',
+    46: 'patchwork',
+    47: 'pixelbot',
+    48: 'planets',
+    49: 'shadows',
+    50: 'shape-grid',
+    51: 'slice',
+    52: 'sprouts',
+    53: 'squircles',
+    54: 'stack',
+    55: 'stripes',
+    56: 'toon-head',
+    57: 'triangles',
+    58: 'voxel-art',
+    59: 'voxel-bot',
+    60: 'waves',
+    61: 'weave',
 };
 
 const avatarNames = {
-    'croodles': 'croodles',
-    'adventurer-neutral': 'adventurer-neutral',
-    'avataaars': 'avataaars',
-    'avataaars-neutral': 'avataaars-neutral',
-    'big-ears': 'big-ears',
-    'big-ears-neutral': 'big-ears-neutral',
-    'big-smile': 'big-smile',
-    'bottts': 'bottts',
-    'bottts-neutral': 'bottts-neutral',
-    'adventurer': 'adventurer',
-    'croodles-neutral': 'croodles-neutral',
-    'dylan': 'dylan',
-    'fun-emoji': 'fun-emoji',
-    'glass': 'glass',
-    'icons': 'icons',
-    'identicon': 'identicon',
-    'thumbs': 'thumbs',
-    'lorelei': 'lorelei',
-    'lorelei-neutral': 'lorelei-neutral',
-    'micah': 'micah',
-    'miniavs': 'miniavs',
-    'notionists': 'notionists',
-    'notionists-neutral': 'notionists-neutral',
-    'open-peeps': 'open-peeps',
-    'personas': 'personas',
-    'pixel-art': 'pixel-art',
-    'pixel-art-neutral': 'pixel-art-neutral',
-    'rings': 'rings',
-    'shapes': 'shapes'
-    // 'initials': 'initials',
+    'croodles': 'Croodles',
+    'adventurer-neutral': 'Adventurer Neutral',
+    'avataaars': 'Avataaars',
+    'avataaars-neutral': 'Avataaars Neutral',
+    'big-ears': 'Big Ears',
+    'big-ears-neutral': 'Big Ears Neutral',
+    'big-smile': 'Big Smile',
+    'bottts': 'Bottts',
+    'bottts-neutral': 'Bottts Neutral',
+    'adventurer': 'Adventurer',
+    'croodles-neutral': 'Croodles Neutral',
+    'fun-emoji': 'Fun Emoji',
+    'icons': 'Icons',
+    'identicon': 'Identicon',
+    'rings': 'Rings',
+    'lorelei': 'Lorelei',
+    'lorelei-neutral': 'Lorelei Neutral',
+    'micah': 'Micah',
+    'miniavs': 'Miniavs',
+    'notionists': 'Notionists',
+    'notionists-neutral': 'Notionists Neutral',
+    'open-peeps': 'Open Peeps',
+    'personas': 'Personas',
+    'pixel-art': 'Pixel Art',
+    'pixel-art-neutral': 'Pixel Art Neutral',
+    'shapes': 'Shapes',
+    'thumbs': 'Thumbs',
+    'dylan': 'Dylan',
+    'glass': 'Glass',
+    'blobs': 'Blobs',
+    'cameo': 'Cameo',
+    'clay': 'Clay',
+    'constellation': 'Constellation',
+    'critters': 'Critters',
+    'cutouts': 'Cutouts',
+    'disco': 'Disco',
+    'gaze': 'Gaze',
+    'glyphs': 'Glyphs',
+    'initial-face': 'Initial Face',
+    'initials': 'Initials',
+    'landscape': 'Landscape',
+    'line-face': 'Line Face',
+    'loops': 'Loops',
+    'marbles': 'Marbles',
+    'moods': 'Moods',
+    'patchwork': 'Patchwork',
+    'pixelbot': 'Pixelbot',
+    'planets': 'Planets',
+    'shadows': 'Shadows',
+    'shape-grid': 'Shape Grid',
+    'slice': 'Slice',
+    'sprouts': 'Sprouts',
+    'squircles': 'Squircles',
+    'stack': 'Stack',
+    'stripes': 'Stripes',
+    'toon-head': 'Toon Head',
+    'triangles': 'Triangles',
+    'voxel-art': 'Voxel Art',
+    'voxel-bot': 'Voxel Bot',
+    'waves': 'Waves',
+    'weave': 'Weave',
 };
 
 
@@ -502,9 +564,12 @@ function loadAvatarGrid() {
         avatarContainer.classList.add('avatar-container');
 
         const avatarImg = document.createElement('img');
-        avatarImg.src = `https://api.dicebear.com/9.x/${style}/svg?seed=${todaySeed}`;
+        // DiceBear rate-limits a burst of requests (429), so the URL is parked on the element and the
+        // queue at the end of this function loads them in small batches. The grid is built either way.
+        avatarImg.dataset.src = `https://api.dicebear.com/11.x/${style}/svg?seed=${todaySeed}`;
+        avatarImg.decoding = 'async';
         avatarImg.alt = avatarNames[style];
-        avatarImg.title = `https://www.dicebear.com/styles${avatarNames[style]}/`;
+        avatarImg.title = `https://www.dicebear.com/styles/${style}/`;
         avatarImg.classList.add('avatar-preview');
 
         // Avatar name label
@@ -512,8 +577,14 @@ function loadAvatarGrid() {
         avatarLabel.classList.add('avatar-label');
         avatarLabel.textContent = avatarNames[style];
 
+        // The preview sits in a square tile so the grid stays even whether the SVG has arrived or not:
+        // an <img> with no intrinsic size yet resolves to a different height than a loaded one.
+        const avatarTile = document.createElement('div');
+        avatarTile.classList.add('avatar-tile');
+        avatarTile.appendChild(avatarImg);
+
         // Append image and label
-        avatarContainer.appendChild(avatarImg);
+        avatarContainer.appendChild(avatarTile);
         avatarContainer.appendChild(avatarLabel);
 
         // Avatar selection logic
@@ -523,7 +594,7 @@ function loadAvatarGrid() {
 
             // Replace label text with the avatar preview
             avatarPreviewContainer.innerHTML = `
-                <img src="${avatarImg.src}" alt="${avatarNames[style]}" title="${avatarNames[style]}" style="width: 150px; height: 150px; border-radius: 5px;">
+                <img src="${avatarImg.dataset.src || avatarImg.src}" alt="${avatarNames[style]}" title="${avatarNames[style]}" style="width: 44px; height: 44px; border-radius: 8px;">
             `;
             
             // Hide "Avatar Styles" text
@@ -533,7 +604,33 @@ function loadAvatarGrid() {
         });
 
         avatarGrid.appendChild(avatarContainer);
+        previewQueue.push(avatarImg);
     }
+
+    loadPreviewsInBatches();
+}
+
+// Sixty-one requests at once earns a 429 from api.dicebear.com, which paints a broken-image tile. Load them
+// six at a time and retry once with a backoff, so a busy moment costs half a second instead of a hole.
+const previewQueue = [];
+
+function loadPreviewsInBatches() {
+    const BATCH = 6;
+    const GAP = 220;
+
+    (function drain(start) {
+        if (start >= previewQueue.length) return;
+        previewQueue.slice(start, start + BATCH).forEach(img => {
+            img.addEventListener('error', function () {
+                const attempts = Number(this.dataset.attempts || 0);
+                if (attempts >= 2) return;
+                this.dataset.attempts = attempts + 1;
+                setTimeout(() => { this.src = this.dataset.src; }, 700 * (attempts + 1));
+            });
+            img.src = img.dataset.src;
+        });
+        setTimeout(() => drain(start + BATCH), GAP);
+    })(0);
 }
 
 

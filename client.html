@@ -563,13 +563,13 @@ function updateProfileInUI(pubkey) {
 
                     if (retryCount >= 3) {
                         console.error(`❌ Stopping retries for ${pubkey}. Using fallback avatar.`);
-                        img.src = `https://api.dicebear.com/9.x/fun-emoji/svg?seed=${pubkey}`;
+                        img.src = `https://api.dicebear.com/11.x/fun-emoji/svg?seed=${pubkey}`;
                         img.onerror = null; // Stop further retries
                     }
                 };
             } else {
                 console.warn(`🛑 Already failed 3 times for ${pubkey}. Using fallback avatar.`);
-                img.src = `https://api.dicebear.com/9.x/fun-emoji/svg?seed=${pubkey}`;
+                img.src = `https://api.dicebear.com/11.x/fun-emoji/svg?seed=${pubkey}`;
             }
         }
     });
@@ -1176,7 +1176,7 @@ function updateNotes() {
             // Ensure profile picture updates dynamically when metadata arrives
             const avatarUrl = profile.picture
                 ? profile.picture // Use real profile picture if available
-                : `https://api.dicebear.com/9.x/fun-emoji/svg?seed=${note.pubkey}`; // Otherwise, use fallback avatar
+                : `https://api.dicebear.com/11.x/fun-emoji/svg?seed=${note.pubkey}`; // Otherwise, use fallback avatar
 
             //  Correct NIP-05 Fallback (Show Shortened Pubkey if Missing)
             const nip05Display = profile.nip05

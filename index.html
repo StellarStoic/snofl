@@ -217,7 +217,38 @@ const avatarStyles = {
     27: "thumbs",
     28: "dylan",
     29: "glass",
-    // 30: "initials",
+    30: "blobs",
+    31: "cameo",
+    32: "clay",
+    33: "constellation",
+    34: "critters",
+    35: "cutouts",
+    36: "disco",
+    37: "gaze",
+    38: "glyphs",
+    39: "initial-face",
+    40: "initials",
+    41: "landscape",
+    42: "line-face",
+    43: "loops",
+    44: "marbles",
+    45: "moods",
+    46: "patchwork",
+    47: "pixelbot",
+    48: "planets",
+    49: "shadows",
+    50: "shape-grid",
+    51: "slice",
+    52: "sprouts",
+    53: "squircles",
+    54: "stack",
+    55: "stripes",
+    56: "toon-head",
+    57: "triangles",
+    58: "voxel-art",
+    59: "voxel-bot",
+    60: "waves",
+    61: "weave",
 };
 
 // Function to generate DiceBear avatar URL from public key
@@ -237,7 +268,7 @@ function getAvatarUrl(pubkey) {
     const avatarStyle = avatarStyles[a] || "croodles";
 
     // Return generated URL
-    return `https://api.dicebear.com/9.x/${avatarStyle}/svg?seed=${seed}`;
+    return `https://api.dicebear.com/11.x/${avatarStyle}/svg?seed=${seed}`;
 }
 
 // Function to update the avatar

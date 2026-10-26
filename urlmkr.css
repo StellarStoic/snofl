@@ -784,6 +784,71 @@ body.mk .background-grid > * {
     border-radius: 10px;
 }
 
+/* The shared sheet paints every style preview at 200x200 (.avatar-preview) inside a 76px grid cell, so each
+   image overflowed its column almost three times over and the picker read as a wall of giant heads with the
+   names colliding underneath. Fill the cell instead of fighting it, and set the label in px: .avatar-label's
+   0.9rem follows html (~34px here), not body.mk's 16px, so it rendered as 30px text under a 76px tile. */
+body.mk .avatar-grid {
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: 14px 10px;
+}
+
+body.mk .avatar-tile {
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    background: #1b1b1b;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+body.mk .avatar-preview {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    /* a pending or refused SVG should leave a quiet tile, not its alt text over a broken-image glyph */
+    color: transparent;
+    z-index: auto;
+}
+
+body.mk .avatar-preview:hover {
+    transform: scale(1.04);
+}
+
+body.mk .avatar-container {
+    margin: 0;
+    text-align: center;
+}
+
+body.mk .avatar-label {
+    margin-top: 5px;
+    font-size: 11px;
+    line-height: 1.25;
+    color: #a3a3a3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The chosen style is a chip in a row, not a portrait. */
+body.mk #avatar-preview-container img {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+}
+
+body.mk .avatars-attribute {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    color: #8a8a8a;
+}
+
+body.mk .avatars-attribute a {
+    color: #b9b9b9;
+}
+
 /* ---------------------------------------------------------------- preview dialog */
 
 body.mk .mk__preview {
