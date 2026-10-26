@@ -2,13 +2,16 @@ from flask import Flask, request, jsonify, redirect, send_from_directory
 import json
 import html
 import sqlite3
-import hashlib
 import os
 import sys
 import random
 import string
+import secrets
+import time
 import urllib.parse
 from datetime import datetime, timedelta
+
+from nip05proof import validate_name, verify_proof
 import logging
 import logging.handlers
 
@@ -73,9 +76,39 @@ def init_db():
     conn.commit()
     conn.close()
 
-def generate_short_url():
-    characters = string.ascii_letters + string.digits
-    return ''.join(random.choices(characters, k=6))
+SHORT_CODE_ALPHABET = string.ascii_letters + string.digits
+SHORT_CODE_LENGTH = 7
+
+
+def generate_short_url(cursor, attempts=8):
+    """A random code, checked against the table.
+
+    This was `md5(url)[:6]`: derived from the URL, so anyone who knew or guessed the destination could
+    work out the code, the whole space was small enough to walk, and two different URLs could land on
+    the same six characters — the first insert wins and the second URL's visitors are sent to the first
+    one's destination. Random codes from `secrets` are unguessable and unpredictable; the loop is the
+    collision check, and seven characters of base62 is ~3.5e12 of them.
+    """
+    for _ in range(attempts):
+        code = ''.join(secrets.choice(SHORT_CODE_ALPHABET) for _ in range(SHORT_CODE_LENGTH))
+        if not cursor.execute("SELECT 1 FROM urls WHERE short = ?", (code,)).fetchone():
+            return code
+    raise RuntimeError("could not find a free short code after %d attempts" % attempts)
+
+# The zap record every new name gets. Unchanged content: this is what a wallet shows a donor.
+LNURLP_TEMPLATE = {
+        "callback": "https://livingroomofsatoshi.com/api/v1/lnurl/payreq/2ef0b1ef-ec6e-43b0-ba78-90f7c59cc95f",
+        "maxSendable": 100000000000,
+        "minSendable": 1000,
+        "metadata": [
+            ["text/plain", "Thank you for supporting the snofl.com project with your Zaps. Your generosity helps drive this initiative forward!"],
+            ["text/identifier", "latterswiss19@walletofsatoshi.com"]
+        ],
+        "commentAllowed": 32,
+        "tag": "payRequest",
+        "allowsNostr": True,
+        "nostrPubkey": "be1d89794bf92de5dd64c1e60f6a2c70c140abac9932418fee30c5c637fe9479"
+    }
 
 @app.route('/shorten', methods=['POST'])
 def shorten_url():
@@ -83,9 +116,6 @@ def shorten_url():
     original_url = data.get("url")
     if not original_url:
         return jsonify({"error": "URL is required"}), 400
-
-    # Generate a consistent hash for the original URL
-    url_hash = hashlib.md5(original_url.encode()).hexdigest()[:6]
 
     # Check if the URL already exists in the database
     conn = sqlite3.connect(DB_FILE)
@@ -97,12 +127,13 @@ def shorten_url():
         conn.close()
         return jsonify({"short_url": f"https://snofl.com/{existing_short[0]}"}), 200
 
-    # If no existing short link, create a new one
-    cursor.execute("INSERT INTO urls (short, original) VALUES (?, ?)", (url_hash, original_url))
+    # A short link nobody else holds: random, unique, and checked before it is written.
+    code = generate_short_url(cursor)
+    cursor.execute("INSERT INTO urls (short, original) VALUES (?, ?)", (code, original_url))
     conn.commit()
     conn.close()
 
-    return jsonify({"short_url": f"https://snofl.com/{url_hash}"}), 201
+    return jsonify({"short_url": f"https://snofl.com/{code}"}), 201
 
 def load_blocked_urls():
     """Load blocked URLs from the external JSON file."""
@@ -316,63 +347,88 @@ def serve_static_file(filename):
 def home():
     return send_from_directory('.', 'index.html')
 
+# A registration writes files, so it is metered per address. In memory on purpose: a restart clearing the
+# counter is better than a counter that needs a database of its own.
+NIP05_MAX_PER_HOUR = 10
+NIP05_HITS = {}
+
+
+def _rate_limited(ip):
+    now = time.time()
+    hits = [t for t in NIP05_HITS.get(ip, []) if now - t < 3600]
+    hits.append(now)
+    NIP05_HITS[ip] = hits
+    return len(hits) > NIP05_MAX_PER_HOUR
+
+
 @app.route('/.well-known/nostr.json', methods=['POST'])
 def update_nostr_json():
+    """Register NIP-05 names — with proof that the caller holds each key.
+
+    Two things were wrong with this route. It took `{"names": {name: pubkey}}` from anyone, so any
+    stranger could claim a name on this domain; and the name went straight into
+    `os.path.join(LNURLP_DIR, name)`, which made a body of `{"names": {"../../x": "..."}}` a write
+    primitive anywhere the process could write.
+
+    A NIP-05 name is a promise that a pubkey belongs to a name here, so the only honest authorisation is
+    a signature by that pubkey: the client signs `snofl-nip05:<name>:<pubkey>:<created_at>` and the
+    server verifies it (BIP-340, in nip05proof.py) before anything is written. Names are then restricted
+    to a lowercase character class that cannot contain a separator, and the store is written atomically.
+    """
+    ip = (request.headers.get("X-Forwarded-For") or request.remote_addr or "?").split(",")[0].strip()
+    if _rate_limited(ip):
+        return jsonify({"error": "too many registrations from this address, try again later"}), 429
+
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict) or not isinstance(data.get("names"), dict) or not data["names"]:
+        return jsonify({"error": "expected {\"names\": {name: pubkey}, \"proofs\": {name: {sig, created_at}}}"}), 400
+
+    proofs = data.get("proofs")
+    if not isinstance(proofs, dict):
+        return jsonify({"error": ("every name needs a proof: sign the string "
+                                  "'snofl-nip05:<name>:<pubkey>:<created_at>' with the key being claimed, "
+                                  "and send {sig, created_at} beside the name")}), 400
+
+    now = int(time.time())
+    claims = {}
+    for raw_name, raw_pubkey in data["names"].items():
+        name = raw_name.strip().lower() if isinstance(raw_name, str) else raw_name
+        pubkey = raw_pubkey.strip().lower() if isinstance(raw_pubkey, str) else raw_pubkey
+        problem = validate_name(name) or verify_proof(name, pubkey, proofs.get(name), now)
+        if problem:
+            return jsonify({"error": "%r: %s" % (name, problem)}), 403
+        claims[name] = pubkey
+
     try:
-        data = request.json
-        if 'names' not in data:
-            return jsonify({"error": "Invalid data format"}), 400
-        
-        # Read existing nostr.json (if exists)
-        try:
-            with open(NOSTR_JSON_PATH, 'r') as f:
-                existing_data = json.load(f)
-        except FileNotFoundError:
-            existing_data = {"names": {}}
-            
-        # Overwrite Protection - Check if name exists
-        for name, pubkey in data['names'].items():
-            if name in existing_data['names']:
-                return jsonify({"error": f"Name '{name}' already exists and cannot be overwritten."}), 409
+        with open(NOSTR_JSON_PATH, "r") as handle:
+            existing_data = json.load(handle)
+    except FileNotFoundError:
+        existing_data = {"names": {}, "relays": {}}
+    existing_data.setdefault("names", {})
 
-        # Update nostr.json with new names/pubkeys
-        existing_data['names'].update(data['names'])
+    for name in claims:
+        if name in existing_data["names"]:
+            return jsonify({"error": "Name '%s' already exists and cannot be overwritten." % name}), 409
 
-        # Write back to nostr.json
-        with open(NOSTR_JSON_PATH, 'w') as f:
-            json.dump(existing_data, f, indent=2)
+    existing_data["names"].update(claims)
 
-        # Create LNURLP file for each new name
-        for name, pubkey in data['names'].items():
-            lnurlp_content = {
-                "callback": "https://livingroomofsatoshi.com/api/v1/lnurl/payreq/2ef0b1ef-ec6e-43b0-ba78-90f7c59cc95f",
-                "maxSendable": 100000000000,
-                "minSendable": 1000,
-                "metadata": [
-                    ["text/plain", "Thank you for supporting the snofl.com project with your Zaps. Your generosity helps drive this initiative forward!"],
-                    ["text/identifier", "latterswiss19@walletofsatoshi.com"]
-                ],
-                "commentAllowed": 32,
-                "tag": "payRequest",
-                "allowsNostr": True,
-                "nostrPubkey": "be1d89794bf92de5dd64c1e60f6a2c70c140abac9932418fee30c5c637fe9479"
-            }
-            # Ensure lnurlp directory exists
-            os.makedirs(LNURLP_DIR, exist_ok=True)
+    # Written beside the real file and moved into place: a half-written store is unreadable to every
+    # client asking who a name belongs to.
+    tmp_path = NOSTR_JSON_PATH + ".tmp"
+    with open(tmp_path, "w") as handle:
+        json.dump(existing_data, handle, indent=2)
+    os.replace(tmp_path, NOSTR_JSON_PATH)
 
-            lnurlp_path = os.path.join(LNURLP_DIR, name)
-            
-            # Overwrite Protection - Check if LNURLP file exists
-            if os.path.exists(lnurlp_path):
-                return jsonify({"error": f"LNURLP for '{name}' already exists."}), 409
-            
-            with open(lnurlp_path, 'w') as lnurlp_file:
-                json.dump(lnurlp_content, lnurlp_file, indent=2)
+    os.makedirs(LNURLP_DIR, exist_ok=True)
+    for name in claims:
+        lnurlp_path = os.path.join(LNURLP_DIR, name)
+        if os.path.exists(lnurlp_path):
+            continue
+        with open(lnurlp_path, "w") as lnurlp_file:
+            json.dump(LNURLP_TEMPLATE, lnurlp_file, indent=2)
 
-        return jsonify({"message": "nostr.json and lnurlp files updated successfully."}), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    log_event("nip05 registered: " + ", ".join(sorted(claims)))
+    return jsonify({"registered": sorted(claims)}), 201
 
 # LNURL get data
 @app.route('/.well-known/lnurlp/<name>', methods=['GET'])

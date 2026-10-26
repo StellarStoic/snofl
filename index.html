@@ -1279,9 +1279,26 @@ async function postMetadata() {
 }
 
 async function updateNostrJson(name, pubkey) {
+    // A name on this domain is a promise that a pubkey belongs to it, so the server now asks the key to
+    // sign for itself before it writes anything: the message is 'snofl-nip05:<name>:<pubkey>:<created_at>'
+    // and it is verified there against the pubkey being claimed. Without that, any stranger could take a
+    // name on this domain.
+    const signingKey = localStorage.getItem("nostr_pk");
+    if (!signingKey) {
+        console.warn("No private key in this browser, so the NIP-05 name was not registered.");
+        return;
+    }
+    const createdAt = Math.floor(Date.now() / 1000);
+    const proofMessage = `snofl-nip05:${name}:${pubkey}:${createdAt}`;
+    const proofHash = sha256(new TextEncoder().encode(proofMessage));
+    const proofSig = await schnorr.sign(proofHash, signingKey);
+
     const wellKnownData = {
         names: {
             [name]: pubkey,
+        },
+        proofs: {
+            [name]: { name: name, pubkey: pubkey, created_at: createdAt, sig: b2h(proofSig) },
         },
     };
 
@@ -1295,9 +1312,10 @@ async function updateNostrJson(name, pubkey) {
         });
 
         if (response.ok) {
-            console.log("nostr.json updated successfully.");
+            console.log("NIP-05 name registered:", name);
         } else {
-            console.error("Failed to update nostr.json.");
+            const reason = await response.json().catch(() => ({}));
+            console.warn("NIP-05 registration refused:", response.status, reason.error || "");
         }
     } catch (error) {
         console.error("Error updating nostr.json:", error);
