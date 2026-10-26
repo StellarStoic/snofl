@@ -1,0 +1,742 @@
+/* urlmkr.css — the maker's own sheet, loaded after styles.css and scoped to body.mk.
+ *
+ * The shared sheet is written for the rendered page: a viewport-scaled root font (1rem ≈ 34px on a
+ * desktop), big display type and centred everything. That is right for a page someone receives and wrong
+ * for a tool someone operates, so the maker sets its own scale and its own layout, and touches nothing
+ * outside this page.
+ */
+
+body.mk {
+    margin: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    color: #e9e9e9;
+    background: #0c0c0c;
+    text-align: left;
+}
+
+body.mk *,
+body.mk *::before,
+body.mk *::after {
+    box-sizing: border-box;
+}
+
+.mk__wrap {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 44px 20px 72px;
+}
+
+/* ---------------------------------------------------------------- header */
+
+.mk__head h1 {
+    font-size: 27px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.mk__lede {
+    margin: 7px 0 0;
+    color: #9b9b9b;
+    font-size: 15px;
+    max-width: 56ch;
+}
+
+.mk__about {
+    margin-top: 14px;
+}
+
+.mk__about > summary {
+    cursor: pointer;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #7f7f7f;
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 0;
+}
+
+.mk__about > summary::-webkit-details-marker {
+    display: none;
+}
+
+.mk__about > summary::before {
+    content: "+";
+    color: #00c853;
+    font-weight: 600;
+}
+
+.mk__about[open] > summary::before {
+    content: "\2212";
+}
+
+.mk__about > summary:hover {
+    color: #cfcfcf;
+}
+
+.mk__about-text {
+    margin-top: 10px;
+    padding: 16px 18px;
+    border: 1px solid #202020;
+    border-radius: 14px;
+    background: #111111;
+    color: #b4b4b4;
+    font-size: 14px;
+    max-width: 74ch;
+}
+
+.mk__about-text p {
+    margin: 0 0 10px;
+}
+
+.mk__about-text p:last-child {
+    margin-bottom: 0;
+}
+
+/* ---------------------------------------------------------------- layout */
+
+.mk__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 36px;
+    align-items: start;
+    margin-top: 30px;
+}
+
+@media (max-width: 960px) {
+    .mk__grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 26px;
+    }
+}
+
+.mk__section {
+    border-top: 1px solid #1e1e1e;
+    padding: 24px 0 8px;
+}
+
+.mk__section:first-of-type {
+    border-top: 0;
+    padding-top: 0;
+}
+
+.mk__section > h2 {
+    margin: 0 0 14px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #808080;
+}
+
+/* ---------------------------------------------------------------- a row: name, switch, field */
+
+.mk__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px 14px;
+    padding: 9px 0;
+}
+
+.mk__row > label {
+    font-size: 15px;
+    color: #dedede;
+    cursor: pointer;
+}
+
+.mk__row > input[type="text"],
+.mk__row > input[type="password"],
+.mk__row > input[type="number"],
+.mk__row > textarea,
+.mk__row > .mk__trio,
+.mk__row > .mk__relays,
+.mk__row > .mk__lock,
+.mk__row > .ntag-group,
+.mk__row > .font-container,
+.mk__row > .background-container,
+.mk__row > .mk__hint {
+    grid-column: 1 / -1;
+}
+
+/* one height for every textarea in a row; the content box overrides it inline as it grows */
+body.mk .mk__row > textarea {
+    height: 96px;
+    min-height: 96px;
+}
+
+/* a scrollbar inside a dark card should not be a white stripe */
+.url-output::-webkit-scrollbar {
+    width: 8px;
+}
+
+.url-output::-webkit-scrollbar-track {
+    background: #0a0a0a;
+}
+
+.url-output::-webkit-scrollbar-thumb {
+    background: #2e2e2e;
+    border-radius: 8px;
+}
+
+.url-output::-webkit-scrollbar-thumb:hover {
+    background: #3d3d3d;
+}
+
+.mk__row--inline {
+    padding: 0;
+}
+
+.mk__spacer {
+    display: block;
+}
+
+.mk__hint {
+    margin: 0;
+    color: #8a8a8a;
+    font-size: 13px;
+}
+
+.mk__tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 1px 7px;
+    border: 1px solid #2c2c2c;
+    border-radius: 999px;
+    color: #8f8f8f;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    vertical-align: 1px;
+}
+
+/* ---------------------------------------------------------------- fields */
+
+body.mk input[type="text"],
+body.mk input[type="password"],
+body.mk input[type="number"],
+body.mk textarea {
+    width: 100%;
+    background: #141414;
+    border: 1px solid #262626;
+    border-radius: 11px;
+    color: #f1f1f1;
+    font: inherit;
+    font-size: 15px;
+    padding: 11px 13px;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+body.mk textarea {
+    min-height: 82px;
+    resize: vertical;
+}
+
+body.mk input::placeholder,
+body.mk textarea::placeholder {
+    color: #6a6a6a;
+}
+
+body.mk input:focus,
+body.mk textarea:focus {
+    outline: none;
+    border-color: #00c853;
+    background: #101010;
+}
+
+body.mk input:disabled,
+body.mk textarea:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------------- switches */
+
+/* styles.css hue-rotates every checkbox and radio by 180deg. That was a way to recolour the native
+   controls; with appearance:none it turns this sheet's green into magenta, so the filter has to go. */
+body.mk input[type="checkbox"],
+body.mk input[type="radio"] {
+    filter: none;
+}
+
+body.mk input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    flex: none;
+    width: 40px;
+    height: 23px;
+    border-radius: 999px;
+    background: #232323;
+    border: 1px solid #313131;
+    position: relative;
+    cursor: pointer;
+    margin: 0;
+    transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+body.mk input[type="checkbox"]::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: #8b8b8b;
+    transition: transform 0.16s ease, background 0.16s ease;
+}
+
+body.mk input[type="checkbox"]:checked {
+    background: rgba(0, 200, 83, 0.16);
+    border-color: #00c853;
+}
+
+body.mk input[type="checkbox"]:checked::after {
+    transform: translateX(17px);
+    background: #00c853;
+}
+
+body.mk input[type="checkbox"]:focus-visible {
+    outline: 2px solid rgba(0, 200, 83, 0.5);
+    outline-offset: 2px;
+}
+
+body.mk input[type="checkbox"]:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------------- card types and relay rows */
+
+.ntag-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.ntag-group label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 13px;
+    border: 1px solid #262626;
+    border-radius: 999px;
+    font-size: 13.5px;
+    color: #c9c9c9;
+    cursor: pointer;
+    background: #101010;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.ntag-group label:hover {
+    border-color: #383838;
+}
+
+.ntag-group label:has(input:checked) {
+    border-color: #00c853;
+    background: rgba(0, 200, 83, 0.1);
+    color: #ffffff;
+}
+
+.ntag-group input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    border: 1px solid #4d4d4d;
+    margin: 0;
+    position: relative;
+    cursor: pointer;
+}
+
+.ntag-group input[type="radio"]:checked {
+    border-color: #00c853;
+    background: #00c853;
+    box-shadow: inset 0 0 0 3px #0c0c0c;
+}
+
+.mk__relays {
+    display: grid;
+    gap: 8px;
+}
+
+.relay-group {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 9px;
+}
+
+.relay-group small {
+    color: #7a7a7a;
+    font-size: 12px;
+}
+
+.relay-group input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: 1px solid #4d4d4d;
+    margin: 0;
+    cursor: pointer;
+}
+
+.relay-group input[type="radio"]:checked {
+    border-color: #00c853;
+    background: #00c853;
+    box-shadow: inset 0 0 0 3px #0c0c0c;
+}
+
+.mk__trio {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+@media (max-width: 620px) {
+    .mk__trio {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ---------------------------------------------------------------- lock it */
+
+.mk__lock {
+    display: grid;
+    gap: 10px;
+    padding: 16px;
+    border: 1px solid #202020;
+    border-radius: 14px;
+    background: #101010;
+}
+
+.password-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-container input {
+    padding-right: 42px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    cursor: pointer;
+    opacity: 0.6;
+    font-size: 15px;
+    user-select: none;
+}
+
+.toggle-password:hover {
+    opacity: 1;
+}
+
+.password-strength {
+    margin: 0;
+    font-size: 13px;
+    color: #8a8a8a;
+    min-height: 18px;
+}
+
+/* ---------------------------------------------------------------- buttons */
+
+body.mk button,
+body.mk .copy-button {
+    font: inherit;
+    font-size: 14px;
+    border-radius: 11px;
+    padding: 11px 15px;
+    border: 1px solid #2b2b2b;
+    background: #191919;
+    color: #eaeaea;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+body.mk button:hover:not(:disabled),
+body.mk .copy-button:hover:not(:disabled) {
+    border-color: #3d3d3d;
+    background: #202020;
+}
+
+body.mk button:disabled,
+body.mk .copy-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+body.mk #toggle_encryption,
+body.mk .mk__preview-open {
+    background: #00c853;
+    border-color: #00c853;
+    color: #04180c;
+    font-weight: 600;
+}
+
+body.mk #toggle_encryption:hover:not(:disabled),
+body.mk .mk__preview-open:hover:not(:disabled) {
+    background: #00df5d;
+    border-color: #00df5d;
+}
+
+/* ---------------------------------------------------------------- the panel */
+
+.mk__panel {
+    position: sticky;
+    top: 26px;
+}
+
+@media (max-width: 960px) {
+    .mk__panel {
+        position: static;
+    }
+}
+
+.mk__panel-title {
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #808080;
+}
+
+/* The shared sheet pins this card to height:150px with max-height:30vw, which clipped the action
+   buttons out of sight. The panel scrolls and sticks; the card itself is as tall as its content. */
+.url-output-container {
+    display: block;
+    height: auto;
+    max-height: none;
+    position: static;
+    inset: auto;
+    background: #111111;
+    border: 1px solid #232323;
+    border-radius: 16px;
+    padding: 16px;
+    text-align: left;
+}
+
+.url-output {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: #a5d6a7;
+    background: #0a0a0a;
+    border: 1px solid #1d1d1d;
+    border-radius: 10px;
+    padding: 11px 12px;
+    margin-bottom: 8px;
+    word-break: break-all;
+    max-height: 170px;
+    overflow: auto;
+}
+
+/* #byte_counter also carries .url-output, so without this it renders inside a second framed box */
+body.mk #byte_counter {
+    color: #7f7f7f;
+    font-size: 12px;
+    margin: 0 0 8px;
+    padding: 0;
+    background: none;
+    border: 0;
+    max-height: none;
+    overflow: visible;
+    word-break: normal;
+    line-height: 1.4;
+}
+
+.error-message {
+    color: #ff6b6b;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.warning-message {
+    color: #ffb74d;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.info-message {
+    color: #8a8a8a;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.mk__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.mk__actions .mk__preview-open {
+    grid-column: 1 / -1;
+}
+
+.mk__panel-note {
+    margin: 10px 2px 0;
+    font-size: 12.5px;
+    color: #777777;
+}
+
+/* ---------------------------------------------------------------- pickers inside rows */
+
+.font-container,
+.background-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+/* ---------------------------------------------------------------- the picker modals */
+
+body.mk .modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    background: rgba(0, 0, 0, 0.75);
+    display: none;
+    padding: 24px;
+}
+
+body.mk .modal[style*="display: block"],
+body.mk .modal[style*="display:block"] {
+    display: grid;
+    place-items: center;
+}
+
+body.mk .avatar-modal-content,
+body.mk .font-modal-content,
+body.mk .background-modal-content {
+    position: relative;
+    background: #121212;
+    border: 1px solid #262626;
+    border-radius: 16px;
+    padding: 22px;
+    width: min(920px, 92vw);
+    max-height: 84vh;
+    overflow: auto;
+    text-align: left;
+}
+
+body.mk .close-modal {
+    position: absolute;
+    top: 8px;
+    right: 14px;
+    font-size: 24px;
+    line-height: 1;
+    color: #9a9a9a;
+    cursor: pointer;
+}
+
+body.mk .close-modal:hover {
+    color: #ffffff;
+}
+
+body.mk .avatar-grid,
+body.mk .font-grid,
+body.mk .background-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+body.mk .avatar-grid img,
+body.mk .font-grid > *,
+body.mk .background-grid > * {
+    border-radius: 10px;
+}
+
+/* ---------------------------------------------------------------- preview dialog */
+
+body.mk .mk__preview {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+}
+
+body.mk .mk__preview::backdrop {
+    background: rgba(0, 0, 0, 0.82);
+}
+
+body.mk .mk__preview[open] {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    place-items: center;
+    padding: 20px;
+    gap: 12px;
+}
+
+.mk__preview-bar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: min(430px, 94vw);
+}
+
+.mk__preview-title {
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #9a9a9a;
+    margin-right: auto;
+}
+
+.mk__preview-link {
+    color: #00c853;
+    font-size: 13px;
+    text-decoration: none;
+    border-bottom: 1px dotted rgba(0, 200, 83, 0.5);
+}
+
+.mk__preview-close {
+    padding: 7px 12px;
+    font-size: 13px;
+}
+
+.mk__preview-frame {
+    width: min(430px, 94vw);
+    height: min(760px, 76vh);
+    border: 1px solid #2a2a2a;
+    border-radius: 18px;
+    background: #000000;
+}
+
+/* ---------------------------------------------------------------- footer */
+
+body.mk .footerStatic {
+    margin-top: 40px;
+    padding: 22px 20px 40px;
+    text-align: center;
+    color: #6d6d6d;
+    font-size: 13px;
+    border-top: 1px solid #1a1a1a;
+}
+
+body.mk .footerStatic a {
+    color: #9a9a9a;
+    text-decoration: none;
+    border-bottom: 1px dotted #3a3a3a;
+}
+
+body.mk .footerStatic a:hover {
+    color: #ffffff;
+}

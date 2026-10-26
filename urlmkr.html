@@ -22,6 +22,7 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="urlmkr.css?v=3">
     <script src="urlmkrAgreement.js"></script>
     <script src="backgroundImages.js"></script>
     <script src="crypto-js.min.js"></script>
@@ -38,18 +39,8 @@
 
 </style>
 
-<body>
+<body class="mk">
     <div id="dim-overlay" class="dim-overlay"></div>
-
-    <div class="url-output-container">
-        <div class="url-output" id="url_output"></div>
-        <div class="url-output" id="byte_counter"></div>
-        <div class="error-message" id="error_message"></div>
-        <div class="warning-message" id="warning_message"></div>
-        <div class="info-message" id="info_message"></div>
-        <button class="copy-button" id="copy_button">Copy URL</button>
-        <button class="copy-button" id="qr_button">Create QR Code</button>
-    </div>
 
     <div id="agreementModal" class="agreement-modal">
         <div class="agreement-modal-content">
@@ -115,227 +106,213 @@
     </div>
 
 
-    <div class="maker-title-and-what">
-        <div class="maker-title">
-            <h1><span style="font-size: 0.9rem;">snofl.com </span> URL Maker</h1>
-        </div>
-        <div class="maker-subtitle">
-            <h3 id="toggle-description">What this tool does?</h3>
-            <div class="maker-what-text hidden">
-                <p>This tool allows you to easily create a custom URL that links to a customized snofl.com website by adjusting the selected parameters.
-                You can choose an NTAG type with the appropriate memory size or select "no NTAG" if you plan to use a QR code instead. Optionally, you can:</p>
-                
-                <ul>- Add a title and a subtitle.</ul>
-                <ul>- Include a custom avatar for users.</ul>
-                <ul>- Lock a message or leave it open for end users to post freely.</ul>
-                <ul>- Set a character limit for user submissions.</ul>
-                <ul>- Add hashtags for better later discoverability on Nostr.</ul>
-                <ul>- Specify custom Nostr relays where the notes will be posted by end users through your custom link.</ul>
-                <ul>- Additionally, you can encrypt the URL so that only the correct key can unlock it. (This is a powerful feature and should not be used for illegal purposes.)</ul>
-                
-                <p>The tool will automatically generate and display the URL, which can then be written to an NTAG using various NFC applications or converted into a QR code to share with others.
-                This tool also includes a built-in URL shortener. The corresponding long URL is stored on my server, but the original (non-shortened) URL is not tracked. Keep this in mind when using the tool.</p>
-            </div>
-        </div>
-    </div>
+    <div class="mk__wrap">
+        <header class="mk__head">
+            <h1>URL Maker</h1>
+            <p class="mk__lede">A webpage that lives inside the link itself. Build it, look at it, share it.</p>
+            <details class="mk__about">
+                <summary>What this tool does</summary>
+                <div class="mk__about-text">
+                    <p>This tool builds a custom URL that opens a customised snofl.com site: the parameters you pick here are the page.</p>
+                    <p>Choose an NTAG type if the link is going onto an NFC tag, or leave it on "no NTAG" for a QR code.
+                    You can add a title and subtitle, a custom avatar for visitors, a locked or open message, a character
+                    limit, hashtags for later discovery on Nostr, and your own relays for where notes get posted. The URL can
+                    also be encrypted so only the right password unlocks it (a powerful feature — not for illegal use).</p>
+                    <p>The URL appears as you type. It can be written to a tag with any NFC app or turned into a QR code. There
+                    is also a built-in shortener: the long URL is stored on my server, the original is not tracked.</p>
+                </div>
+            </details>
+        </header>
 
-    <hr class="hrLine">
+        <div class="mk__grid">
+            <main class="mk__form">
+                <section class="mk__section">
+                    <h2>The page</h2>
 
-    <div class="form-group">
-        <label>NTAG Type:</label>
-        <div class="ntag-group">
-            <label for="ntag_none">
-                No NTAG (∞) <input type="radio" id="ntag_none" name="ntag_type" value="none">
-            </label>
-            <label for="ntag203">
-                * 203 (144 B) <input type="radio" id="ntag203" name="ntag_type" value="203" data-bytes="137">
-            </label>
-            <label for="ntag213">
-                * 213 (144 B) <input type="radio" id="ntag213" name="ntag_type" value="213" data-bytes="137">
-            </label>
-            <label for="ntag215">
-                * 215 (504 B) <input type="radio" id="ntag215" name="ntag_type" value="215" data-bytes="492">
-            </label>
-            <label for="ntag216">
-                * 216 (888 B)<input type="radio" id="ntag216" name="ntag_type" value="216" data-bytes="868">
-            </label>
+                    <div class="form-group mk__row">
+                        <label for="include_h1">Title</label>
+                        <input type="checkbox" id="include_h1">
+                        <input type="text" id="h1_input" placeholder="Title" disabled>
+                    </div>
 
-            <label for="ntag413DNA">
-                * 413 DNA (888 B) <input type="radio" id="ntag413DNA" name="ntag_type" value="413DNA" data-bytes="398">
-            </label>
-            <label for="ntag424DNA">
-                * 424 DNA (888 B)<input type="radio" id="ntag424DNA" name="ntag_type" value="424DNA" data-bytes="916">
-            </label>
+                    <div class="form-group mk__row">
+                        <label for="include_h3">Subtitle</label>
+                        <input type="checkbox" id="include_h3">
+                        <input type="text" id="h3_input" placeholder="Subtitle" disabled>
+                    </div>
 
-            <!-- <label for="ntag_i2c_1K">
-                * I²C 1K (888 B) <input type="radio" id="ntag_i2c_1K" name="ntag_type" value="I2C_1K" data-bytes="868">
-            </label>
-            <label for="ntag216">
-                * I²C 2K (1904 B)<input type="radio" id="ntag_i2c_2K" name="ntag_type" value="I2C_2K" data-bytes="1900">
-            </label> -->
-        </div>
-    </div>
+                    <div class="form-group mk__row">
+                        <label for="include_p">Your content</label>
+                        <input type="checkbox" id="include_p">
+                        <textarea id="p_input" placeholder="Whatever you like — read the FAQ for what is supported" disabled></textarea>
+                    </div>
 
-    <hr class="hrLine">
+                    <div class="form-group mk__row">
+                        <label for="include_message">Fixed message</label>
+                        <input type="checkbox" id="include_message">
+                        <textarea id="message_input" placeholder="A preset message, fixed and uneditable by the visitor" disabled></textarea>
+                    </div>
+                </section>
 
-    <div class="form-group">
-        <label for="include_avatar" class="avatar-label-container">
-            <span id="avatar-preview-container"></span>
-            <span id="avatar-label">Avatar Styles</span>
-            <input type="checkbox" id="include_avatar">
-        </label>
-    </div>
+                <section class="mk__section">
+                    <h2>How it looks</h2>
 
-    <hr class="hrLine">
+                    <div class="form-group mk__row">
+                        <label for="include_font">Font</label>
+                        <input type="checkbox" id="include_font">
+                        <div id="font-container" class="font-container"></div>
+                    </div>
 
-    <div class="form-group">
-        <label for="include_ln">
-            Lightning Address <span style="font-size: 0.35em; padding: 10px;">LUD-16 only</span> <input type="checkbox" id="include_ln">
-        </label>
-        <input type="text" id="ln_input" placeholder="one@satoshi.si" disabled>
-    </div>
+                    <div class="form-group mk__row">
+                        <label for="include_background">Background</label>
+                        <input type="checkbox" id="include_background">
+                        <div id="background-container" class="background-container"></div>
+                    </div>
 
-    <hr class="hrLine">
+                    <div class="form-group mk__row">
+                        <label for="include_avatar" class="avatar-label-container">
+                            <span id="avatar-preview-container"></span>
+                            <span id="avatar-label">Avatar style</span>
+                            <input type="checkbox" id="include_avatar">
+                        </label>
+                    </div>
+                </section>
 
-    <div class="form-group">
-        <label for="include_font">
-            Font <input type="checkbox" id="include_font">
-        </label>
-        <div id="font-container" class="font-container"></div>
-    </div>
+                <section class="mk__section">
+                    <h2>What visitors get</h2>
 
-    <hr class="hrLine">
-    
-    <div class="form-group">
-        <label for="include_background">
-            Background <input type="checkbox" id="include_background">
-        </label>
-        <div id="background-container" class="background-container">
-        </div>
-    </div>
+                    <div class="form-group mk__row">
+                        <label for="allow_notes">Public notes</label>
+                        <input type="checkbox" id="allow_notes" checked
+                            title="On: visitors can post a note anyone can find. Off: they can only talk in the private room.">
+                        <p class="mk__hint">On: a visitor can post a note anyone can find. Off: the page offers only the private room.</p>
+                    </div>
 
-    <hr class="hrLine">
+                    <div class="form-group mk__row">
+                        <label for="custom_characters">Max characters (default 280)</label>
+                        <input type="checkbox" id="custom_characters">
+                        <input type="number" id="characters_input" placeholder="1–5000" min="1" max="5000" disabled>
+                    </div>
 
-    <div class="form-group">
-        <label for="include_h1">
-            Title<input type="checkbox" id="include_h1">
-        </label>
-        <input type="text" id="h1_input" placeholder="Title" disabled>
+                    <div class="form-group mk__row">
+                        <label for="include_ln">Lightning address <span class="mk__tag">LUD-16</span></label>
+                        <input type="checkbox" id="include_ln">
+                        <input type="text" id="ln_input" placeholder="one@satoshi.si" disabled>
+                    </div>
 
+                    <div class="form-group mk__row">
+                        <label for="hashtag1">Hashtags</label>
+                        <span class="mk__spacer"></span>
+                        <div class="mk__trio">
+                            <input type="text" id="hashtag1" placeholder="first — no # needed">
+                            <input type="text" id="hashtag2" placeholder="second">
+                            <input type="text" id="hashtag3" placeholder="third">
+                        </div>
+                    </div>
+                </section>
 
-    <hr class="hrLine">
+                <section class="mk__section">
+                    <h2>Where it lives</h2>
 
+                    <div class="form-group mk__row">
+                        <label>Card type</label>
+                        <span class="mk__spacer"></span>
+                        <div class="ntag-group">
+                            <label for="ntag_none">No tag — QR only <input type="radio" id="ntag_none" name="ntag_type" value="none"></label>
+                            <label for="ntag203">203 · 144 B <input type="radio" id="ntag203" name="ntag_type" value="203" data-bytes="137"></label>
+                            <label for="ntag213">213 · 144 B <input type="radio" id="ntag213" name="ntag_type" value="213" data-bytes="137"></label>
+                            <label for="ntag215">215 · 504 B <input type="radio" id="ntag215" name="ntag_type" value="215" data-bytes="492"></label>
+                            <label for="ntag216">216 · 888 B <input type="radio" id="ntag216" name="ntag_type" value="216" data-bytes="868"></label>
+                            <label for="ntag413DNA">413 DNA · 888 B <input type="radio" id="ntag413DNA" name="ntag_type" value="413DNA" data-bytes="398"></label>
+                            <label for="ntag424DNA">424 DNA · 888 B <input type="radio" id="ntag424DNA" name="ntag_type" value="424DNA" data-bytes="916"></label>
+                        </div>
+                    </div>
 
-        <label for="include_h3">
-            Subtitle<input type="checkbox" id="include_h3">
-        </label>
-        <input type="text" id="h3_input" placeholder="Subtitle" disabled>
+                    <div class="form-group mk__row">
+                        <label for="include_relays">Custom relays</label>
+                        <input type="checkbox" id="include_relays" title="if leaved empty, the default relays (greyed relays in the input) will be used by the main website where the user will post the note">
+                        <div class="mk__relays">
+                            <div class="relay-group">
+                                <input type="text" id="relay1" placeholder="wss://relay.nostr.band" disabled>
+                                <input type="radio" id="random1" name="random_relay1" title="Pick a random online relay from nostr.watch" disabled>
+                                <small>random</small>
+                            </div>
+                            <div class="relay-group">
+                                <input type="text" id="relay2" placeholder="wss://bostr.bitcointxoko.com" disabled>
+                                <input type="radio" id="random2" name="random_relay2" title="Pick a random online relay from nostr.watch" disabled>
+                                <small>random</small>
+                            </div>
+                            <div class="relay-group">
+                                <input type="text" id="relay3" placeholder="wss://bostr.nokotaro.com" disabled>
+                                <input type="radio" id="random3" name="random_relay3" title="Pick a random online relay from nostr.watch" disabled>
+                                <small>random</small>
+                            </div>
+                            <div class="relay-group">
+                                <input type="text" id="relay4" placeholder="wss://ditto.pub/relay" disabled>
+                                <input type="radio" id="random4" name="random_relay4" title="Pick a random online relay from nostr.watch" disabled>
+                                <small>random</small>
+                            </div>
+                            <div class="relay-group">
+                                <input type="text" id="relay5" placeholder="wss://relay.bostr.online/" disabled>
+                                <input type="radio" id="random5" name="random_relay5" title="Pick a random online relay from nostr.watch" disabled>
+                                <small>random</small>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
+                <section class="mk__section">
+                    <h2>Lock it</h2>
 
-    <hr class="hrLine">
+                    <div class="form-group mk__row">
+                        <label for="encrypt_url">Encrypt the URL with a password</label>
+                        <input type="checkbox" id="encrypt_url">
+                        <div class="mk__lock">
+                            <div class="password-container">
+                                <input type="password" id="encryption_password" placeholder="Password" disabled>
+                                <span id="toggle_password" class="toggle-password" title="Show or hide the password">👁️</span>
+                            </div>
+                            <p id="password_strength" class="password-strength"> </p>
 
+                            <div class="mk__row mk__row--inline">
+                                <label for="enable_hint">Password hint</label>
+                                <input type="checkbox" id="enable_hint">
+                            </div>
+                            <input type="text" id="password_hint" placeholder="A clue for whoever has to unlock it" disabled>
 
-        <label for="include_p">
-            Your Content<input type="checkbox" id="include_p">
-        </label>
-        <textarea id="p_input" placeholder="You can type whatever. read FAQ to learn what is supported" disabled></textarea>
-    </div>
+                            <button id="toggle_encryption" disabled>Encrypt</button>
+                        </div>
+                    </div>
+                </section>
+            </main>
 
-    <hr class="hrLine">
-
-    <div class="form-group">
-        <label for="include_message">
-            Fixed Message<input type="checkbox" id="include_message">
-        </label>
-        <textarea id="message_input" placeholder="Enter a preset message here; it will be fixed and uneditable by the end user." disabled></textarea>
-    </div>
-
-    <div class="form-group">
-        <label for="allow_notes">
-            Public notes <input type="checkbox" id="allow_notes" checked
-                title="On: visitors can post a note anyone can find. Off: they can only talk in the private room.">
-        </label>
-        <small style="display: block; opacity: 0.7; font-size: 0.45em;">
-            On: a visitor can post a note anyone can find. Off: the page offers only the private room.
-        </small>
-    </div>
-
-    <div class="form-group">
-        <label for="custom_characters">
-            Max Characters Limit (default is 280) <input type="checkbox" id="custom_characters">
-        </label>
-        <input type="number" id="characters_input" placeholder="(1-5000)" min="1" max="5000" disabled>
-    </div>
-
-    <!-- <hr class="hrLine">
-
-    <div class="form-group">
-        <label for="prevent_reuse">
-            Prevent Reusing IDs
-            <input type="checkbox" id="prevent_reuse" title="This will prevent posting notes more than 1 time per pubKey. Use with caution because it deletes the current privKey from local storage">
-        </label>
-    </div> -->
-
-    <hr class="hrLine">
-
-    <div class="form-group">
-        <label for="hashtag1">Hashtags:</label>
-        <input type="text" id="hashtag1" placeholder="1'st (do NOT include #)">
-        <input type="text" id="hashtag2" placeholder="2'nd (do NOT include #)">
-        <input type="text" id="hashtag3" placeholder="3'rd (do NOT include #)">
-    </div>
-
-    <hr class="hrLine">
-
-    <div class="form-group">
-        <label for="include_relays">
-            Select Custom / Random Relays<input type="checkbox" id="include_relays" title="if leaved empty, the default relays (greyed relays in the input) will be used by the main website where the user will post the note">
-        </label>
-        <div class="relay-group">
-            <input type="text" id="relay1" placeholder="wss://relay.nostr.band" disabled>
-            <input type="radio" id="random1" name="random_relay1" title="Clicking this will chose random online relays from the nostr.watch" disabled> <small>random</small>
-        </div>
-        <div class="relay-group">
-            <input type="text" id="relay2" placeholder="wss://bostr.bitcointxoko.com" disabled>
-            <input type="radio" id="random2" name="random_relay2" title="Clicking this will chose random online relays from the nostr.watch" disabled> <small>random</small>
-        </div>
-        <div class="relay-group">
-            <input type="text" id="relay3" placeholder="wss://bostr.nokotaro.com" disabled>
-            <input type="radio" id="random3" name="random_relay3" title="Clicking this will chose random online relays from the nostr.watch" disabled> <small>random</small>
-        </div>
-        <div class="relay-group">
-            <input type="text" id="relay4" placeholder="wss://ditto.pub/relay" disabled>
-            <input type="radio" id="random4" name="random_relay4" title="Clicking this will chose random online relays from the nostr.watch" disabled> <small>random</small>
-        </div>
-        <div class="relay-group">
-            <input type="text" id="relay5" placeholder="wss://relay.bostr.online/" disabled>
-            <input type="radio" id="random5" name="random_relay5" title="Clicking this will chose random online relays from the nostr.watch" disabled> <small>random</small>
+            <aside class="mk__panel">
+                <h2 class="mk__panel-title">Your link</h2>
+    <div class="url-output-container">
+        <div class="url-output" id="url_output"></div>
+        <div class="url-output" id="byte_counter"></div>
+        <div class="error-message" id="error_message"></div>
+        <div class="warning-message" id="warning_message"></div>
+        <div class="info-message" id="info_message"></div>
+        <div class="mk__actions">
+            <button class="copy-button" id="copy_button">Copy URL</button>
+            <button class="copy-button" id="qr_button">Create QR code</button>
+            <button class="mk__preview-open" id="preview_button" type="button">Preview page</button>
         </div>
     </div>
-
-    <div class="form-group">
-        <label for="encrypt_url">Encrypt URL with a password: 
-            <input type="checkbox" id="encrypt_url">
-        </label>
-
-
-        <label for="encryption_password">Password to unlock the URL</label>
-        <div class="password-container">
-            <input type="password" id="encryption_password" placeholder="Enter password" disabled>
-            <span id="toggle_password" class="toggle-password">👁️</span>
+                <p class="mk__panel-note">Preview opens the page exactly as a visitor sees it.</p>
+            </aside>
         </div>
-        <p id="password_strength" class="password-strength"> </p>
-
-
-        <label for="password_hint">
-            Password Hint
-            <input type="checkbox" id="enable_hint">
-        </label>
-        <input type="text" id="password_hint" placeholder="Enter password hint" disabled>
-
-
-        <button id="toggle_encryption" disabled>Encrypt</button>
     </div>
+
+    <dialog id="mk-preview" class="mk__preview" aria-label="Preview of the page you are building">
+        <div class="mk__preview-bar">
+            <span class="mk__preview-title">Preview</span>
+            <a id="mk-preview-open" class="mk__preview-link" href="#" target="_blank" rel="noopener">Open in a tab</a>
+            <button type="button" id="mk-preview-close" class="mk__preview-close">Close</button>
+        </div>
+        <iframe id="mk-preview-frame" class="mk__preview-frame" title="Preview of the page" src="about:blank"></iframe>
+    </dialog>
 
     <footer class="footerStatic">
         <a href="about.html">About</a> | 
@@ -563,12 +540,23 @@ function resetAvatar() {
         include_p_Checkbox.addEventListener('change', function () {
             p_Input.disabled = !this.checked;
             if (this.checked) {
-                p_Input.style.height = '100vh';  // Resize input box to a larger height
-                p_Input.style.width = '100%';     // Optional: Adjust width for better input
+                // This used to be style.height = '100vh', from when the maker was one long column and the
+                // content box was meant to dominate the screen. In a two-column layout that made a 1379px
+                // box for one line of text, so it grows to its content instead, with a floor and a ceiling.
+                p_Input.style.height = 'auto';
+                p_Input.style.height = Math.min(320, Math.max(96, p_Input.scrollHeight)) + 'px';
+                p_Input.style.width = '100%';
             } else {
-                p_Input.style.height = 'auto';   // Reset to default size
-                p_Input.style.width = '50%';
+                p_Input.style.height = '';       // back to the stylesheet's floor
+                p_Input.style.width = '';
             }
+        });
+
+        // grow with what is typed, up to the same ceiling
+        p_Input.addEventListener('input', function () {
+            if (this.disabled || !this.style.height) return;
+            this.style.height = 'auto';
+            this.style.height = Math.min(320, Math.max(96, this.scrollHeight)) + 'px';
         });
 
 
@@ -1615,10 +1603,16 @@ document.getElementById('close_qr_button').addEventListener('click', function ()
             return relayList[Math.floor(Math.random() * relayList.length)];
         }
 
-        document.getElementById('toggle-description').addEventListener('click', function() {
-        const description = document.querySelector('.maker-what-text');
-        description.classList.toggle('hidden');
-        });
+        // Was the old "What this tool does?" heading, which a click toggled. The explainer is a <details>
+        // now and opens itself, but this block used to throw on load because the element was gone — and the
+        // throw killed every listener attached after it in the same callback, encryption included.
+        const descriptionToggle = document.getElementById('toggle-description');
+        if (descriptionToggle) {
+            descriptionToggle.addEventListener('click', function () {
+                const description = document.querySelector('.maker-what-text');
+                if (description) description.classList.toggle('hidden');
+            });
+        }
 
         document.getElementById('encrypt_url').addEventListener('change', function () {
             const passwordInput = document.getElementById('encryption_password');
@@ -1886,6 +1880,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Initialize URL
         updateURL();
     </script>
+    <script src="urlmkrPreview.js?v=1" defer></script>
 </body>
 
 
