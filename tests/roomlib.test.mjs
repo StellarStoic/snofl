@@ -10,7 +10,7 @@ import { webcrypto } from 'node:crypto';
 import {
   sha256, toHex, fromHex, leadingZeroBits, utf8,
   pageIdentity, pageId, roomDifficulty, ROOM_CONTROL_PARAMS,
-  roomKey, encryptMessage, decryptMessage, messageAad,
+  pageSecret,
   eventSerialization, eventId, mineEvent, verifyProofOfWork, nonceTag,
 } from '../roomlib.js';
 
@@ -70,36 +70,15 @@ test('difficulty comes from w, is clamped, and falls back to the default', () =>
   assert.equal(roomDifficulty('?t=x&w=3.7'), 3);
 });
 
-test('messages round-trip under the key the link derives', async () => {
-  const identity = pageIdentity('?t=Coffee&p=Nice');
-  const key = await roomKey(identity, subtle);
-  const text = 'Anyone here? · ☕ · <b>not html</b>';
-  const encrypted = await encryptMessage(key, text, { subtle });
-
-  assert.match(encrypted, /^snoflroom1:/);
-  assert.ok(!encrypted.includes('Coffee'), 'the plaintext must not survive in the content');
-  assert.equal(await decryptMessage(key, encrypted, { subtle }), text);
-
-  // the same link, read on another machine, derives the same key
-  const sameKey = await roomKey(pageIdentity('?p=Nice&t=Coffee'), subtle);
-  assert.equal(await decryptMessage(sameKey, encrypted, { subtle }), text);
-});
-
-test('a different link cannot read the room, and tampering is refused, not thrown', async () => {
-  const key = await roomKey(pageIdentity('?t=A'), subtle);
-  const other = await roomKey(pageIdentity('?t=B'), subtle);
-  const encrypted = await encryptMessage(key, 'secret', { subtle });
-
-  assert.equal(await decryptMessage(other, encrypted, { subtle }), null, 'another page must read nothing');
-
-  const body = encrypted.slice('snoflroom1:'.length);
-  const bytes = Buffer.from(body, 'base64');
-  bytes[bytes.length - 1] ^= 0x01;
-  assert.equal(await decryptMessage(key, 'snoflroom1:' + bytes.toString('base64'), { subtle }), null,
-    'AES-GCM must reject a flipped bit rather than return rubbish');
-
-  assert.equal(await decryptMessage(key, 'plain text, not for this room', { subtle }), null);
-  assert.equal(await decryptMessage(key, 'snoflroom1:$$$not base64$$$', { subtle }), null);
+test('the room secret is 32 bytes from the link, and different for a different link', () => {
+  const a = pageSecret('?t=Same');
+  const b = pageSecret('?t=Same');
+  const c = pageSecret('?t=Other');
+  assert.equal(a.length, 32);
+  assert.deepEqual([...a], [...b], 'the same link always derives the same secret');
+  assert.notDeepEqual([...a], [...c], 'another page derives another secret');
+  // and it is not the room id itself: two derivations, both from the page, neither reusable as the other
+  assert.notEqual(toHex(a), pageId('?t=Same'));
 });
 
 test('the event id is the hash of the serialization the site already signs', async () => {
@@ -156,26 +135,4 @@ test('an event with no nonce is reported, not thrown on', () => {
   const verdict = verifyProofOfWork({ pubkey: 'aa'.repeat(32), created_at: 1, kind: 1, tags: [['h', 'x']], content: '', id: '00'.repeat(32) });
   assert.equal(verdict.ok, false);
   assert.equal(verdict.reason, 'no nonce tag');
-});
-
-test('a message is bound to its author and time, so a relay cannot re-attribute it', async () => {
-  const identity = pageIdentity('?t=Bound');
-  const key = await roomKey(identity, subtle);
-  const roomId = pageId('?t=Bound');
-  const author = 'ab'.repeat(32);
-  const createdAt = 1761600000;
-  const aad = messageAad(roomId, author, createdAt);
-
-  const encrypted = await encryptMessage(key, 'the coffee was cold', { subtle, aad });
-  assert.equal(await decryptMessage(key, encrypted, { subtle, aad }), 'the coffee was cold');
-
-  // another author, the same message: the attacker has the ciphertext but not the plaintext
-  const impostor = messageAad(roomId, 'cd'.repeat(32), createdAt);
-  assert.equal(await decryptMessage(key, encrypted, { subtle, aad: impostor }), null);
-
-  // another time on the same message
-  assert.equal(await decryptMessage(key, encrypted, { subtle, aad: messageAad(roomId, author, createdAt + 1) }), null);
-
-  // another room on the same relay
-  assert.equal(await decryptMessage(key, encrypted, { subtle, aad: messageAad(pageId('?t=Other'), author, createdAt) }), null);
 });

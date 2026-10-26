@@ -6,9 +6,10 @@
 // a leaked link leaks the room.
 
 import {
-  pageIdentity, pageId, roomDifficulty, roomKey,
-  encryptMessage, decryptMessage, mineEvent, verifyProofOfWork, toHex, messageAad,
+  pageIdentity, pageId, pageSecret, roomDifficulty,
+  mineEvent, verifyProofOfWork, toHex,
 } from './roomlib.js';
+import { conversationKeyFromSecret, encryptPayload, decryptPayload, looksLikePayload } from './nip44.js';
 
 const DEFAULT_RELAYS = [
   'wss://relay.nostr.band',
@@ -17,6 +18,26 @@ const DEFAULT_RELAYS = [
   'wss://relay.snort.social',
   'wss://nos.lol',
 ];
+
+/** The plaintext a room message carries. NIP-44 gives us no associated data, so the author and the
+ *  timestamp ride inside the ciphertext and are compared with the event's own fields on read — a relay
+ *  that swaps either one gets a message nobody displays. */
+function packMessage(pubkey, createdAt, text) {
+  return JSON.stringify({ v: 1, p: pubkey, c: createdAt, m: text });
+}
+
+function unpackMessage(plaintext, event) {
+  let body;
+  try {
+    body = JSON.parse(plaintext);
+  } catch {
+    return null;
+  }
+  if (!body || body.v !== 1 || typeof body.m !== 'string') return null;
+  if (String(body.p).toLowerCase() !== String(event.pubkey).toLowerCase()) return null;
+  if (Number(body.c) !== Number(event.created_at)) return null;
+  return body.m;
+}
 
 const MAX_MESSAGES = 300;
 const FETCH_LIMIT = 200;
@@ -203,12 +224,12 @@ export async function mount(options = {}) {
 
   let key;
   try {
-    key = await roomKey(identity);
+    key = conversationKeyFromSecret(pageSecret(search));
   } catch (error) {
     list.textContent = '';
     list.append(element('p', 'room__error', 'This browser cannot derive the room key: ' + error.message));
     composer.remove();
-    return { roomId, roomKey: null };
+    return { roomId, conversationKey: null };
   }
 
   const messages = [];
@@ -238,9 +259,15 @@ export async function mount(options = {}) {
     if (messages.some((entry) => entry.id === event.id)) return false;
     const verdict = verifyProofOfWork(event);
     if (!verdict.ok) return false;
-    const text = await decryptMessage(key, event.content, {
-      aad: messageAad(roomId, event.pubkey, event.created_at),
-    });
+    if (!looksLikePayload(event.content)) return false;
+    let plaintext;
+    try {
+      plaintext = decryptPayload(event.content, key);
+    } catch {
+      // not this room's payload, or not a NIP-44 payload at all
+      return false;
+    }
+    const text = unpackMessage(plaintext, event);
     if (text === null) return false;
     messages.push({
       id: event.id, pubkey: event.pubkey, created_at: event.created_at,
@@ -267,9 +294,9 @@ export async function mount(options = {}) {
     status.textContent = `Working… (~${Math.round(2 ** difficulty / 60000)}s)`;
     try {
       const createdAt = Math.floor(Date.now() / 1000);
-      const content = await encryptMessage(key, text, {
-        aad: messageAad(roomId, window.pub, createdAt),
-      });
+      // a NIP-44 v2 payload: version, nonce, ChaCha20 over padded plaintext, HMAC — the protocol's own
+      // format, so any implementation handed the room key could read this message
+      const content = encryptPayload(packMessage(window.pub, createdAt, text), key);
       const draft = {
         pubkey: window.pub,
         created_at: createdAt,
@@ -320,7 +347,7 @@ export async function mount(options = {}) {
     }
   });
 
-  return { roomId, difficulty, relays, roomKey: key, messages };
+  return { roomId, difficulty, relays, conversationKey: key, messages };
 }
 
 if (typeof window !== 'undefined') {

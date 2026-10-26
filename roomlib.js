@@ -137,92 +137,17 @@ export function roomDifficulty(search, fallback = 20) {
 }
 
 // ------------------------------------------------------------------------------------------------
-// The key: private by link
+// The secret the room is keyed by
 // ------------------------------------------------------------------------------------------------
-const ROOM_SALT = utf8('snofl-room-v1');
-const ROOM_INFO = utf8('aes-gcm-256');
-const CONTENT_PREFIX = 'snoflroom1:';
-
 /**
- * Derive the room's AES-GCM key from the page identity.
+ * The room's secret: 32 bytes from the page identity.
  *
- * HKDF over the identity hash: every reader with the link derives the same key, and the relays hold
- * nothing but ciphertext. Not forward-secret and not un-invitable — a leaked link leaks the room, which
- * is the same deal as the page itself.
+ * This is what NIP-44's conversation key is derived from (see nip44.js). The link *is* the key material,
+ * which is what makes the room private-by-link: nothing else about the page has to be kept secret, and no
+ * key ever travels between the people in the room.
  */
-export async function roomKey(identity, subtle) {
-  const api = subtle || globalThis.crypto?.subtle;
-  if (!api) throw new Error('WebCrypto is unavailable in this browser');
-  const material = await api.importKey('raw', sha256(utf8('snofl-rooms-key:' + identity)), 'HKDF', false, ['deriveKey']);
-  return api.deriveKey(
-    { name: 'HKDF', hash: 'SHA-256', salt: ROOM_SALT, info: ROOM_INFO },
-    material,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt', 'decrypt'],
-  );
-}
-
-function toBase64(bytes) {
-  let binary = '';
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary);
-}
-
-function fromBase64(text) {
-  const binary = atob(text);
-  const out = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
-  return out;
-}
-
-/**
- * The associated data a message is bound to: the room, the author and the timestamp.
- *
- * AES-GCM proves the ciphertext was not touched, but says nothing about the fields beside it — so a relay
- * could take a real encrypted message and republish it under another author's pubkey, or another time.
- * Feeding those fields in as associated data makes any such edit fail to decrypt, which is the difference
- * between "the words are authentic" and "the attribution is".
- */
-export function messageAad(roomId, pubkey, createdAt) {
-  return utf8(`snofl-room-aad-v1:${roomId}:${String(pubkey).toLowerCase()}:${createdAt}`);
-}
-
-/** Encrypt one message for the room. The output is what goes into a kind-1 event's content. */
-export async function encryptMessage(key, text, options = {}) {
-  const { subtle, aad } = options;
-  const api = subtle || globalThis.crypto?.subtle;
-  const iv = globalThis.crypto.getRandomValues(new Uint8Array(12));
-  const params = { name: 'AES-GCM', iv };
-  if (aad) params.additionalData = aad;
-  const ciphertext = new Uint8Array(await api.encrypt(params, key, utf8(text)));
-  const joined = new Uint8Array(iv.length + ciphertext.length);
-  joined.set(iv);
-  joined.set(ciphertext, iv.length);
-  return CONTENT_PREFIX + toBase64(joined);
-}
-
-/** Read one message. Returns null for anything this room cannot read — foreign content, wrong key,
- *  or fields that were changed after it was written. */
-export async function decryptMessage(key, content, options = {}) {
-  const { subtle, aad } = options;
-  if (typeof content !== 'string' || !content.startsWith(CONTENT_PREFIX)) return null;
-  const api = subtle || globalThis.crypto?.subtle;
-  let raw;
-  try {
-    raw = fromBase64(content.slice(CONTENT_PREFIX.length));
-  } catch {
-    return null;
-  }
-  if (raw.length < 13) return null;
-  try {
-    const params = { name: 'AES-GCM', iv: raw.slice(0, 12) };
-    if (aad) params.additionalData = aad;
-    const plain = await api.decrypt(params, key, raw.slice(12));
-    return new TextDecoder().decode(plain);
-  } catch {
-    return null;
-  }
+export function pageSecret(search) {
+  return sha256(utf8('snofl-rooms-key:' + pageIdentity(search)));
 }
 
 // ------------------------------------------------------------------------------------------------

@@ -10,20 +10,21 @@ import assert from 'node:assert/strict';
 import { webcrypto } from 'node:crypto';
 
 import {
-  pageIdentity, pageId, roomDifficulty, roomKey,
-  encryptMessage, decryptMessage, mineEvent, verifyProofOfWork, eventId, messageAad,
+  pageIdentity, pageId, pageSecret, roomDifficulty,
+  mineEvent, verifyProofOfWork, eventId,
 } from '../roomlib.js';
+import { conversationKeyFromSecret, encryptPayload, decryptPayload } from '../nip44.js';
 
 const subtle = webcrypto.subtle;
 const LINK = '?t=Coffee+in+Ljubljana&s=Somebody+left+a+review&p=The+flat+white+was+perfect&f=7&b=42';
 
 /** Exactly what room.js does on submit, minus the WebSocket. */
 async function composeMessage(search, text, { pubkey = 'ab'.repeat(32), difficulty = 10 } = {}) {
-  const identity = pageIdentity(search);
   const roomId = pageId(search);
-  const key = await roomKey(identity, subtle);
+  const key = conversationKeyFromSecret(pageSecret(search));
   const createdAt = 1761600000;
-  const content = await encryptMessage(key, text, { subtle, aad: messageAad(roomId, pubkey, createdAt) });
+  // the author and time ride inside the ciphertext: NIP-44 has no associated data
+  const content = encryptPayload(JSON.stringify({ v: 1, p: pubkey, c: createdAt, m: text }), key);
   const draft = {
     pubkey,
     created_at: createdAt,
@@ -36,31 +37,38 @@ async function composeMessage(search, text, { pubkey = 'ab'.repeat(32), difficul
 }
 
 /** Exactly what room.js does on read. */
-async function readMessage(search, event) {
-  const key = await roomKey(pageIdentity(search), subtle);
+function readMessage(search, event) {
+  const key = conversationKeyFromSecret(pageSecret(search));
   const verdict = verifyProofOfWork(event);
   if (!verdict.ok) return null;
-  const text = await decryptMessage(key, event.content, { subtle, aad: messageAad(pageId(search), event.pubkey, event.created_at) });
-  // room.js does exactly this: a payload this room cannot open is not a message, it is silence
-  return text === null ? null : { text, bits: verdict.bits };
+  let body;
+  try {
+    body = JSON.parse(decryptPayload(event.content, key));
+  } catch {
+    return null; // not this room's payload
+  }
+  // room.js refuses a message whose claimed author or time is not the event's
+  if (String(body.p).toLowerCase() !== String(event.pubkey).toLowerCase()) return null;
+  if (Number(body.c) !== Number(event.created_at)) return null;
+  return { text: body.m, bits: verdict.bits };
 }
 
 test('a message written for a link is readable from that link, and from nothing else', async () => {
   const event = await composeMessage(LINK, 'Anyone here? The coffee machine is broken.');
 
-  const same = await readMessage(LINK, event);
+  const same = readMessage(LINK, event);
   assert.equal(same.text, 'Anyone here? The coffee machine is broken.');
   assert.ok(same.bits >= 10);
 
   // the parameters in another order are the same page
   const reordered = '?b=42&f=7&p=The+flat+white+was+perfect&s=Somebody+left+a+review&t=Coffee+in+Ljubljana';
-  assert.equal((await readMessage(reordered, event)).text, same.text);
+  assert.equal(readMessage(reordered, event).text, same.text);
 
   // a single character different is a different page, and a different room
   const edited = LINK.replace('perfect', 'perfect.');
-  assert.equal(await readMessage(edited, event), null);
+  assert.equal(readMessage(edited, event), null);
   // and so is a page with an extra parameter
-  assert.equal(await readMessage(LINK + '&m=1', event), null);
+  assert.equal(readMessage(LINK + '&m=1', event), null);
 });
 
 test('the room id in the tag is the one the payload is encrypted for', async () => {
@@ -105,9 +113,9 @@ test('what a stranger with the link cannot do', async () => {
   // an event stripped of its work is not shown, even though it decrypts fine
   const noWork = { ...event, tags: event.tags.filter((tag) => tag[0] !== 'nonce') };
   assert.equal(verifyProofOfWork(noWork).ok, false);
-  assert.equal(await readMessage(LINK, noWork), null, 'the reader refuses it before decrypting');
+  assert.equal(readMessage(LINK, noWork), null, 'the reader refuses it before decrypting');
 
   // and a correctly-worked event whose content was produced for another room does not decrypt
   const elsewhere = await composeMessage(LINK + '&x=2', 'other room');
-  assert.equal(await readMessage(LINK, elsewhere), null);
+  assert.equal(readMessage(LINK, elsewhere), null);
 });
