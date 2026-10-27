@@ -23,7 +23,7 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=10">
-    <link rel="stylesheet" href="urlmkr.css?v=55">
+    <link rel="stylesheet" href="urlmkr.css?v=57">
     <script src="urlmkrAgreement.js?v=2"></script>
     <script src="backgroundImages.js"></script>
     <script src="crypto-js.min.js"></script>
@@ -218,6 +218,7 @@
                              except for the [text](url) link form, which is what the Link button writes. -->
                         <textarea id="p_input" rows="8" placeholder="Whatever you like — the buttons above insert what the page can show" disabled></textarea>
                         <div class="mk__console" id="content_console" aria-label="Content formatting">
+                            <div class="mk__strip-wrap">
                             <div class="mk__cmd-strip" role="toolbar" aria-label="Insert into the content">
                             <button type="button" class="mk__cmd" data-cmd="b" title="Bold: wraps the selection in &lt;b&gt;…&lt;/b&gt;"><span class="mk__cmd-glyph"><b>B</b></span><span class="mk__cmd-name">Bold</span></button>
                             <button type="button" class="mk__cmd" data-cmd="i" title="Italic: slants it with &lt;i&gt;…&lt;/i&gt;"><span class="mk__cmd-glyph"><i>I</i></span><span class="mk__cmd-name">Italic</span></button>
@@ -238,7 +239,7 @@
                             <button type="button" class="mk__cmd" data-cmd="link" title="Link: the one Markdown form the page honours: [the words](https://address)"><span class="mk__cmd-glyph">↗</span><span class="mk__cmd-name">Link</span></button>
                             <button type="button" class="mk__cmd" data-cmd="image" title="Image: a picture address on its own line shows the picture"><span class="mk__cmd-glyph">▢</span><span class="mk__cmd-name">Image</span></button>
                             <button type="button" class="mk__cmd" data-cmd="note" title="Note: an nevent1… / note1… reference on its own line is resolved"><span class="mk__cmd-glyph">N</span><span class="mk__cmd-name">Note</span></button>
-                            <button type="button" class="mk__cmd" data-cmd="event" title="Event: an naddr1… calendar event is drawn as a card"><span class="mk__cmd-glyph">EV</span><span class="mk__cmd-name">Event</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="event" title="Calendar: an naddr1… calendar event is drawn as a card"><span class="mk__cmd-glyph">CAL</span><span class="mk__cmd-name">Calendar</span></button>
                             <button type="button" class="mk__cmd mk__cmd--qr" data-cmd="ln" title="Lightning: lightning:&lt;invoice or address&gt; draws a QR with the Lightning mark"><span class="mk__cmd-glyph">LN</span><span class="mk__cmd-name">Lightning</span></button>
                             <button type="button" class="mk__cmd mk__cmd--qr" data-cmd="btc" title="Bitcoin: bitcoin:&lt;address&gt; draws a QR with the Bitcoin mark"><span class="mk__cmd-glyph">BTC</span><span class="mk__cmd-name">Bitcoin</span></button>
                             <button type="button" class="mk__cmd mk__cmd--qr" data-cmd="ecash" title="eCash: ecash:&lt;address&gt; draws a QR with the eCash mark"><span class="mk__cmd-glyph">XEC</span><span class="mk__cmd-name">eCash</span></button>
@@ -246,7 +247,9 @@
                             <button type="button" class="mk__cmd mk__cmd--qr" data-cmd="qrcode" title="Any QR: anything after qr: becomes a plain QR"><span class="mk__cmd-glyph">QR</span><span class="mk__cmd-name">Any QR</span></button>
                             <button type="button" class="mk__cmd mk__cmd--poll" data-cmd="poll" title="Poll: [poll:Question|Choice|Choice], or [poll2:…] for two answers each"><span class="mk__cmd-glyph">▁▄█</span><span class="mk__cmd-name">Poll</span></button>
                             </div>
-                            <p class="mk__console-hint" id="content_console_hint">Select words first and a button wraps them; press one with nothing selected and it writes a word you can type over. The name under each button says what it does — no hovering needed.</p>
+                            <button type="button" class="mk__strip-more" id="strip_more" aria-label="More commands" title="More commands">&#8250;</button>
+                            </div>
+                            <p class="mk__console-hint" id="content_console_hint">Select words first and a button wraps them; press one with nothing selected and it writes a word you can type over. The name under each button says what it does — no hovering needed. The row scrolls sideways; the fade on the right means there are more commands.</p>
                         </div>
 
                     </div>
@@ -1981,7 +1984,7 @@ document.getElementById('close_qr_button').addEventListener('click', function ()
         link: {name: 'Link', explain: 'the one Markdown form the page honours: [the words](https://address).', open: '[', close: '](https://)', placeholder: 'link text'},
         image: {name: 'Image', explain: 'a picture address alone on its line is shown as the picture.', insert: 'https://example.com/picture.jpg', ownLine: true},
         note: {name: 'Note', explain: 'an nevent1… or note1… reference alone on its line is resolved.', insert: 'nostr:nevent1', ownLine: true},
-        event: {name: 'Event', explain: 'type or paste a calendar event reference straight after nostr: and the page draws it as a card with the date, the place and the summary.', insert: 'nostr:naddr1', ownLine: true, prefix: true},
+        event: {name: 'Calendar', explain: 'type or paste a calendar event reference straight after nostr: and the page draws it as a card with the date, the place, the summary and the three RSVP answers.', insert: 'nostr:naddr1', ownLine: true, prefix: true},
         ln: {name: 'Lightning', explain: 'type or paste an invoice or a Lightning address straight after lightning: and the page draws a QR with the Lightning mark; a tap on it copies the value.', insert: 'lightning:', ownLine: true, prefix: true},
         btc: {name: 'Bitcoin', explain: 'type or paste the address straight after bitcoin: and the page draws a QR with the Bitcoin mark.', insert: 'bitcoin:', ownLine: true, prefix: true},
         ecash: {name: 'eCash', explain: 'type or paste the eCash address straight after ecash: for a QR with the eCash mark.', insert: 'ecash:', ownLine: true, prefix: true},
@@ -2069,7 +2072,39 @@ document.getElementById('close_qr_button').addEventListener('click', function ()
         hint(describe(spec, text));
     }
 
+    /*
+     * Twenty-six commands do not fit across a phone, and a strip that scrolls silently hides half of them — D went
+     * looking for the Calendar button and could not find it. The fade on the right edge says "there is more", and it
+     * retires once you reach the end; the one on the left appears when you can go back.
+     */
+    function syncStripOverflow() {
+        const strip = document.querySelector('.mk__cmd-strip');
+        const wrap = strip && strip.closest('.mk__strip-wrap');
+        if (!strip || !wrap) return;
+        const more = strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 4;
+        const back = strip.scrollLeft > 4;
+        wrap.classList.toggle('has-more', more);
+        wrap.classList.toggle('has-prev', back);
+        const button = document.getElementById('strip_more');
+        if (button) button.hidden = !more;
+    }
+    window.syncStripOverflow = syncStripOverflow;
+
     document.addEventListener('DOMContentLoaded', () => {
+        const strip = document.querySelector('.mk__cmd-strip');
+        if (strip) {
+            strip.addEventListener('scroll', syncStripOverflow, {passive: true});
+            window.addEventListener('resize', syncStripOverflow);
+        }
+        // a fade is a hint; this is a control. It scrolls most of a screenful and says when it is done.
+        const moreButton = document.getElementById('strip_more');
+        if (moreButton && strip) {
+            moreButton.addEventListener('click', () => {
+                strip.scrollBy({left: Math.round(strip.clientWidth * 0.85), behavior: 'smooth'});
+                setTimeout(syncStripOverflow, 320);
+            });
+        }
+        syncStripOverflow();
         const bar = document.getElementById('content_console');
         if (bar) {
             bar.addEventListener('click', event => {

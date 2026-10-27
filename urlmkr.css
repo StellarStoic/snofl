@@ -1910,6 +1910,67 @@ body.mk .mk__console {
     margin: 8px 0 0;
 }
 
+/* The strip scrolls, and a scroll nobody can see is half a toolbar: the fades say which way there is more. */
+body.mk .mk__strip-wrap {
+    position: relative;
+    min-width: 0;
+}
+
+body.mk .mk__strip-wrap::before,
+body.mk .mk__strip-wrap::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 8px;
+    width: 40px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 1;
+}
+
+body.mk .mk__strip-wrap::after {
+    right: 0;
+    background: linear-gradient(to right, rgba(20, 20, 20, 0), #141414 75%);
+}
+
+body.mk .mk__strip-wrap::before {
+    left: 0;
+    background: linear-gradient(to left, rgba(20, 20, 20, 0), #141414 75%);
+}
+
+body.mk .mk__strip-wrap.has-more::after,
+body.mk .mk__strip-wrap.has-prev::before {
+    opacity: 1;
+}
+
+body.mk .mk__strip-more {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-60%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 34px;
+    padding: 0;
+    font-family: inherit;
+    font-size: 19px;
+    line-height: 1;
+    color: #dcdcdc;
+    background: #1f1f1f;
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 2;
+}
+
+body.mk .mk__strip-more:hover {
+    color: var(--accent, #4caf50);
+    border-color: var(--accent, #4caf50);
+}
+
 body.mk .mk__cmd-strip {
     display: flex;
     min-width: 0;

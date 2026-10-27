@@ -180,14 +180,26 @@
             <div class="faq-question client" onclick="toggleFaq('faq6')"><a href="#faqAboutClient">You say there's a src page?</a></div>
             <div id="faq6" class="faq-answer">
                 <p>
-                    Yes, you can use <a href="https://snofl.com/src.html" target="_blank">src</a> to look up content on Nostr relays that support 
-                    <a href="https://github.com/nostr-protocol/nips/blob/master/50.md" target="_blank">NIP-50</a>.
+                    Yes — <a href="https://snofl.com/src.html" target="_blank">src</a> is the discovery page. It looks up
+                    content on the Nostr relays that support
+                    <a href="https://github.com/nostr-protocol/nips/blob/master/50.md" target="_blank">NIP-50</a>, and it
+                    searches by itself the moment it opens: type nothing and you still get what the relays hold, so the
+                    box is for narrowing, not for starting.
                     <br><br>
-                    You can search using multiple keywords, either combined or separately.  
-                    You can toggle the view by keyword, or even block publishers you don't like.  
+                    Several keywords at once work, and <strong>ANY</strong> / <strong>ALL</strong> decides whether a
+                    result has to match one of them or every one. Under each result there is a row of controls: hide the
+                    ones you do not want, block a publisher whose notes you never want to see again, and vote.
                     <br><br>
-                    It's still a work in progress, so some features may not work as expected.  
-                    <strong>Reactions don’t work yet</strong>, and things are still a bit clunky because, honestly, I suck at understanding WebSockets. 😅  
+                    Voting is <strong>▲ / ▼</strong> with the counts inside the arrows. One npub counts once, changing
+                    your mind moves your vote instead of adding another, and pressing the arrow you already pressed
+                    withdraws it — the counts are read back off the relays, so they are the same for anybody who opens
+                    the page. Your own vote is tinted.
+                    <br><br>
+                    The badge in the top right is the key those votes are signed with: a random ID kept in your browser,
+                    held for 24 hours before it can be replaced, the same identity a custom page uses. Reading needs no
+                    identity at all.
+                    <br><br>
+                    A page you make with hashtags links to src, so people who find the tag find the page.
                 </p>
                 
             </div> 
