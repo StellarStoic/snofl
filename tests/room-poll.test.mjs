@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  packPoll, packPollVote, unpackRoomMessage, tallyPoll, pollIsClosed, newPollId,
+  packPoll, packPollVote, unpackRoomMessage, tallyPoll, pollIsClosed, pollMaxAnswers, newPollId,
   POLL_MAX_OPTIONS, POLL_MIN_OPTIONS,
 } from '../roomlib.js';
 
@@ -103,4 +103,44 @@ test('two polls made at the same moment do not share an id', () => {
   const ids = new Set(Array.from({ length: 50 }, () => newPollId()));
   assert.equal(ids.size, 50);
   assert.ok([...ids].every((id) => /^[0-9a-f]{10}$/.test(id)));
+});
+
+test('how many answers one person may give travels with the poll, in NIP-88 terms', () => {
+  const options = [['a', 'A'], ['b', 'B'], ['c', 'C'], ['d', 'D']];
+  const build = (max) => unpackRoomMessage(
+    packPoll(PUB, EVENT.created_at, { id: 'p', question: 'q', options, max }), EVENT).poll;
+
+  const one = JSON.parse(packPoll(PUB, EVENT.created_at, { id: 'p', question: 'q', options, max: 1 }));
+  assert.equal(one.poll.t, 'single', 'one answer is NIP-88 singlechoice');
+  assert.equal(one.poll.mx, 1);
+
+  const three = JSON.parse(packPoll(PUB, EVENT.created_at, { id: 'p', question: 'q', options, max: 3 }));
+  assert.equal(three.poll.t, 'multi', 'more than one is multiplechoice');
+  assert.equal(three.poll.mx, 3, 'and the exact ceiling rides beside it');
+
+  assert.equal(build(1).max, 1);
+  assert.equal(build(3).max, 3);
+  assert.equal(pollMaxAnswers(build(1)), 1);
+  assert.equal(pollMaxAnswers(build(3)), 3);
+});
+
+test('a ceiling can never exceed the options, and a legacy poll keeps NIP-88 behaviour', () => {
+  const options = [['a', 'A'], ['b', 'B']];
+  assert.equal(unpackRoomMessage(packPoll(PUB, EVENT.created_at, { id: 'p', question: 'q', options, max: 9 }), EVENT).poll.max, 2,
+    'asking for more answers than there are options is clamped');
+
+  const legacy = (type) => unpackRoomMessage(JSON.stringify({
+    v: 1, p: PUB, c: EVENT.created_at, m: '', poll: { id: 'old', q: 'q', o: options, t: type, e: 0 },
+  }), EVENT).poll;
+
+  assert.equal(legacy('single').max, 1);
+  assert.equal(legacy('multi').max, 2, 'a poll from before the ceiling means "any number", as NIP-88 reads it');
+  assert.equal(pollMaxAnswers(legacy('multi')), 2);
+});
+
+test('an answer cannot carry more options than the poll allows', () => {
+  const packed = JSON.parse(packPollVote(PUB, EVENT.created_at, 'p', ['a', 'b', 'c'], 2));
+  assert.deepEqual(packed.pv.s, ['a', 'b'], 'the ceiling truncates rather than refusing the answer');
+  const unlimited = JSON.parse(packPollVote(PUB, EVENT.created_at, 'p', ['a', 'b', 'c'], 3));
+  assert.deepEqual(unlimited.pv.s, ['a', 'b', 'c']);
 });

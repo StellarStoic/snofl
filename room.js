@@ -19,6 +19,7 @@ import {
   unpackRoomMessage,
   tallyPoll,
   pollIsClosed,
+  pollMaxAnswers,
   newPollId,
   POLL_MAX_OPTIONS,
   POLL_MIN_OPTIONS,
@@ -652,6 +653,7 @@ export async function mount(options = {}) {
     const answers = pollAnswers.get(poll.id) || new Map();
     const { rows, voters } = tallyPoll(poll.options, answers);
     const closed = pollIsClosed(poll);
+    const ceiling = pollMaxAnswers(poll);
     const mine = myAnswer(poll.id);
     const unchanged = mine
       && mine.options.length === pollDraft.size
@@ -662,7 +664,7 @@ export async function mount(options = {}) {
       element('span', 'room__poll-tag', 'Poll'),
       element('span', 'room__poll-meta',
         `${shortAuthor(poll.pubkey, options.npubEncode || window.npubEncode)} · ${timeAgo(poll.created_at)}` +
-        ` · ${poll.type === 'multi' ? 'several answers' : 'one answer'} · ${closesIn(poll.endsAt)}`),
+        ` · ${ceiling === 1 ? 'one answer each' : `up to ${ceiling} answers each`} · ${closesIn(poll.endsAt)}`),
     );
 
     const question = element('p', 'room__poll-question', poll.question);
@@ -688,10 +690,16 @@ export async function mount(options = {}) {
         // this draft belongs to this poll now: without this, the next render would re-seed the ticks from
         // the last counted answer and the tap would undo itself
         pollDraftFor = poll.id;
-        if (poll.type === 'multi') {
-          if (pollDraft.has(row.id)) pollDraft.delete(row.id); else pollDraft.add(row.id);
-        } else {
+        if (ceiling === 1) {
           pollDraft = new Set([row.id]);
+        } else if (pollDraft.has(row.id)) {
+          pollDraft.delete(row.id);
+        } else if (pollDraft.size < ceiling) {
+          pollDraft.add(row.id);
+        } else {
+          // at the ceiling: say so rather than silently dropping the tap
+          status.textContent = `This poll takes ${ceiling} answers each — untick one to choose another.`;
+          return;
         }
         renderPoll();
       });
@@ -705,13 +713,16 @@ export async function mount(options = {}) {
       actions.append(element('span', 'room__poll-note', 'Your answer is counted. Tick another to change it.'));
     } else {
       // the same control as Post, so it borrows that rule rather than inventing a second one
-      const sendVote = element('button', 'room__poll-send room__send', 'Send answer');
+      const sendVote = element('button', 'room__poll-send room__send',
+        ceiling > 1 ? `Send ${pollDraft.size || ''} answer${pollDraft.size === 1 ? '' : 's'}`.replace('  ', ' ') : 'Send answer');
       sendVote.type = 'button';
       sendVote.disabled = !pollDraft.size;
       sendVote.addEventListener('click', () => castPollAnswer(poll, [...pollDraft]));
       actions.append(sendVote);
     }
-    actions.append(element('span', 'room__poll-voters', `${voters} ${voters === 1 ? 'answer' : 'answers'}`));
+    // counted in people, not ticks: one person may hold two of the answers now, and "1 answer" read as a
+    // tally of ticks next to three options
+    actions.append(element('span', 'room__poll-voters', `${voters} ${voters === 1 ? 'voter' : 'voters'}`));
 
     pollPanel.append(head, question, list_, actions);
   }
@@ -727,7 +738,8 @@ export async function mount(options = {}) {
     status.textContent = 'Sending your answer…';
     try {
       const createdAt = Math.floor(Date.now() / 1000);
-      const content = encryptPayload(packPollVote(window.pub, createdAt, poll.id, optionIds), key);
+      const content = encryptPayload(
+        packPollVote(window.pub, createdAt, poll.id, optionIds, pollMaxAnswers(poll)), key);
       const draft = {
         pubkey: window.pub,
         created_at: createdAt,
@@ -759,11 +771,22 @@ export async function mount(options = {}) {
   pollQuestion.maxLength = 160;
   const pollFields = element('div', 'room__poll-fields');
   const pollType = element('select', 'room__poll-type');
-  [['single', 'One answer'], ['multi', 'Several answers']].forEach(([value, label]) => {
-    const option = element('option', '', label);
-    option.value = value;
-    pollType.append(option);
-  });
+  /**
+   * How many answers one person may give. 1 is NIP-88's `singlechoice`, more is `multiplechoice` with a
+   * ceiling; the list tracks how many options the poll actually has, so it can never offer 5 answers to a
+   * poll with 3 options.
+   */
+  const rebuildAnswerCeiling = () => {
+    const options = Math.max(POLL_MIN_OPTIONS, pollFields.children.length);
+    const chosen = Number(pollType.value) || 1;
+    pollType.textContent = '';
+    for (let count = 1; count <= options; count += 1) {
+      const option = element('option', '', count === 1 ? 'One answer each' : `Up to ${count} answers each`);
+      option.value = String(count);
+      pollType.append(option);
+    }
+    pollType.value = String(Math.min(Math.max(1, chosen), options));
+  };
   const pollCloses = element('select', 'room__poll-closes');
   [['0', 'Stays open'], ['3600', 'Closes in an hour'], ['86400', 'Closes tomorrow'], ['604800', 'Closes in a week']]
     .forEach(([value, label]) => {
@@ -780,20 +803,33 @@ export async function mount(options = {}) {
     field.maxLength = 90;
     field.value = value;
     pollFields.append(field);
+    rebuildAnswerCeiling();
   };
   addOptionField();
   addOptionField();
 
-  const addOption = element('button', 'room__poll-add', 'Add an option');
+  // The + sits with the option fields, because that is the list it extends.
+  const addOption = element('button', 'room__poll-add', '+');
   addOption.type = 'button';
+  addOption.title = `Add another option (up to ${POLL_MAX_OPTIONS})`;
+  addOption.setAttribute('aria-label', 'Add another option');
+  pollFields.after(addOption);
+  const syncAddOption = () => {
+    const atCeiling = pollFields.children.length >= POLL_MAX_OPTIONS;
+    addOption.disabled = atCeiling;
+    addOption.title = atCeiling
+      ? `A poll takes at most ${POLL_MAX_OPTIONS} options`
+      : `Add another option (up to ${POLL_MAX_OPTIONS})`;
+  };
   addOption.addEventListener('click', () => {
     if (pollFields.children.length >= POLL_MAX_OPTIONS) return;
     addOptionField();
-    // a fresh field takes the focus, and the button goes away at the ceiling
+    // a fresh field takes the focus, and the + goes quiet at the ceiling
     const fields = [...pollFields.children];
     fields[fields.length - 1].focus();
-    addOption.disabled = fields.length >= POLL_MAX_OPTIONS;
+    syncAddOption();
   });
+  syncAddOption();
 
   const postPoll = element('button', 'room__send', `Post poll · ${estimateWork(difficulty)}`);
   postPoll.type = 'submit';
@@ -816,6 +852,8 @@ export async function mount(options = {}) {
     pollForm.hidden = false;
     pollToggle.hidden = true;
     [...pollFields.children].forEach((field) => { if (!field.value) field.value = ''; });
+    rebuildAnswerCeiling();
+    syncAddOption();
     pollQuestion.focus();
   });
 
@@ -849,7 +887,7 @@ export async function mount(options = {}) {
         id: pollId,
         question,
         options,
-        type: pollType.value,
+        max: Number(pollType.value) || 1,
         endsAt: seconds ? createdAt + seconds : 0,
       });
       const draft = {
@@ -871,6 +909,7 @@ export async function mount(options = {}) {
       status.textContent = `Poll sent to ${accepted} of ${results.length} relays`;
       pollQuestion.value = '';
       [...pollFields.children].forEach((field) => { field.value = ''; });
+      syncAddOption();
     } catch (error) {
       status.textContent = error?.cancelled
         ? 'Mining cancelled — the poll was not sent.'

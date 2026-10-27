@@ -537,3 +537,23 @@
         font-size: 13px;
     }
 }
+
+/* The + that extends the option list: square, the same dashed hairline as the other quiet controls, and
+   quiet again at the ceiling rather than disappearing (a control that vanishes reads as a bug). */
+.room__poll-add {
+    align-self: flex-start;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    font-size: 18px;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.room__poll-add:disabled {
+    opacity: 0.35;
+    cursor: default;
+    border-color: var(--room-rule, #333);
+    color: var(--room-rule, #333);
+}

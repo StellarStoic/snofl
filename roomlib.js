@@ -265,12 +265,30 @@ function cleanOptions(options) {
   return rows.map((row) => ({ ...row, label: row.label.slice(0, POLL_MAX_LABEL) }));
 }
 
+/**
+ * How many of the options one person may pick. NIP-88 only knows `singlechoice` and `multiplechoice`, so
+ * `polltype` still says which of the two this is and the exact ceiling travels beside it as `mx`: another
+ * client reads a `singlechoice` poll as one answer and a `multiplechoice` one as any number, which is the
+ * right behaviour for a reader who does not know our field.
+ */
+export function pollMaxAnswers(poll) {
+  const options = Array.isArray(poll && poll.options) ? poll.options : [];
+  // the unpacked poll calls it `max`; a poll read straight off the wire still has NIP-88's `mx`
+  const ceiling = Math.floor(Number(poll && (poll.max ?? poll.mx)) || 0);
+  const limit = poll && poll.type === 'single' ? 1 : (ceiling || options.length || 1);
+  return Math.min(limit, Math.max(1, options.length || 1));
+}
+
 /** The message a poll posts: empty text, and the poll beside it. */
 export function packPoll(pubkey, createdAt, poll) {
   const options = cleanOptions(poll.options);
   if (!options) throw new Error(`a poll needs ${POLL_MIN_OPTIONS}-${POLL_MAX_OPTIONS} options with labels`);
   const question = String(poll.question || '').trim();
   if (!question) throw new Error('a poll needs a question');
+  // `max` is the ceiling the form asks for; `type: 'multi'` is the older way of saying "as many as there are",
+  // and both must keep working because a poll is only as good as the links that already carry one
+  const requested = Number(poll.max) > 0 ? Number(poll.max) : (poll.type === 'multi' ? options.length : 1);
+  const max = Math.min(Math.max(1, Math.floor(requested)), options.length);
   return JSON.stringify({
     v: 1,
     p: pubkey,
@@ -280,7 +298,9 @@ export function packPoll(pubkey, createdAt, poll) {
       id: String(poll.id || newPollId()),
       q: question.slice(0, POLL_MAX_QUESTION),
       o: options.map((option) => [option.id, option.label]),
-      t: poll.type === 'multi' ? 'multi' : 'single',
+      // one answer is `singlechoice`, anything more is `multiplechoice` with a ceiling of `mx`
+      t: max === 1 ? 'single' : 'multi',
+      mx: max,
       // `endsAt` is NIP-88's own tag name; 0 means it does not close on its own
       e: Number.isFinite(poll.endsAt) && poll.endsAt > 0 ? Math.floor(poll.endsAt) : 0,
     },
@@ -288,10 +308,13 @@ export function packPoll(pubkey, createdAt, poll) {
 }
 
 /** The message an answer posts: empty text, the poll it answers, and the option ids chosen. */
-export function packPollVote(pubkey, createdAt, pollId, optionIds) {
-  const chosen = [...new Set((optionIds || []).map((id) => String(id).trim()).filter(Boolean))];
+export function packPollVote(pubkey, createdAt, pollId, optionIds, max) {
+  let chosen = [...new Set((optionIds || []).map((id) => String(id).trim()).filter(Boolean))];
   if (!chosen.length) throw new Error('pick at least one option');
   if (!pollId) throw new Error('an answer needs the poll it answers');
+  // a ceiling the poll set is a rule even when the person answering is in a hurry
+  const ceiling = Math.max(1, Math.floor(Number(max) || chosen.length));
+  if (chosen.length > ceiling) chosen = chosen.slice(0, ceiling);
   return JSON.stringify({ v: 1, p: pubkey, c: createdAt, m: '', pv: { id: String(pollId), s: chosen } });
 }
 
@@ -321,6 +344,10 @@ export function unpackRoomMessage(plaintext, event) {
         question: question.slice(0, POLL_MAX_QUESTION),
         options,
         type: body.poll.t === 'multi' ? 'multi' : 'single',
+        // a poll written before the ceiling existed keeps NIP-88's own reading: one answer, or any number
+        max: Math.floor(Number(body.poll.mx) || 0) > 0
+          ? Math.min(Math.floor(Number(body.poll.mx)), options.length)
+          : (body.poll.t === 'multi' ? options.length : 1),
         endsAt: Number(body.poll.e) > 0 ? Math.floor(Number(body.poll.e)) : 0,
       },
       vote: null,
