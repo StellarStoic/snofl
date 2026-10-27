@@ -1702,11 +1702,17 @@ small {
     color: rgb(253, 128, 149);
 }
 
+/* The visits checker is its own category in the FAQ index, so it carries the same colour here. */
+.faq-question.urlchckr a {
+    color: rgb(0, 207, 200);
+}
+
 /* Hover Effect */
 .faq-question.uni a:hover,
 .faq-question.client a:hover,
 .faq-question.urlmkr a:hover,
 .faq-question.index a:hover,
+.faq-question.urlchckr a:hover,
 .faq-question.showhistory a:hover {
     text-decoration: underline;
     opacity: 0.8;

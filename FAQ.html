@@ -18,7 +18,7 @@
     
     <!-- Web Manifest (for PWAs) -->
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
-    <link rel="stylesheet" href="styles.css?v=8">
+    <link rel="stylesheet" href="styles.css?v=9">
     <script src="backgroundImages.js"></script>
     <script src="background.js"></script>
     <script src="fontList.js"></script>  
@@ -56,6 +56,9 @@
             </p>
             <p class="content-paragraph clickable-category" style="color: orange; font-weight: bold;" onclick="filterFAQs('index')">
                 Questions about the Home Site
+            </p>
+            <p class="content-paragraph clickable-category" style="color: rgb(0, 207, 200); font-weight: bold;" onclick="filterFAQs('urlchckr')">
+                Questions about the visits checker
             </p>
             <p class="content-paragraph clickable-category" style="color: rgb(253, 128, 149); font-weight: bold;" onclick="filterFAQs('showhistory')">
                 Questions about ShowHistory
@@ -342,6 +345,38 @@
             </div>
 
         <!-- New FAQ Question -->
+        <div class="faq-question urlchckr" id="faqVisits" onclick="toggleFaq('faqVisits2')"><a href="#faqVisits">How many times was my short link opened, and when does it disappear?</a></div>
+        <div id="faqVisits2" class="faq-answer">
+            <p>
+                Every link you shorten is kept on my server rather than on Nostr: the long address sits in a small
+                database and the short code only redirects to it. The <a href="urlchckr.html">chck</a> page reads
+                that one row and tells you:
+            </p>
+            <ul>
+                <li>how many times the short link has been opened,</li>
+                <li>when it was last opened (UTC),</li>
+                <li>the long address it points at,</li>
+                <li>how old the short link is, and</li>
+                <li>how long it has left before it is deleted.</li>
+            </ul>
+            <p>
+                You can reach it from the footer as <strong>chck</strong>, or straight from the QR window: right
+                after you make a short link, <em>Check this link's visits</em> opens the page with the code already
+                filled in.
+            </p>
+            <p>
+                Short links are kept for 2,100 days — a little under six years — and the page counts that down to the
+                hour. If something had to be removed because of a report, the page says so instead, with the date, how
+                many times it had been opened and the reason.
+            </p>
+            <p>
+                One thing worth knowing: those numbers are not private to you. Anyone who has the short code can open
+                the same page and see the same count, the last visit and where it points — the lookup answers one code
+                at a time, so nobody can walk the whole list. If the destination is something you would not want a
+                stranger to read, do not shorten it.
+            </p>
+        </div>
+
         <div class="faq-question index" onclick="toggleFaq('faq10')"><a href="#faqCanIdelete">How can I delete a Note I posted?</a></div>
         <div id="faq10" class="faq-answer">
             <p><strong>You can't</strong></p>
@@ -358,7 +393,7 @@
         <a href="FAQ.html">FAQ</a> | 
         <a href="urlmkr.html">URLmkr</a> | 
         <a href="src.html">src</a> | 
-        <a href="urlchckr.html">Visits</a>
+        <a href="urlchckr.html">chck</a>
         <!-- <button id="showHistoryBtn"  title="a History data of all the posted notes from this device">Show History</button> -->
     </footer>
 

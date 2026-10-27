@@ -3,135 +3,334 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Check URL views</title>
+    <title>chck · snofl</title>
+    <meta name="description" content="How many times a shortened snofl link was opened, when it was last opened, and when it will be deleted.">
     <style>
-        @import url(https://fonts.bunny.net/css?family=athiti:200);
-        /* Root font-size scaling based on viewport width */
-        html {
-            font-size: calc(1vw + 1vh + 0.5vmin); /* Adjusts base font size based on the viewport */
+        /* chck - the visits checker. It carried its own 2010 sheet: a viewport-scaled root font (1rem ≈ 34px on a
+           desktop), a black page with pure-green text, and a bunny.net font import. This is the same visual
+           language as the maker and src: #141414 ground, #1d1d1d cards, one green accent, 17px type - and the
+           page sets its own scale instead of following the viewport.
+
+           The footer is deliberately plain here, not the site's .footerDynamic: that one is fixed and hidden until
+           a scroll or a hover reveals it, which on a page this short would leave the links invisible. footer.js
+           guards on the class, so it simply leaves this footer alone. */
+        :root {
+            --ground: #141414;
+            --card: #1d1d1d;
+            --edge: #2e2e2e;
+            --edge-strong: #3a3a3a;
+            --ink: #f1f1f1;
+            --ink-dim: #a9a9a9;
+            --ink-faint: #8a8a8a;
+            --accent: #4caf50;
+            --accent-strong: #5cbb60;
+            --accent-ink: #0d1f0e;
+            --radius-lg: 16px;
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
             margin: 0;
             padding: 0;
         }
+
         body {
-            font-family: 'Athiti', sans-serif;
-            background-color: black;
-            color: rgb(2, 230, 2);
-            margin: 10px;
-            padding: 0;
-            box-sizing: border-box;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 17px;
+            line-height: 1.55;
+            color: var(--ink);
+            background: var(--ground);
+            -webkit-font-smoothing: antialiased;
         }
 
-        
-        .container {
-            max-width: 90%;
-            margin: auto;
-            padding: 10px;
-            box-sizing: border-box;
-        }
-        input, button {
-            margin: 10px 0;
-            padding: 10px;
+        .page {
             width: 100%;
-            box-sizing: border-box;
-            font-size: 1rem;
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 44px 20px 36px;
+            flex: 1 0 auto;
+        }
+
+        .head h1 {
+            margin: 0;
+            font-size: 30px;
+            font-weight: 650;
+            letter-spacing: -0.01em;
+        }
+
+        .head h1 .brand {
+            color: var(--accent);
+        }
+
+        .head .lede {
+            margin: 10px 0 26px;
+            max-width: 54ch;
+            font-size: 16px;
+            color: var(--ink-dim);
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--edge);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+        }
+
+        .card + .card {
+            margin-top: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+        }
+
+        .field {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1 1 auto;
+            min-width: 0;
+            /* 16px is the floor before iOS zooms the page when a field takes focus */
+            font-family: inherit;
+            font-size: 17px;
+            padding: 12px 14px;
+            color: var(--ink);
+            background: #191919;
+            border: 1px solid var(--edge-strong);
+            border-radius: var(--radius);
+            outline: none;
+            transition: border-color 0.15s ease, background 0.15s ease;
+        }
+
+        input[type="text"]::placeholder {
+            color: #bcbcbc;
+            opacity: 1;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent);
+            background: #1f1f1f;
         }
 
         button {
-            background: #1f1f1f;
-            color: #fff;
-            border: 1px solid #454545;
+            flex: 0 0 auto;
+            min-height: 46px;
+            padding: 12px 22px;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 650;
+            color: var(--accent-ink);
+            background: var(--accent);
+            border: 1px solid var(--accent);
+            border-radius: var(--radius);
             cursor: pointer;
+            transition: background 0.15s ease, transform 0.06s ease;
         }
-        
-        .result {
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #454545;
-            background: #1f1f1f;
-            font-size: 1rem;
-            word-wrap: break-word;
+
+        button:hover {
+            background: var(--accent-strong);
+            border-color: var(--accent-strong);
         }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button:focus-visible {
+            outline: 2px solid var(--accent-strong);
+            outline-offset: 2px;
+        }
+
+        .hint {
+            margin: 10px 0 0;
+            font-size: 14px;
+            color: var(--ink-faint);
+        }
+
+        /* the numbers: label left, value right, one row each */
+        .rows {
+            display: grid;
+            gap: 2px;
+            margin: 0;
+        }
+
+        .rows > div {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 11px 2px;
+            border-bottom: 1px solid var(--edge);
+        }
+
+        .rows > div:first-child {
+            padding-top: 0;
+        }
+
+        .rows > div:last-child {
+            border-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .rows dt {
+            flex: 0 0 auto;
+            font-size: 15px;
+            color: var(--ink-dim);
+        }
+
+        .rows dd {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: right;
+            overflow-wrap: anywhere;
+        }
+
+        .rows dd.is-number {
+            font-variant-numeric: tabular-nums;
+            font-size: 19px;
+            color: var(--accent);
+        }
+
         .error {
-            color: red;
-            font-size: 1rem;
+            margin: 16px 0 0;
+            padding: 14px 16px;
+            font-size: 15px;
+            line-height: 1.5;
+            color: #ffd9d9;
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.45);
+            border-left-width: 3px;
+            border-radius: var(--radius-sm);
         }
-        h2 {
-            font-size: 1.5rem;
+
+        .error a {
+            color: #ffd9d9;
+        }
+
+        footer {
+            flex: 0 0 auto;
+            margin-top: auto;
+            padding: 24px 20px 28px;
             text-align: center;
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 0.03em;
+            color: var(--ink-faint);
         }
-        label {
-            font-size: 1rem;
+
+        footer a {
+            color: var(--ink-dim);
+            text-decoration: none;
+            margin: 0 6px;
         }
-        footer, .footerStatic {
-    position: absolute;  /* Change from fixed to absolute */
-    bottom: 0;
-    padding: 10px;
-    background-color: #272727c2;
-    backdrop-filter: blur(10px);
-    color: #efefef;
-    width: 100vw;
-    left: 0;
-    font-size: 2rem;
-    text-align: center;
-    box-sizing: border-box; /* Ensures padding doesn't add extra width */
-}
 
-#time-till-deletion {
-    padding-bottom: 100px; /* Add padding to prevent overlap with footer */
-}
+        footer a:hover {
+            color: var(--accent);
+            text-decoration: underline;
+        }
 
-.footerDynamic {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100vw;
-    padding: 10px;
-    background-color: #272727c2;
-    backdrop-filter: blur(10px);
-    color: #efefef;
-    font-size: 2rem;
-    text-align: center;
-    box-sizing: border-box;
-    transition: opacity 0.5s ease-in-out;
-    opacity: 0;  /* Initially hidden */
-    pointer-events: none;  /* Disable interaction when hidden */
-}
+        @media (max-width: 520px) {
+            .page {
+                padding: 30px 16px 28px;
+            }
 
-footer a {
-    color: #ffffff;
-    margin: 0 10px;
-    text-decoration: none;
-}
+            .head h1 {
+                font-size: 26px;
+            }
 
-footer a:hover {
-    text-decoration: underline;
-}
+            .field {
+                flex-direction: column;
+            }
 
+            button {
+                width: 100%;
+            }
+
+            /* at this width a value held on the right can only wrap - stack the pair and give the long
+               original URL the full column instead */
+            .rows > div {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 2px;
+            }
+
+            .rows dd {
+                text-align: left;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>short URL total visits and time till deletion</h2>
-        <label for="short-url">Enter Shortened URL:</label>
-        <input type="text" id="short-url" placeholder="e.g., https://snofl.com/c984d0">
-        <button id="check-btn">Check Visits</button>
+    <main class="page">
+        <header class="head">
+            <h1>chck <span class="brand">· snofl</span></h1>
+            <p class="lede">
+                Paste a shortened snofl link to see how many times it was opened, when that last happened, and how
+                long it has left before it is deleted.
+            </p>
+        </header>
 
-        <div class="result" id="result-container" style="display: none;">
-            <p><strong>Total Visits:</strong> <span id="total-visits">0</span></p>
-            <p><strong>Last Accessed:</strong> <span id="last-accessed">N/A</span></p>
-            <p><strong>Original URL:</strong> <span id="original-url">N/A</span></p>
-            <p><strong>URL Age:</strong> <span id="url-age">N/A</span></p>
-            <p><strong>Time Till Deletion:</strong> <span id="time-till-deletion">N/A</span></p>
-        </div>
+        <section class="card">
+            <label for="short-url">Shortened link</label>
+            <div class="field">
+                <input type="text" id="short-url" placeholder="https://snofl.com/c984d0" autocomplete="off" spellcheck="false">
+                <button id="check-btn">Check</button>
+            </div>
+            <p class="hint">One code at a time — the count, the last visit and the destination of that link.</p>
+        </section>
+
+        <section class="card" id="result-container" style="display: none;">
+            <dl class="rows">
+                <div>
+                    <dt>Total visits</dt>
+                    <dd id="total-visits" class="is-number">0</dd>
+                </div>
+                <div>
+                    <dt>Last opened</dt>
+                    <dd id="last-accessed">N/A</dd>
+                </div>
+                <div>
+                    <dt>Original URL</dt>
+                    <dd id="original-url">N/A</dd>
+                </div>
+                <div>
+                    <dt>Link age</dt>
+                    <dd id="url-age">N/A</dd>
+                </div>
+                <div>
+                    <dt>Time till deletion</dt>
+                    <dd id="time-till-deletion">N/A</dd>
+                </div>
+            </dl>
+        </section>
 
         <p id="error-message" class="error" style="display: none;"></p>
-    </div>
 
-    <footer class="footerDynamic">
-        <a href="about.html">About</a> | 
-        <a href="FAQ.html">FAQ</a> | 
-        <a href="urlmkr.html">URLmkr</a> | 
-        <a href="src.html">src</a> |
+    </main>
+
+    <footer>
+        <a href="about.html">About</a> |
+        <a href="FAQ.html">FAQ</a> |
+        <a href="urlmkr.html">URLmkr</a> |
+        <a href="src.html">src</a>
     </footer>
 
     <script>
@@ -188,10 +387,6 @@ footer a:hover {
             }
 
             try {
-                // // Extract the short code from the URL
-                // const urlParts = shortUrl.split('/');
-                // const shortCode = urlParts[urlParts.length - 1];
-
                 // Fetch data from the /visits endpoint
                 // One code at a time: the route answers this link's numbers, or 404s. It used to
                 // return the whole table, which anyone could page through to see every shortcut.
@@ -229,6 +424,5 @@ footer a:hover {
             document.getElementById('check-btn').click();
         })();
     </script>
-    <script src="footer.js"></script>
 </body>
 </html>
