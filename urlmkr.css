@@ -159,6 +159,19 @@ body.mk *::after {
 .mk__row > input[type="password"],
 .mk__row > input[type="number"],
 .mk__row > textarea,
+.mk__row > .mk__console,
+.mk__row > .mk__editor-open,
+.mk__row > .mk__editor-clear {
+    /* full row width, and every one of them on its own line */
+    grid-column: 1 / -1;
+    min-width: 0;
+}
+
+.mk__row > .mk__editor-open,
+.mk__row > .mk__editor-clear {
+    justify-self: start;
+}
+
 .mk__row > .mk__trio,
 .mk__row > .mk__relays,
 .mk__row > .mk__lock,
@@ -1330,10 +1343,16 @@ body.mk .mk__row.is-expanded {
     border-radius: 18px;
     box-shadow: 0 30px 90px rgba(0, 0, 0, 0.65);
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    /* label, the field (which takes the room), and the strip under it */
+    grid-template-rows: auto minmax(0, 1fr) auto;
     align-items: start;
-    gap: 14px;
+    gap: 12px;
     overflow: hidden;
+}
+
+body.mk .mk__row.is-expanded > .mk__console {
+    grid-row: 3;
+    grid-column: 1 / -1;
 }
 
 body.mk .mk__row.is-expanded::before {
@@ -1351,6 +1370,7 @@ body.mk .mk__row.is-expanded > label {
 }
 
 body.mk .mk__row.is-expanded > textarea {
+    grid-row: 2;
     height: 100% !important;
     min-height: 0 !important;
     max-height: none !important;
@@ -1871,19 +1891,51 @@ body.mk #check_short_visits:hover {
 /* The console is a toolbar of words, not of mystery glyphs: every button carries its own name underneath, so a
    phone - where :hover does not exist - can still read what it is about to press. The grid fills the width, so
    twenty buttons cost five rows on a phone rather than a hidden scroll. */
+/* The commands sit under the field they write into, in one row that scrolls sideways. A wrapping grid turned
+   twenty-five commands into five rows of buttons stacked above the very text they edit; a strip keeps the editor
+   tall and the toolbar thin, and a sideways scroll is one gesture on a phone. */
 body.mk .mk__console {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
+    display: block;
+    margin: 8px 0 0;
+}
+
+body.mk .mk__cmd-strip {
+    display: flex;
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: nowrap;
     gap: 6px;
-    margin: 10px 0 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2px 2px 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #3a3a3a transparent;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+}
+
+body.mk .mk__cmd-strip::-webkit-scrollbar {
+    height: 6px;
+}
+
+body.mk .mk__cmd-strip::-webkit-scrollbar-thumb {
+    background: #3a3a3a;
+    border-radius: 3px;
+}
+
+body.mk .mk__cmd-strip::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 body.mk .mk__cmd {
     display: flex;
+    flex: 0 0 auto;
+    scroll-snap-align: start;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 3px;
+    min-width: 74px;
     min-height: 46px;
     padding: 7px 4px;
     font-family: inherit;
@@ -1943,15 +1995,14 @@ body.mk .mk__cmd--poll .mk__cmd-name {
 }
 
 body.mk .mk__console-hint {
-    grid-column: 1 / -1;
-    margin: 2px 0 0;
+    margin: 0;
     font-size: 12px;
     line-height: 1.4;
     color: var(--ink-soft, #a9a9a9);
 }
 
 body.mk #p_input {
-    min-height: 180px;
+    min-height: 300px;
     resize: vertical;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 14px;

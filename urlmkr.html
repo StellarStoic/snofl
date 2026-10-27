@@ -23,7 +23,7 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=10">
-    <link rel="stylesheet" href="urlmkr.css?v=49">
+    <link rel="stylesheet" href="urlmkr.css?v=52">
     <script src="urlmkrAgreement.js?v=2"></script>
     <script src="backgroundImages.js"></script>
     <script src="crypto-js.min.js"></script>
@@ -216,7 +216,9 @@
                         <!-- The console: a button per thing the page actually renders, each writing at the caret.
                              The page shows plain HTML, so these insert HTML - Markdown is not rendered there,
                              except for the [text](url) link form, which is what the Link button writes. -->
+                        <textarea id="p_input" rows="8" placeholder="Whatever you like — the buttons above insert what the page can show" disabled></textarea>
                         <div class="mk__console" id="content_console" aria-label="Content formatting">
+                            <div class="mk__cmd-strip" role="toolbar" aria-label="Insert into the content">
                             <button type="button" class="mk__cmd" data-cmd="b" title="Bold: wraps the selection in &lt;b&gt;…&lt;/b&gt;"><span class="mk__cmd-glyph"><b>B</b></span><span class="mk__cmd-name">Bold</span></button>
                             <button type="button" class="mk__cmd" data-cmd="i" title="Italic: slants it with &lt;i&gt;…&lt;/i&gt;"><span class="mk__cmd-glyph"><i>I</i></span><span class="mk__cmd-name">Italic</span></button>
                             <button type="button" class="mk__cmd" data-cmd="u" title="Underline: underlines it with &lt;u&gt;…&lt;/u&gt;"><span class="mk__cmd-glyph"><u>U</u></span><span class="mk__cmd-name">Underline</span></button>
@@ -242,9 +244,10 @@
                             <button type="button" class="mk__cmd mk__cmd--qr" data-cmd="monero" title="Monero: monero:&lt;address&gt; draws a QR with the Monero mark"><span class="mk__cmd-glyph">XMR</span><span class="mk__cmd-name">Monero</span></button>
                             <button type="button" class="mk__cmd mk__cmd--qr" data-cmd="qrcode" title="Any QR: anything after qr: becomes a plain QR"><span class="mk__cmd-glyph">QR</span><span class="mk__cmd-name">Any QR</span></button>
                             <button type="button" class="mk__cmd mk__cmd--poll" data-cmd="poll" title="Poll: [poll:Question|Choice|Choice], or [poll2:…] for two answers each"><span class="mk__cmd-glyph">▁▄█</span><span class="mk__cmd-name">Poll</span></button>
+                            </div>
                             <p class="mk__console-hint" id="content_console_hint">Select words first and a button wraps them; press one with nothing selected and it writes a word you can type over. The name under each button says what it does — no hovering needed.</p>
                         </div>
-                        <textarea id="p_input" rows="8" placeholder="Whatever you like — the buttons above insert what the page can show" disabled></textarea>
+
                     </div>
 
                     </section>
