@@ -18,7 +18,7 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="searchNostr.css?v=4">
+    <link rel="stylesheet" href="searchNostr.css?v=7">
 
 
     <title>snofl discovery client</title>
@@ -251,7 +251,7 @@ function toggleKeyword(keyword) {
     console.log(`🔑 Active keywords:`, Object.keys(keywordStates).filter(k => keywordStates[k]));
     
     updateTitleWithKeywords();
-    updateNotes(); // Re-filter results based on active keywords
+    updateNotes(); // Re-filter results based on active keywords (this also refreshes the count)
     
     // Show filtering stats
     const activeCount = Object.keys(keywordStates).filter(k => keywordStates[k]).length;
@@ -664,7 +664,7 @@ function updateCounters() {
         }
     });
 
-    const displayedCount = displayedNotes.length;
+    const displayedCount = document.querySelectorAll("#notes .note").length;
     const filteredCount = filteredNotes.length;
     const totalCount = allNotes.length;
     
@@ -1174,8 +1174,17 @@ function updateNotes() {
             const readableTime = formatTimestamp(note.created_at || Date.now() / 1000);
             const noteIdShort = `${note.id.slice(0, 4)}...${note.id.slice(-4)}`;
 
-            // Highlight keywords and hashtags
-            let highlightedContent = note.content;
+            // Pictures first. These two passes used to run the other way round, and the keyword pass put a
+            // <span> inside the URL ("image.<span class=\"highlight\">nostr</span>.build"), so the image regex
+            // could never match and every picture in a note appeared as a raw link.
+            const imageUrls = [];
+            let highlightedContent = note.content.replace(
+                /https?:\/\/\S+\.(?:jpg|jpeg|gif|png|webp)/gi,
+                (match) => {
+                    imageUrls.push(match);
+                    return `\u0000IMG${imageUrls.length - 1}\u0000`;
+                }
+            );
 
             keywords.forEach((keyword) => {
                 const isActive = keywordStates[keyword] ?? true; // Check toggle state
@@ -1201,12 +1210,15 @@ function updateNotes() {
                 );
             })
 
-            // Ensure image click opens in fullscreen
-            const imageRegex = /(https?:\/\/\S+\.(?:jpg|jpeg|gif|png|webp))/gi;
+            // paint the pictures back in, in place of their placeholders
+            highlightedContent = highlightedContent.replace(/\u0000IMG(\d+)\u0000/g, (_match, index) =>
+                `<img src="${imageUrls[Number(index)]}" alt="Image" class="note-image" loading="lazy">`
+            );
+
+            // a link that is not a picture should stay a link the reader can open
             highlightedContent = highlightedContent.replace(
-                imageRegex,
-                (match) =>
-                    `<img src="${match}" alt="Image" class="note-image">`
+                /(?<!href=")(?<!src=")(https?:\/\/\S+)/gi,
+                (match) => `<a href="${match}" target="_blank" rel="noopener noreferrer">${match}</a>`
             );
 
             // Determine visibility of the note
@@ -1220,8 +1232,10 @@ function updateNotes() {
                 ? "display: none;"
                 : "";
 
-            // Apply `truncated` class if the note is longer than 300 characters
-            const isTruncated = highlightedContent.length > 300;
+            // Apply `truncated` class if the note is longer than 300 characters - but never to a note carrying a
+            // picture: the clipping cut the image in half and the "...more" chip sat across it.
+            const noteHasImage = /<img[^>]*class="note-image"/.test(highlightedContent);
+            const isTruncated = !noteHasImage && highlightedContent.length > 300;
             const truncatedClass = isTruncated ? "truncated" : "";
 
             const isHidden = hiddenNotes.has(note.id) ? "hidden" : ""; // Check if note should be hidden
@@ -1298,6 +1312,10 @@ function updateNotes() {
         // Attach event listener for copy buttons
         attachCopyListeners();
         attachImageClickListeners(); // Attach image event listeners every time updateNotes() runs
+
+        // Every render refreshes the counter, and it counts the cards actually on the page: displayedNotes
+        // lagged behind here once and produced "Showing 69 of 22 filtered notes".
+        updateCounters();
 }
 
 function toggleHide(noteId) {
