@@ -275,6 +275,202 @@ function renderNostrReference(event, reference) {
     else displayNote1Event(event, reference);
 }
 
+/* ------------------------------------------------------------------ RSVPs (NIP-52 kind 31925)
+ *
+ * An RSVP is an addressable event of its own: `a` names the coordinate it answers, `status` says accepted,
+ * tentative or declined, and `d` keeps one RSVP per person per event replaceable instead of piling them up. The
+ * tally below keeps the newest RSVP per pubkey for the same reason the src votes do: one person, one answer.
+ */
+
+const RSVP_STATUSES = {accepted: "Attending", tentative: "Maybe", declined: "Declined"};
+const rsvpTally = new Map();      // coordinate -> Map(pubkey -> {status, at})
+
+function calendarCoordinate(event) {
+    const identifier = eventTag(event, "d");
+    if (identifier === null || !event.pubkey) return null;
+    return `${Number(event.kind)}:${event.pubkey}:${identifier}`;
+}
+
+function rsvpMarkup(event) {
+    const coordinate = calendarCoordinate(event);
+    if (!coordinate) return "";
+    // one line, like the card: newlines here would become <br> and split the row apart
+    const buttons = Object.entries(RSVP_STATUSES).map(([status, label]) =>
+        `<button type="button" class="cal-event__rsvp" data-rsvp-status="${status}" ` +
+        `data-rsvp-coordinate="${escapeEventText(coordinate)}" ` +
+        `data-rsvp-author="${escapeEventText(event.pubkey)}" ` +
+        `data-rsvp-id="${escapeEventText(event.id || "")}" ` +
+        `aria-pressed="false">${label}<span class="cal-event__rsvp-count" data-rsvp-count="${status}"></span></button>`).join("");
+    return `<div class="cal-event__rsvps" data-rsvp-block="${escapeEventText(coordinate)}">` +
+        `<div class="cal-event__rsvp-row">${buttons}</div>` +
+        `<p class="cal-event__rsvp-note" role="status"></p></div>`;
+}
+
+/** Ask the relays who answered this event, newest RSVP per person. */
+function loadRsvps(coordinate, relays) {
+    const relayList = relays && relays.length ? relays : defaultRelays;
+    const settled = new Map();
+    const finish = () => {
+        rsvpTally.set(coordinate, settled);
+        paintRsvps(coordinate);
+    };
+    let pending = relayList.length;
+    if (!pending) return;
+    relayList.forEach((relay) => {
+        let socket;
+        const done = () => {
+            try { socket.close(); } catch { /* gone */ }
+            pending -= 1;
+            if (pending === 0) finish();
+        };
+        try {
+            socket = new WebSocket(relay);
+        } catch {
+            pending -= 1;
+            if (pending === 0) finish();
+            return;
+        }
+        const timer = setTimeout(done, 6000);
+        socket.onopen = () => {
+            try {
+                socket.send(JSON.stringify(["REQ", "rsvps", {kinds: [31925], "#a": [coordinate], limit: 500}]));
+            } catch { clearTimeout(timer); done(); }
+        };
+        socket.onmessage = (message) => {
+            try {
+                const data = JSON.parse(message.data);
+                if (data[0] === "EOSE") { clearTimeout(timer); return done(); }
+                if (data[0] !== "EVENT" || !data[2] || data[2].kind !== 31925) return;
+                const rsvp = data[2];
+                const status = eventTag(rsvp, "status");
+                if (!RSVP_STATUSES[status]) return;
+                const current = settled.get(rsvp.pubkey);
+                if (current && Number(rsvp.created_at) <= current.at) return;
+                settled.set(rsvp.pubkey, {status, at: Number(rsvp.created_at) || 0});
+            } catch { /* not ours */ }
+        };
+        socket.onerror = () => { clearTimeout(timer); done(); };
+        socket.onclose = () => { clearTimeout(timer); done(); };
+    });
+}
+
+function paintRsvps(coordinate) {
+    const block = document.querySelector(`.cal-event__rsvps[data-rsvp-block="${CSS.escape(coordinate)}"]`);
+    if (!block) return;
+    const tally = rsvpTally.get(coordinate) || new Map();
+    const counts = {accepted: 0, tentative: 0, declined: 0};
+    const me = localStorage.getItem("nostr_pub");
+    let mine = null;
+    tally.forEach((answer, pubkey) => {
+        counts[answer.status] = (counts[answer.status] || 0) + 1;
+        if (me && pubkey === me) mine = answer.status;
+    });
+    block.querySelectorAll(".cal-event__rsvp").forEach((button) => {
+        const status = button.dataset.rsvpStatus;
+        const badge = button.querySelector("[data-rsvp-count]");
+        if (badge) badge.textContent = counts[status] ? String(counts[status]) : "";
+        const isMine = mine === status;
+        button.classList.toggle("is-mine", isMine);
+        button.setAttribute("aria-pressed", isMine ? "true" : "false");
+    });
+}
+
+/** Publish one RSVP, signed by the visitor's own key, straight to the relays this page already trusts. */
+async function publishRsvp(button) {
+    const block = button.closest(".cal-event__rsvps");
+    const note = block ? block.querySelector(".cal-event__rsvp-note") : null;
+    const say = (text) => { if (note) note.textContent = text; };
+
+    const pk = localStorage.getItem("nostr_pk");
+    const pub = localStorage.getItem("nostr_pub");
+    if (!pk || !pub) {
+        say("RSVP needs a Nostr ID on this page — open the ID badge to make one.");
+        return;
+    }
+    if (typeof signEvent !== "function") {
+        say("This page cannot sign right now.");
+        return;
+    }
+
+    const status = button.dataset.rsvpStatus;
+    const coordinate = button.dataset.rsvpCoordinate;
+    const author = button.dataset.rsvpAuthor;
+    const eventId = button.dataset.rsvpId;
+    const tally = rsvpTally.get(coordinate) || new Map();
+    const current = tally.get(pub);
+    if (current && current.status === status) {
+        say(`You already answered ${RSVP_STATUSES[status].toLowerCase()}.`);
+        return;
+    }
+
+    button.disabled = true;
+    say("Signing…");
+    try {
+        // `d` is the coordinate itself: one RSVP per person per event, replaceable, as an addressable event should be
+        const tags = [["a", coordinate], ["d", coordinate], ["status", status]];
+        if (eventId) tags.push(["e", eventId]);
+        if (author) tags.push(["p", author]);
+
+        const event = {kind: 31925, content: "", created_at: Math.floor(Date.now() / 1000), tags, pubkey: pub};
+        const signed = await signEvent(event, pk);
+        const payload = {
+            content: signed.content, created_at: signed.created_at, id: signed.id,
+            kind: signed.kind, pubkey: signed.pubkey, sig: signed.sig, tags: signed.tags,
+        };
+
+        const relayList = (typeof getQueryParams === "function" && getQueryParams().r) || [];
+        const targets = [...new Set([...relayList, ...defaultRelays])];
+        const accepted = await new Promise((resolve) => {
+            let count = 0;
+            let settled = 0;
+            const finish = () => { settled += 1; if (settled === targets.length) resolve(count); };
+            const guard = setTimeout(() => resolve(count), 7000);
+            targets.forEach((relay) => {
+                let socket;
+                try {
+                    socket = new WebSocket(relay);
+                } catch { return finish(); }
+                const done = () => { try { socket.close(); } catch { /* gone */ } finish(); };
+                const timer = setTimeout(done, 6000);
+                socket.onopen = () => {
+                    try { socket.send(JSON.stringify(["EVENT", payload])); } catch { done(); }
+                };
+                socket.onmessage = (message) => {
+                    try {
+                        const data = JSON.parse(message.data);
+                        if (data[0] === "OK" && data[2] === true) { count += 1; clearTimeout(timer); done(); }
+                        else if (data[0] === "OK") { clearTimeout(timer); done(); }
+                    } catch { /* not ours */ }
+                };
+                socket.onerror = () => { clearTimeout(timer); done(); };
+                socket.onclose = () => { clearTimeout(timer); done(); };
+            });
+            setTimeout(() => clearTimeout(guard), 7600);
+        });
+
+        // the answer is ours to show straight away, whatever the relays are still doing
+        tally.set(pub, {status, at: Math.floor(Date.now() / 1000)});
+        rsvpTally.set(coordinate, tally);
+        paintRsvps(coordinate);
+        say(accepted > 0
+            ? `Answered ${RSVP_STATUSES[status].toLowerCase()} — accepted by ${accepted} of ${targets.length} relays.`
+            : "No relay accepted the answer. Try again in a moment.");
+    } catch (error) {
+        console.error("RSVP failed:", error);
+        say("That did not go through: " + (error && error.message ? error.message : "unknown error"));
+    } finally {
+        button.disabled = false;
+    }
+}
+
+/** One delegated listener: cards are re-rendered on every truncation, so per-button handlers would be lost. */
+document.addEventListener("click", (event) => {
+    const button = event.target.closest(".cal-event__rsvp");
+    if (!button) return;
+    event.preventDefault();
+    publishRsvp(button);
+});
+
 /** NIP-52 calendar event as a card: title, when, where, what, and a way out to njump. */
 function displayCalendarEvent(event, reference) {
     const paragraph = document.querySelector('#customParagraph');
@@ -293,16 +489,19 @@ function displayCalendarEvent(event, reference) {
 
     // The sentinels matter: truncateParagraph slices the page's markup by length, and without a marker it will
     // happily cut through the middle of a card, leaving its title and date but not its place or summary.
-    const card = `<!--ref:start--><div class="cal-event">
-            <div class="cal-event__label">${isDateBased ? "Calendar · date" : "Calendar · time"}</div>
-            <div class="cal-event__title">${escapeEventText(title)}</div>
-            ${when ? `<div class="cal-event__when">${escapeEventText(when)}</div>` : ""}
-            ${where ? `<div class="cal-event__where">${escapeEventText(where)}</div>` : ""}
-            ${summary ? `<div class="cal-event__summary">${escapeEventText(summary).slice(0, 600)}</div>` : ""}
-            ${image && /^https?:\/\//i.test(image) ? `<img class="cal-event__image" src="${escapeEventText(image)}" alt="">` : ""}
-            <a class="cal-event__link" href="https://njump.me/${escapeEventText(String(reference).replace(/^nostr:/, ""))}" target="_blank" rel="noopener">open in njump &#8669;</a>
-        </div><!--ref:end-->
-    `;
+    // Built as one line on purpose: this markup goes through convertNewlinesToBreaks, which would turn every
+    // newline of a readable template into a <br> and leave the card full of gaps.
+    const card =
+        '<!--ref:start--><div class="cal-event">' +
+            `<div class="cal-event__label">${isDateBased ? "Calendar · date" : "Calendar · time"}</div>` +
+            `<div class="cal-event__title">${escapeEventText(title)}</div>` +
+            (when ? `<div class="cal-event__when">${escapeEventText(when)}</div>` : "") +
+            (where ? `<div class="cal-event__where">${escapeEventText(where)}</div>` : "") +
+            (summary ? `<div class="cal-event__summary">${escapeEventText(summary).slice(0, 600)}</div>` : "") +
+            (image && /^https?:\/\//i.test(image) ? `<img class="cal-event__image" src="${escapeEventText(image)}" alt="">` : "") +
+            rsvpMarkup(event) +
+            `<a class="cal-event__link" href="https://njump.me/${escapeEventText(String(reference).replace(/^nostr:/, ""))}" target="_blank" rel="noopener">open in njump &#8669;</a>` +
+        '</div><!--ref:end-->';
 
     const fullContent = paragraph.getAttribute('data-full-content');
     const updated = fullContent.replace(reference, card);
@@ -310,6 +509,12 @@ function displayCalendarEvent(event, reference) {
     if (paragraph.getAttribute('data-expanded') === "true") paragraph.innerHTML = updated;
     else truncateParagraph(paragraph);
     applyModalListenersToMedia(paragraph);
+
+    const coordinate = calendarCoordinate(event);
+    if (coordinate) {
+        const relayList = (typeof getQueryParams === "function" && getQueryParams().r) || [];
+        loadRsvps(coordinate, [...new Set([...relayList, ...defaultRelays])]);
+    }
 }
 // Fetch the note1 event from relays (stop after first success)
 // If event not found, retry with default relays

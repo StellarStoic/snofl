@@ -468,6 +468,72 @@ video[id^="embedded-video-"]:hover {
     border-radius: 10px;
 }
 
+/* the three answers, and what everyone else said */
+.cal-event__rsvps {
+    display: grid;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.cal-event__rsvp-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.cal-event__rsvp {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 11px;
+    font-family: inherit;
+    font-size: 12.5px;
+    line-height: 1.2;
+    color: #d0d0d0;
+    background: #202020;
+    border: 1px solid #333;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: color .12s ease, border-color .12s ease, background .12s ease;
+}
+
+.cal-event__rsvp:hover:not(:disabled) {
+    color: #f0f0f0;
+    border-color: #4a4a4a;
+    background: #262626;
+}
+
+.cal-event__rsvp.is-mine {
+    color: var(--accent, #4caf50);
+    border-color: var(--accent, #4caf50);
+    background: rgba(76, 175, 80, 0.14);
+}
+
+.cal-event__rsvp:disabled {
+    opacity: 0.55;
+    cursor: progress;
+}
+
+.cal-event__rsvp-count {
+    font-variant-numeric: tabular-nums;
+    color: #9a9a9a;
+}
+
+.cal-event__rsvp.is-mine .cal-event__rsvp-count {
+    color: var(--accent, #4caf50);
+}
+
+.cal-event__rsvp-note {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #9a9a9a;
+}
+
+.cal-event__rsvp-note:empty {
+    display: none;
+}
+
 .cal-event__link {
     justify-self: start;
     font-size: 12.5px;

@@ -350,8 +350,15 @@
                 yours. A whole-day event's end date is <em>exclusive</em> in NIP-52, so "1 May to 4 May" is shown as
                 1–3 May, which is what the author meant.
                 <br><br>
-                The card is read-only for now: no RSVP (kind <code>31925</code>) and no adding it to a calendar app
-                from the page — "open in njump" is the way out.
+                The card also carries the three answers — <strong>Attending</strong>, <strong>Maybe</strong>,
+                <strong>Declined</strong>. Pressing one publishes an RSVP (kind <code>31925</code>) signed by your own
+                key: an <code>a</code> tag naming the event's coordinate, a <code>status</code>, and a
+                <code>d</code> that is the coordinate itself, so answering again replaces your previous answer instead
+                of piling up. The counts beside each button are read back off the relays — newest answer per person,
+                so nobody can be counted twice — and your own choice is tinted. Changing your mind moves the count
+                rather than adding one. RSVP needs a Nostr ID on the page; without one the card says so instead of
+                failing quietly. Adding an event to a calendar app from the page is not there yet — "open in njump" is
+                the way out.
             </p>
         </div>
 
