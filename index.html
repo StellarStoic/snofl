@@ -27,7 +27,7 @@
     <script src="https://bundle.run/browserify-cipher@1.0.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=9">
-    <link rel="stylesheet" href="room.css?v=7">
+    <link rel="stylesheet" href="room.css?v=8">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="background.js"></script>
@@ -37,7 +37,7 @@
     <script src="crypto-js.min.js"></script>                                                                                                                   
     <script src="dec.js"></script>                                                                                                                   
     <script src="bech32.js"></script>                                                                                                                   
-    <script src="note1.js?v=4"></script>
+    <script src="note1.js?v=5"></script>
     <!-- <script src="footer.js"></script> // IS AT THE BOTTOM-->
 </head>
 
@@ -411,10 +411,39 @@ async function setDynamicContent() {
     const paragraph = document.getElementById("customParagraph");
     const readMoreLink = document.getElementById("readMoreLink");
 
+    /*
+     * A poll written into the content is not text: it becomes a card under the page, and the room reads the
+     * declarations from window.SNOFL_PAGE_POLLS. Two scripts write the paragraph (this one and note1.js, which
+     * re-reads `p` on load to resolve note references), so the split lives in one function both call - a second
+     * copy is how the token reappeared in the text after it had already been taken out once.
+     */
+    if (typeof window.snoflContentWithoutPolls !== 'function') {
+        window.SNOFL_PAGE_POLLS = window.SNOFL_PAGE_POLLS || [];
+        window.snoflContentWithoutPolls = function (text) {
+            const pattern = /\[poll\d?:[^\[\]|]+(?:\|[^\[\]|]*){1,5}\]/g;
+            const source = String(text == null ? '' : text);
+            const declared = source.match(pattern) || [];
+            if (declared.length) {
+                window.SNOFL_PAGE_POLLS = [...new Set([...(window.SNOFL_PAGE_POLLS || []), ...declared])];
+                console.log('Page declares', declared.length, 'poll(s)');
+            }
+            return {
+                declared,
+                text: source.replace(pattern, '').replace(/[ \t]+\n/g, '\n').trim(),
+            };
+        };
+    }
+
     if (p) {
         console.log("Processing paragraph content:", p);
+        // A poll written into the content travels with the link: collect the tokens here, hand them to the
+        // room (which reads them from this global when it mounts) and take them out of the text, so the card
+        // is the only thing the reader sees.
+        // `p` is a const from the query, so the text without its poll tokens is a new value rather than a
+        // reassignment - and this runs before anything else touches the content.
+        const contentText = window.snoflContentWithoutPolls(p).text;
         // Replace media links first
-        let processedContent = replaceMediaLinks(p); // Replace media links
+        let processedContent = replaceMediaLinks(contentText); // Replace media links
         console.log("After replacing media links:", processedContent);
 
         // Store the processed content for truncation and expansion
@@ -2540,7 +2569,7 @@ updateAvatar();
 </script>
 <script src="footer.js"></script>       
 
-    <script type="module" src="room.js?v=6"></script>
+    <script type="module" src="room.js?v=8"></script>
 </body>
 
 </html>

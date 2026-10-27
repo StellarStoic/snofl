@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 
 import {
   packPoll, packPollVote, unpackRoomMessage, tallyPoll, pollIsClosed, pollMaxAnswers, newPollId,
+  parsePollDeclaration, parseDeclaredPolls, stripPollDeclarations, declaredPollId,
   POLL_MAX_OPTIONS, POLL_MIN_OPTIONS,
 } from '../roomlib.js';
 
@@ -143,4 +144,64 @@ test('an answer cannot carry more options than the poll allows', () => {
   assert.deepEqual(packed.pv.s, ['a', 'b'], 'the ceiling truncates rather than refusing the answer');
   const unlimited = JSON.parse(packPollVote(PUB, EVENT.created_at, 'p', ['a', 'b', 'c'], 3));
   assert.deepEqual(unlimited.pv.s, ['a', 'b', 'c']);
+});
+
+/* A poll written into the page's own text is not a room message: it has to be identical for every reader, so
+   it travels in the link and only the answers go to a relay. */
+
+test('a poll written into the content becomes the same poll for every reader', () => {
+  const token = '[poll:Where do we fly tomorrow?|Krvavec|Stol|Ratitovec]';
+  const poll = parsePollDeclaration(token);
+  assert.equal(poll.question, 'Where do we fly tomorrow?');
+  assert.deepEqual(poll.options.map(option => option.label), ['Krvavec', 'Stol', 'Ratitovec']);
+  assert.equal(poll.max, 1, 'a plain [poll:…] is one answer each');
+  assert.equal(poll.type, 'single');
+  assert.equal(poll.id, parsePollDeclaration(token).id, 'two readers of the same link agree on the id');
+  assert.notEqual(parsePollDeclaration('[poll:Other question|Krvavec|Stol]').id, poll.id);
+});
+
+test('a numbered token lets each person pick that many answers', () => {
+  const poll = parsePollDeclaration('[poll2:Which two days?|Fri|Sat|Sun]');
+  assert.equal(poll.max, 2);
+  assert.equal(poll.type, 'multi');
+  assert.equal(pollIsClosed(poll), false, 'a declared poll does not close on a clock it cannot carry');
+  assert.equal(pollMaxAnswers(poll), 2);
+});
+
+test('a malformed declaration is not a poll, so it stays as text rather than half-rendering', () => {
+  assert.equal(parsePollDeclaration('[poll:only a question]'), null, 'a poll needs options');
+  assert.equal(parsePollDeclaration('[poll:]'), null);
+  assert.equal(parsePollDeclaration('[poll:a|b|c|d|e|f|g|h]'), null, 'more options than a poll takes');
+  assert.equal(parsePollDeclaration('not a poll at all'), null);
+  assert.deepEqual(parseDeclaredPolls('nothing here'), []);
+});
+
+test('the tokens leave the text they were written in', () => {
+  const text = 'Come fly tomorrow.\n[poll:Where?|Krvavec|Stol]\nMeeting at eight.';
+  assert.equal(stripPollDeclarations(text), 'Come fly tomorrow.\n\nMeeting at eight.');
+  assert.equal(parseDeclaredPolls(text).length, 1);
+  // two polls on one page are two cards, in the order they were written
+  const two = '[poll:First?|a|b]\n[poll:Second?|c|d]';
+  assert.deepEqual(parseDeclaredPolls(two).map(poll => poll.question), ['First?', 'Second?']);
+});
+
+test('the id is derived from the declaration, not from a clock or a random source', () => {
+  assert.equal(declaredPollId('[poll:Q|a|b]'), declaredPollId('[poll:Q|a|b]'));
+  assert.equal(declaredPollId('[poll:Q|a|b]'), declaredPollId('[poll:q|a|b]'), 'case is not a new poll');
+  assert.equal(declaredPollId('[poll:Q|a|b]'), declaredPollId('[poll:  Q | a | b ]'), 'spacing is not either');
+  assert.notEqual(declaredPollId('[poll:Q|a|b]'), declaredPollId('[poll:Q|a|c]'));
+  assert.match(declaredPollId('[poll:Q|a|b]'), /^p[0-9a-f]{8}$/);
+});
+
+test('a page poll is the room poll, so the room does not offer a second one', async () => {
+  const {readFile} = await import('node:fs/promises');
+  const room = await readFile(new URL('../room.js', import.meta.url), 'utf8');
+  assert.match(room, /if \(poll\.source === 'page'\) \{/);
+  assert.match(room, /pollToggle\.hidden = true;/);
+  assert.match(room, /pollToggle\.textContent = 'New poll';/);
+  // and the declared poll wins over anything a visitor posted in the room
+  assert.match(room, /const fromPage = \[\.\.\.polls\.values\(\)\]\.filter\(poll => poll\.source === 'page'\)/);
+  assert.match(room, /if \(fromPage\.length\) return fromPage\[0\];/);
+  // the page's tokens reach the room through one global, read at mount
+  assert.match(room, /parseDeclaredPolls\(Array\.isArray\(window\.SNOFL_PAGE_POLLS\)/);
 });

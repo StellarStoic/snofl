@@ -21,6 +21,7 @@ import {
   pollIsClosed,
   pollMaxAnswers,
   newPollId,
+  parseDeclaredPolls,
   POLL_MAX_OPTIONS,
   POLL_MIN_OPTIONS,
 } from './roomlib.js';
@@ -353,6 +354,15 @@ export async function mount(options = {}) {
   const messages = new Map();      // note id -> { id, pubkey, created_at, text, powBits }
   const reactions = new Map();     // note id -> Map(pubkey -> { value, created_at })
   const polls = new Map();         // poll id -> { id, pubkey, created_at, question, options, type, endsAt, noteId }
+  // A poll written into the page's own content travels with the link, so every reader sees the same question
+  // without anyone having to publish it first. It shares the room's payloads, mining and tallying; the
+  // answers are the only thing that goes to a relay.
+  const declaredPolls = Array.isArray(options.declaredPolls)
+    ? options.declaredPolls
+    : parseDeclaredPolls(Array.isArray(window.SNOFL_PAGE_POLLS) ? window.SNOFL_PAGE_POLLS.join('\n') : '');
+  for (const poll of declaredPolls) {
+    polls.set(poll.id, {...poll, source: 'page', pubkey: null, created_at: 0, powBits: 0});
+  }
   const pollAnswers = new Map();   // poll id -> Map(pubkey -> { options, created_at })
   let sortMode = 'new';
   let activeMining = null;         // { cancelled } while a post or a vote is mining
@@ -612,6 +622,11 @@ export async function mount(options = {}) {
    */
 
   const selectedPoll = () => {
+    // the page declares at most one poll it means; a room poll is what happens when nobody wrote one
+    const fromPage = [...polls.values()].filter(poll => poll.source === 'page').sort((a, b) => (
+      declaredPolls.findIndex(entry => entry.id === a.id) - declaredPolls.findIndex(entry => entry.id === b.id)
+    ));
+    if (fromPage.length) return fromPage[0];
     let newest = null;
     for (const poll of polls.values()) {
       if (!newest || poll.created_at > newest.created_at) newest = poll;
@@ -643,7 +658,15 @@ export async function mount(options = {}) {
       return;
     }
     pollPanel.hidden = false;
-    pollToggle.textContent = 'New poll';
+    // A poll declared by the page is the room's poll: offering "New poll" beside it would post a room poll
+    // that the panel never shows, because the page's one wins. Say so instead of hiding the reason.
+    if (poll.source === 'page') {
+      pollToggle.hidden = true;
+      pollForm.hidden = true;
+    } else {
+      pollToggle.hidden = false;
+      pollToggle.textContent = 'New poll';
+    }
 
     if (pollDraftFor !== poll.id) {
       pollDraftFor = poll.id;
@@ -663,7 +686,9 @@ export async function mount(options = {}) {
     head.append(
       element('span', 'room__poll-tag', 'Poll'),
       element('span', 'room__poll-meta',
-        `${shortAuthor(poll.pubkey, options.npubEncode || window.npubEncode)} · ${timeAgo(poll.created_at)}` +
+        (poll.source === 'page'
+          ? 'asked by this page'
+          : `${shortAuthor(poll.pubkey, options.npubEncode || window.npubEncode)} · ${timeAgo(poll.created_at)}`) +
         ` · ${ceiling === 1 ? 'one answer each' : `up to ${ceiling} answers each`} · ${closesIn(poll.endsAt)}`),
     );
 

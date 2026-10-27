@@ -244,7 +244,7 @@ export function verifyProofOfWork(event) {
 
 export const POLL_MAX_OPTIONS = 6;
 export const POLL_MIN_OPTIONS = 2;
-const POLL_MAX_LABEL = 90;
+export const POLL_MAX_LABEL = 90;
 const POLL_MAX_QUESTION = 160;
 
 /** A short id for one poll, so an answer can name it without the poll event's id (unknown until it is mined). */
@@ -384,4 +384,74 @@ export function tallyPoll(options, votes, { now = Math.floor(Date.now() / 1000) 
 /** Has this poll closed on its own? */
 export function pollIsClosed(poll, now = Math.floor(Date.now() / 1000)) {
   return !!(poll && poll.endsAt && poll.endsAt <= now);
+}
+
+/* ---------------------------------------------------------------- polls declared by the page itself
+ *
+ * A poll the page creator wrote is not a room message: everybody who opens the link must see the same
+ * question, so it travels inside the link's own `p` text as `[poll:Question|First|Second]` — or
+ * `[poll2:Question|…]` for two answers each — and only the *answers* go to the room. That keeps the poll
+ * unforgeable (it is in the link), keeps it out of the URL's byte budget as far as a poll can be, and still
+ * uses the room's NIP-88 payloads, mining and tallying for the votes.
+ */
+
+const POLL_DECLARATION = /\[poll(\d?):([^\[\]|]+(?:\|[^\[\]|]*){1,5})\]/g;
+
+/** FNV-1a over a string: chosen because it is synchronous, so every reader agrees without a server or a clock. */
+function fingerprint(text) {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return 'p' + hash.toString(16).padStart(8, '0');
+}
+
+/**
+ * A stable id for a declared poll, taken from what the poll *says* rather than from the characters it was
+ * typed with: `[poll:Q|a|b]` and `[poll: Q | a | b ]` are the same poll, so an edit that only moves spaces
+ * does not move everyone's answers to a new question.
+ */
+export function declaredPollId(declaration) {
+  const poll = parsePollDeclaration(declaration, {withId: false});
+  const text = poll
+    ? `${poll.max}|${poll.question}|${poll.options.map(option => option.label).join('|')}`
+    : String(declaration);
+  return fingerprint(text.trim().toLowerCase());
+}
+
+/** One `[poll:…]` token as a poll, or null when it is not one. */
+export function parsePollDeclaration(token, {withId = true} = {}) {
+  const match = String(token || '').match(/^\[poll(\d?):(.+)\]$/s);
+  if (!match) return null;
+  const parts = match[2].split('|').map(part => part.trim());
+  const question = parts.shift();
+  const options = parts.filter(Boolean);
+  if (!question || options.length < POLL_MIN_OPTIONS || options.length > POLL_MAX_OPTIONS) return null;
+  const ceiling = Math.min(Math.max(1, Number(match[1]) || 1), options.length);
+  const poll = {
+    question: question.slice(0, POLL_MAX_QUESTION),
+    options: options.map((label, index) => ({id: String.fromCharCode(97 + index), label: label.slice(0, POLL_MAX_LABEL)})),
+    type: ceiling === 1 ? 'single' : 'multi',
+    max: ceiling,
+    endsAt: 0,
+    declaration: String(token),
+  };
+  if (!withId) return poll;
+  return {...poll, id: declaredPollId(token)};
+}
+
+/** Every poll a page declares, in the order written. */
+export function parseDeclaredPolls(text) {
+  const polls = [];
+  for (const match of String(text || '').matchAll(POLL_DECLARATION)) {
+    const poll = parsePollDeclaration(match[0]);
+    if (poll) polls.push(poll);
+  }
+  return polls;
+}
+
+/** The text without its poll tokens, which render as cards rather than as characters. */
+export function stripPollDeclarations(text) {
+  return String(text || '').replace(POLL_DECLARATION, '').replace(/[ \t]+\n/g, '\n').trim();
 }

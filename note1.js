@@ -586,6 +586,11 @@ document.querySelectorAll('.details-icon').forEach(icon => {
 window.onload = () => {
     const params = new URLSearchParams(window.location.search);
     let pValue = params.get('p') || '';
+    // a poll declared in the content is a card under the page, never text in it: the same split the page itself
+    // does, taken from the same function, or this second write puts the token back
+    if (typeof window.snoflContentWithoutPolls === 'function') {
+        pValue = window.snoflContentWithoutPolls(pValue).text;
+    }
     const relayParam = params.getAll('r');
     
     const customParagraph = document.getElementById('customParagraph');

@@ -1694,3 +1694,57 @@ body.mk #check_short_visits {
 body.mk #check_short_visits:hover {
     color: #08470c;
 }
+
+/* ---------------------------------------------------------------- the content console
+   One button per thing the page actually renders, each writing at the caret. Its own row above the field, so
+   it stays in reach when the field is full of text, and short labels because the writer is not reading docs. */
+body.mk .mk__console {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 10px 0 8px;
+}
+
+body.mk .mk__cmd {
+    min-width: 38px;
+    min-height: 36px;
+    padding: 6px 10px;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1;
+    color: #dcdcdc;
+    background: #191919;
+    border: 1px solid var(--edge-strong, #3a3a3a);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: color .12s ease, border-color .12s ease, background .12s ease;
+}
+
+body.mk .mk__cmd:hover,
+body.mk .mk__cmd:focus-visible {
+    color: var(--accent, #4caf50);
+    border-color: var(--accent, #4caf50);
+    background: #1f1f1f;
+    outline: none;
+}
+
+body.mk .mk__cmd--poll {
+    padding: 6px 14px;
+    border-color: var(--accent, #4caf50);
+    color: var(--accent, #4caf50);
+    font-weight: 600;
+}
+
+body.mk .mk__console-hint {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: #a9a9a9;
+}
+
+body.mk #p_input {
+    min-height: 180px;
+    resize: vertical;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 14px;
+    line-height: 1.5;
+}
