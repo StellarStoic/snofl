@@ -22,8 +22,8 @@
     <!-- Web Manifest (for PWAs) -->
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=9">
-    <link rel="stylesheet" href="urlmkr.css?v=41">
+    <link rel="stylesheet" href="styles.css?v=10">
+    <link rel="stylesheet" href="urlmkr.css?v=42">
     <script src="urlmkrAgreement.js?v=2"></script>
     <script src="backgroundImages.js"></script>
     <script src="crypto-js.min.js"></script>
@@ -236,6 +236,11 @@
                             <button type="button" class="mk__cmd" data-cmd="link" title="Link: the one Markdown form the page honours: [the words](https://address)"><span class="mk__cmd-glyph">↗</span><span class="mk__cmd-name">Link</span></button>
                             <button type="button" class="mk__cmd" data-cmd="image" title="Image: a picture address on its own line shows the picture"><span class="mk__cmd-glyph">▢</span><span class="mk__cmd-name">Image</span></button>
                             <button type="button" class="mk__cmd" data-cmd="note" title="Note: an nevent1… / note1… reference on its own line is resolved"><span class="mk__cmd-glyph">N</span><span class="mk__cmd-name">Note</span></button>
+                            <button type="button" class="mk__cmd mk__cmd--qr" data-cmd="ln" title="Lightning: lightning:&lt;invoice or address&gt; draws a QR with the Lightning mark"><span class="mk__cmd-glyph">LN</span><span class="mk__cmd-name">Lightning</span></button>
+                            <button type="button" class="mk__cmd mk__cmd--qr" data-cmd="btc" title="Bitcoin: bitcoin:&lt;address&gt; draws a QR with the Bitcoin mark"><span class="mk__cmd-glyph">BTC</span><span class="mk__cmd-name">Bitcoin</span></button>
+                            <button type="button" class="mk__cmd mk__cmd--qr" data-cmd="ecash" title="eCash: ecash:&lt;address&gt; draws a QR with the eCash mark"><span class="mk__cmd-glyph">XEC</span><span class="mk__cmd-name">eCash</span></button>
+                            <button type="button" class="mk__cmd mk__cmd--qr" data-cmd="monero" title="Monero: monero:&lt;address&gt; draws a QR with the Monero mark"><span class="mk__cmd-glyph">XMR</span><span class="mk__cmd-name">Monero</span></button>
+                            <button type="button" class="mk__cmd mk__cmd--qr" data-cmd="qrcode" title="Any QR: anything after qr: becomes a plain QR"><span class="mk__cmd-glyph">QR</span><span class="mk__cmd-name">Any QR</span></button>
                             <button type="button" class="mk__cmd mk__cmd--poll" data-cmd="poll" title="Poll: [poll:Question|Choice|Choice], or [poll2:…] for two answers each"><span class="mk__cmd-glyph">▁▄█</span><span class="mk__cmd-name">Poll</span></button>
                             <p class="mk__console-hint" id="content_console_hint">Select words first and a button wraps them; press one with nothing selected and it writes a word you can type over. The name under each button says what it does — no hovering needed.</p>
                         </div>
@@ -1840,6 +1845,11 @@ document.getElementById('close_qr_button').addEventListener('click', function ()
         link: {name: 'Link', explain: 'the one Markdown form the page honours: [the words](https://address).', open: '[', close: '](https://)', placeholder: 'link text'},
         image: {name: 'Image', explain: 'a picture address alone on its line is shown as the picture.', insert: 'https://example.com/picture.jpg', ownLine: true},
         note: {name: 'Note', explain: 'an nevent1… or note1… reference alone on its line is resolved.', insert: 'nostr:nevent1', ownLine: true},
+        ln: {name: 'Lightning', explain: 'type or paste an invoice or a Lightning address straight after lightning: and the page draws a QR with the Lightning mark; a tap on it copies the value.', insert: 'lightning:', ownLine: true, prefix: true},
+        btc: {name: 'Bitcoin', explain: 'type or paste the address straight after bitcoin: and the page draws a QR with the Bitcoin mark.', insert: 'bitcoin:', ownLine: true, prefix: true},
+        ecash: {name: 'eCash', explain: 'type or paste the eCash address straight after ecash: for a QR with the eCash mark.', insert: 'ecash:', ownLine: true, prefix: true},
+        monero: {name: 'Monero', explain: 'type or paste the Monero address straight after monero: for a QR with the Monero mark.', insert: 'monero:', ownLine: true, prefix: true},
+        qrcode: {name: 'Any QR', explain: 'anything after qr: becomes a plain QR — a link, a message, a key. Four other prefixes draw their own mark.', insert: 'qr:', ownLine: true, prefix: true},
         poll: {name: 'Poll', explain: '[poll:Question|Choice|Choice] — up to six, or [poll2:…] to let each person pick two.', insert: '[poll:Your question here|First choice|Second choice]', ownLine: true, selectFrom: 'Your question'},
     };
 
@@ -1909,7 +1919,9 @@ document.getElementById('close_qr_button').addEventListener('click', function ()
             return;
         }
         if (spec.insert) {
-            const text = lead + spec.insert + tail;
+            // A prefix is not a finished thing: the caret has to sit right after `bitcoin:` so the address can be
+            // typed or pasted there, which means no trailing newline for this kind.
+            const text = lead + spec.insert + (spec.prefix ? '' : tail);
             write(input, text, spec.selectFrom || null);
             hint(describe(spec, text));
             return;

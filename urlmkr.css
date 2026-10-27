@@ -1754,6 +1754,13 @@ body.mk .mk__cmd:focus-visible .mk__cmd-name {
     color: var(--accent, #4caf50);
 }
 
+/* the five prefixes that become QR codes read as a different kind of thing: a value to paste, not a format */
+body.mk .mk__cmd--qr .mk__cmd-glyph {
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    color: var(--ink-soft, #a9a9a9);
+}
+
 body.mk .mk__cmd--poll {
     border-color: var(--accent, #4caf50);
     color: var(--accent, #4caf50);

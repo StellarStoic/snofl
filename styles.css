@@ -401,11 +401,18 @@ video[id^="embedded-video-"]:hover {
     text-align: center;     /* Ensure text is aligned */
 }
 
+/* The generator draws a 350px canvas, and this image had no cap - with its padding and border that is 374px,
+   wider than a 390px phone once the page's own padding is counted. Capped, and the padding moved inside the box. */
 .paragraph-qr-code {
-    border: 2px solid #000; /* Optional: Add a border around the QR code */
-    border-radius: 8px;     /* Optional: Add rounded corners */
-    padding: 10px;          /* Add padding around the QR code */
-    background-color: #fff; /* Ensure a clean background */
+    display: block;
+    width: auto;
+    max-width: min(100%, 350px);
+    height: auto;
+    box-sizing: border-box;
+    border: 2px solid #000;
+    border-radius: 8px;
+    padding: 10px;
+    background-color: #fff;
 }
 
 #messageArea {
