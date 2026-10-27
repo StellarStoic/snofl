@@ -18,7 +18,7 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="searchNostr.css?v=9">
+    <link rel="stylesheet" href="searchNostr.css?v=10">
     <!-- the same signer the custom pages use, so a vote here carries the same identity it would there -->
     <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
 
@@ -1259,15 +1259,17 @@ function updateNotes() {
         <div class="note ${hiddenNotes.has(note.id) ? "hidden" : ""}" style="${visibilityStyle}">
             <!--  Eye Button: Above Metadata & Copy Button -->
             <button class="hide-eye-button" onclick="toggleHide('${note.id}')" title="Hide/Show Note">
-                <img src="${hiddenNotes.has(note.id) ? "img/othrIcon/eye_hide.png" : "img/othrIcon/eye_view.png"}" alt="Toggle Visibility">
+                <img src="${hiddenNotes.has(note.id) ? "img/othrIcon/eye_hide.png" : "img/othrIcon/eye_view.png"}"
+                     alt="Toggle Visibility" width="15" height="15" decoding="async">
             </button>
 
             <button class="ban-profile-button" onclick="banProfile('${note.pubkey}')" style="display: none;" title="Nuke this Profile">
-                <img src="img/othrIcon/bomb.png" alt="Ban Profile">
+                <img src="img/othrIcon/bomb.png" alt="Ban Profile" width="15" height="15" decoding="async">
             </button>
 
             <button class="copy-button" data-noteid="${note.id}" title="Copy Note ID">
-                <img src="https://img.icons8.com/material-outlined/24/000000/copy.png" alt="Copy Icon">
+                <img src="https://img.icons8.com/material-outlined/24/000000/copy.png" alt="Copy Icon"
+                     width="15" height="15" decoding="async">
             </button>
             <div class="note-header">
                 <img src="${avatarUrl}" 

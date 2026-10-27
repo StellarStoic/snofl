@@ -306,9 +306,19 @@ body {
     border-color: var(--ink-faint);
 }
 
-.note > button img {
+/* These icons are 512x512 PNGs shown at 15px, so this rule is the only thing between a note and a
+   full-scale eye. It used to need the <img> to be a *direct* child of the button - a nesting change, a
+   different template or a stylesheet a phone had cached would drop it and paint a 512px icon. The rule no
+   longer cares how deep the image sits, and the max-* pair holds the size even if a width is set elsewhere.
+   The <img> also carries width/height attributes, so the size survives a stylesheet that never arrives. */
+.note button img,
+.note > button img,
+.hide-eye-button img {
     width: 15px;
     height: 15px;
+    max-width: 15px;
+    max-height: 15px;
+    object-fit: contain;
     filter: invert(1) opacity(0.78);
 }
 
