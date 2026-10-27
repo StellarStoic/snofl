@@ -115,6 +115,7 @@
         <a href="about.html">About</a> | 
         <a href="FAQ.html">FAQ</a> | 
         <a href="urlmkr.html">URLmkr</a> | 
+        <a href="src.html">src</a> | 
         <button id="showHistoryBtn"  title="a History data of all the posted notes from this device">Show History</button>
     </footer>
 
@@ -1885,13 +1886,13 @@ const hashtags = hashtagList.length > 0 ? hashtagList.join(",") : "general"; // 
 // Collect relays from URL parameters or use defaults
 const relayList = r.length > 0 ? r : []; // Only include if `r` exists
 
-// Construct base client link
-let clientLink = `https://snofl.com/client.html?h=${hashtags}`;
+// Construct the src link
+let srcLink = `https://snofl.com/src.html?h=${hashtags}`;
 
 // Only append `r=` if relays exist in the URL parameters
 if (relayList.length > 0) {
     const relays = relayList.join(",");
-    clientLink += `&r=${relays}`;
+    srcLink += `&r=${relays}`;
 }
 
 
@@ -1901,7 +1902,7 @@ const statusMessage = document.getElementById("statusMessage");
 if (statusMessage) {
     statusMessage.innerHTML = `
         <span style="color: #00ff55; font-weight: bold;">✅ Message has been sent.</span> <br>
-        <a href="${clientLink}" target="_blank" style="color: #00ff55; text-decoration: underline;">
+        <a href="${srcLink}" target="_blank" style="color: #00ff55; text-decoration: underline;">
             🔗 View messages with your hashtags
         </a>
     `;

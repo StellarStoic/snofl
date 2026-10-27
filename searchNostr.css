@@ -1,8 +1,8 @@
 /* ============================================================================
-   snofl discovery client
+   src · snofl
    ----------------------------------------------------------------------------
-   The page a snofl page links to when it carries hashtags: it searches the
-   relays for notes using those tags. It shipped with a 2010-era sheet - flat
+   src - the page a snofl page links to when it carries hashtags: it searches
+   the relays for notes using those tags. It shipped with a 2010-era sheet - flat
    black, 1rem viewport-scaled root, orange counters, 200px avatars, controls
    scattered over three rows - so this is the maker's visual language applied
    here: #141414 ground, #1d1d1d cards, one green accent, 17px type, 12-16px
@@ -94,7 +94,7 @@ body {
 }
 
 .title::before {
-    content: "snofl · nostr search";
+    content: "snofl · src";
     flex-basis: 100%;
     font-size: 12px;
     font-weight: 600;
@@ -867,19 +867,19 @@ body {
 }
 
 /* one sentence saying what this page is, under the tag chips */
-.client-lede {
+.src-lede {
     margin: -6px 2px 14px;
     font-size: 14px;
     color: var(--ink-dim);
 }
 
-.client-lede a {
+.src-lede a {
     color: var(--accent);
     text-decoration: none;
     border-bottom: 1px solid rgba(76, 175, 80, 0.35);
 }
 
-.client-lede a:hover {
+.src-lede a:hover {
     border-bottom-color: var(--accent);
 }
 
@@ -910,4 +910,32 @@ body {
 
 .note-content a:hover {
     border-bottom-color: #7fc8ff;
+}
+
+/* the shared footer, in this page's own sheet: src loads none of the site's other CSS, so it carries the same
+   metrics the rest of the site uses (12px, 400 weight, wide tracking) instead of inheriting them */
+.src-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 26px 0 0;
+    padding: 14px 2px 4px;
+    border-top: 1px solid var(--edge);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.03em;
+    color: var(--ink-faint);
+}
+
+.src-footer a {
+    color: var(--ink-dim);
+    text-decoration: none;
+    padding: 4px 6px;
+    border-radius: 6px;
+}
+
+.src-footer a:hover {
+    color: var(--accent);
+    background: #1d1d1d;
 }
