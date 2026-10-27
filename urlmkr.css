@@ -1698,19 +1698,26 @@ body.mk #check_short_visits:hover {
 /* ---------------------------------------------------------------- the content console
    One button per thing the page actually renders, each writing at the caret. Its own row above the field, so
    it stays in reach when the field is full of text, and short labels because the writer is not reading docs. */
+/* The console is a toolbar of words, not of mystery glyphs: every button carries its own name underneath, so a
+   phone - where :hover does not exist - can still read what it is about to press. The grid fills the width, so
+   twenty buttons cost five rows on a phone rather than a hidden scroll. */
 body.mk .mk__console {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
     gap: 6px;
     margin: 10px 0 8px;
 }
 
 body.mk .mk__cmd {
-    min-width: 38px;
-    min-height: 36px;
-    padding: 6px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 46px;
+    padding: 7px 4px;
     font-family: inherit;
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1;
     color: #dcdcdc;
     background: #191919;
@@ -1718,6 +1725,20 @@ body.mk .mk__cmd {
     border-radius: 8px;
     cursor: pointer;
     transition: color .12s ease, border-color .12s ease, background .12s ease;
+}
+
+body.mk .mk__cmd-glyph {
+    font-size: 14px;
+    line-height: 1.1;
+}
+
+body.mk .mk__cmd-name {
+    font-size: 10.5px;
+    line-height: 1.1;
+    letter-spacing: 0.01em;
+    color: var(--ink-soft, #a9a9a9);
+    text-align: center;
+    white-space: nowrap;
 }
 
 body.mk .mk__cmd:hover,
@@ -1728,17 +1749,28 @@ body.mk .mk__cmd:focus-visible {
     outline: none;
 }
 
+body.mk .mk__cmd:hover .mk__cmd-name,
+body.mk .mk__cmd:focus-visible .mk__cmd-name {
+    color: var(--accent, #4caf50);
+}
+
 body.mk .mk__cmd--poll {
-    padding: 6px 14px;
     border-color: var(--accent, #4caf50);
     color: var(--accent, #4caf50);
     font-weight: 600;
 }
 
+body.mk .mk__cmd--poll .mk__cmd-name {
+    color: var(--accent, #4caf50);
+    font-weight: 600;
+}
+
 body.mk .mk__console-hint {
-    margin: 6px 0 0;
+    grid-column: 1 / -1;
+    margin: 2px 0 0;
     font-size: 12px;
-    color: #a9a9a9;
+    line-height: 1.4;
+    color: var(--ink-soft, #a9a9a9);
 }
 
 body.mk #p_input {

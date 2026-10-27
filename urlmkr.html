@@ -23,7 +23,7 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=9">
-    <link rel="stylesheet" href="urlmkr.css?v=40">
+    <link rel="stylesheet" href="urlmkr.css?v=41">
     <script src="urlmkrAgreement.js?v=2"></script>
     <script src="backgroundImages.js"></script>
     <script src="crypto-js.min.js"></script>
@@ -217,21 +217,29 @@
                              The page shows plain HTML, so these insert HTML - Markdown is not rendered there,
                              except for the [text](url) link form, which is what the Link button writes. -->
                         <div class="mk__console" id="content_console" aria-label="Content formatting">
-                            <button type="button" class="mk__cmd" data-cmd="b" title="Bold (select text first)"><b>B</b></button>
-                            <button type="button" class="mk__cmd" data-cmd="i" title="Italic"><i>I</i></button>
-                            <button type="button" class="mk__cmd" data-cmd="h2" title="Heading">H</button>
-                            <button type="button" class="mk__cmd" data-cmd="h3" title="Small heading">h</button>
-                            <button type="button" class="mk__cmd" data-cmd="ul" title="Bulleted list">•</button>
-                            <button type="button" class="mk__cmd" data-cmd="ol" title="Numbered list">1.</button>
-                            <button type="button" class="mk__cmd" data-cmd="quote" title="Quote">❝</button>
-                            <button type="button" class="mk__cmd" data-cmd="code" title="Code">&lt;/&gt;</button>
-                            <button type="button" class="mk__cmd" data-cmd="link" title="Link">link</button>
-                            <button type="button" class="mk__cmd" data-cmd="image" title="Image by URL">img</button>
-                            <button type="button" class="mk__cmd" data-cmd="note" title="Embed a Nostr note">note</button>
-                            <button type="button" class="mk__cmd mk__cmd--poll" data-cmd="poll" title="Add a poll here">Poll</button>
+                            <button type="button" class="mk__cmd" data-cmd="b" title="Bold: wraps the selection in &lt;b&gt;…&lt;/b&gt;"><span class="mk__cmd-glyph"><b>B</b></span><span class="mk__cmd-name">Bold</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="i" title="Italic: slants it with &lt;i&gt;…&lt;/i&gt;"><span class="mk__cmd-glyph"><i>I</i></span><span class="mk__cmd-name">Italic</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="u" title="Underline: underlines it with &lt;u&gt;…&lt;/u&gt;"><span class="mk__cmd-glyph"><u>U</u></span><span class="mk__cmd-name">Underline</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="s" title="Strike: crosses it out with &lt;s&gt;…&lt;/s&gt;"><span class="mk__cmd-glyph"><s>S</s></span><span class="mk__cmd-name">Strike</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="mark" title="Highlight: puts a yellow marker behind it: &lt;mark&gt;"><span class="mk__cmd-glyph">M</span><span class="mk__cmd-name">Highlight</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="small" title="Small: sets it smaller with &lt;small&gt;…&lt;/small&gt;"><span class="mk__cmd-glyph">a</span><span class="mk__cmd-name">Small</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="h2" title="Heading: a real &lt;h2&gt; heading, on its own line"><span class="mk__cmd-glyph">H</span><span class="mk__cmd-name">Heading</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="h3" title="Subhead: a smaller &lt;h3&gt; heading, on its own line"><span class="mk__cmd-glyph">h</span><span class="mk__cmd-name">Subhead</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="ul" title="Bullets: a &lt;ul&gt; list: one item per line selected"><span class="mk__cmd-glyph">•</span><span class="mk__cmd-name">Bullets</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="ol" title="Numbers: an &lt;ol&gt; list: one item per line selected"><span class="mk__cmd-glyph">1.</span><span class="mk__cmd-name">Numbers</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="quote" title="Quote: sets it apart as a &lt;blockquote&gt;"><span class="mk__cmd-glyph">❝</span><span class="mk__cmd-name">Quote</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="code" title="Code: monospaced inline &lt;code&gt;"><span class="mk__cmd-glyph">&lt;/&gt;</span><span class="mk__cmd-name">Code</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="pre" title="Pre: &lt;pre&gt; keeps every space and line break exactly as typed"><span class="mk__cmd-glyph">¶</span><span class="mk__cmd-name">Pre</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="table" title="Table: a two-column &lt;table&gt;; add &lt;tr&gt; rows and &lt;td&gt; cells"><span class="mk__cmd-glyph">T</span><span class="mk__cmd-name">Table</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="details" title="Fold: &lt;details&gt;: the summary shows, the rest opens on a tap"><span class="mk__cmd-glyph">▸</span><span class="mk__cmd-name">Fold</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="hr" title="Rule: a &lt;hr&gt; line across the page"><span class="mk__cmd-glyph">—</span><span class="mk__cmd-name">Rule</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="link" title="Link: the one Markdown form the page honours: [the words](https://address)"><span class="mk__cmd-glyph">↗</span><span class="mk__cmd-name">Link</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="image" title="Image: a picture address on its own line shows the picture"><span class="mk__cmd-glyph">▢</span><span class="mk__cmd-name">Image</span></button>
+                            <button type="button" class="mk__cmd" data-cmd="note" title="Note: an nevent1… / note1… reference on its own line is resolved"><span class="mk__cmd-glyph">N</span><span class="mk__cmd-name">Note</span></button>
+                            <button type="button" class="mk__cmd mk__cmd--poll" data-cmd="poll" title="Poll: [poll:Question|Choice|Choice], or [poll2:…] for two answers each"><span class="mk__cmd-glyph">▁▄█</span><span class="mk__cmd-name">Poll</span></button>
+                            <p class="mk__console-hint" id="content_console_hint">Select words first and a button wraps them; press one with nothing selected and it writes a word you can type over. The name under each button says what it does — no hovering needed.</p>
                         </div>
                         <textarea id="p_input" rows="8" placeholder="Whatever you like — the buttons above insert what the page can show" disabled></textarea>
-                        <p class="mk__console-hint" id="content_console_hint">Select text and press a button, or press one to write at the cursor.</p>
                     </div>
 
                     <div class="form-group mk__row">
@@ -1808,19 +1816,31 @@ document.getElementById('close_qr_button').addEventListener('click', function ()
  * tag. `<b>` costs 7 bytes around a word where `<strong>` costs 17.
  */
 (function contentConsole() {
+    /*
+     * name / explain are not decoration: they are what the hint line under the toolbar says after a press, because
+     * a phone has no hover and a glyph alone is a guess. `explain` never repeats the name.
+     */
     const COMMANDS = {
-        b: {open: '<b>', close: '</b>', placeholder: 'bold'},
-        i: {open: '<i>', close: '</i>', placeholder: 'italic'},
-        h2: {open: '<h2>', close: '</h2>', placeholder: 'Heading', ownLine: true},
-        h3: {open: '<h3>', close: '</h3>', placeholder: 'Small heading', ownLine: true},
-        ul: {first: '<ul>\n  <li>', between: '</li>\n  <li>', close: '</li>\n</ul>', placeholder: 'first item', ownLine: true},
-        ol: {first: '<ol>\n  <li>', between: '</li>\n  <li>', close: '</li>\n</ol>', placeholder: 'first item', ownLine: true},
-        quote: {open: '<blockquote>', close: '</blockquote>', placeholder: 'quoted', ownLine: true},
-        code: {open: '<code>', close: '</code>', placeholder: 'code'},
-        link: {open: '[', close: '](https://)', placeholder: 'link text'},
-        image: {insert: 'https://example.com/picture.jpg', ownLine: true},
-        note: {insert: 'nostr:nevent1', ownLine: true},
-        poll: {insert: '[poll:Your question here|First choice|Second choice]', ownLine: true, selectFrom: 'Your question'},
+        b: {name: 'Bold', explain: 'wraps the selection in <b>…</b>.', open: '<b>', close: '</b>', placeholder: 'bold'},
+        i: {name: 'Italic', explain: 'slants it with <i>…</i>.', open: '<i>', close: '</i>', placeholder: 'italic'},
+        u: {name: 'Underline', explain: 'underlines it with <u>…</u>.', open: '<u>', close: '</u>', placeholder: 'underlined'},
+        s: {name: 'Strike', explain: 'crosses it out with <s>…</s>.', open: '<s>', close: '</s>', placeholder: 'crossed out'},
+        mark: {name: 'Highlight', explain: 'puts a yellow marker behind it with <mark>…</mark>.', open: '<mark>', close: '</mark>', placeholder: 'highlighted'},
+        small: {name: 'Small', explain: 'sets it smaller with <small>…</small>.', open: '<small>', close: '</small>', placeholder: 'small print'},
+        h2: {name: 'Heading', explain: 'a real <h2> heading, on its own line.', open: '<h2>', close: '</h2>', placeholder: 'Heading', ownLine: true},
+        h3: {name: 'Subhead', explain: 'a smaller <h3> heading, on its own line.', open: '<h3>', close: '</h3>', placeholder: 'Small heading', ownLine: true},
+        ul: {name: 'Bullets', explain: 'a <ul> list — select several lines and each becomes an item.', first: '<ul>\n  <li>', between: '</li>\n  <li>', close: '</li>\n</ul>', placeholder: 'first item', ownLine: true},
+        ol: {name: 'Numbers', explain: 'an <ol> list — select several lines and each becomes an item.', first: '<ol>\n  <li>', between: '</li>\n  <li>', close: '</li>\n</ol>', placeholder: 'first item', ownLine: true},
+        quote: {name: 'Quote', explain: 'sets it apart as a <blockquote>.', open: '<blockquote>', close: '</blockquote>', placeholder: 'quoted', ownLine: true},
+        code: {name: 'Code', explain: 'monospaced inline <code>…</code>.', open: '<code>', close: '</code>', placeholder: 'code'},
+        pre: {name: 'Pre', explain: '<pre> keeps every space and line break exactly as typed.', open: '<pre>', close: '</pre>', placeholder: 'preformatted text', ownLine: true},
+        table: {name: 'Table', explain: 'a two-column table — add <tr> rows and <td> cells as you need.', insert: '<table>\n  <tr><th>Head</th><th>Head</th></tr>\n  <tr><td>cell</td><td>cell</td></tr>\n</table>', ownLine: true, selectFrom: 'Head'},
+        details: {name: 'Fold', explain: 'the summary shows and the rest opens on a tap.', insert: '<details><summary>More</summary>\nhidden until tapped\n</details>', ownLine: true, selectFrom: 'hidden until tapped'},
+        hr: {name: 'Rule', explain: 'a <hr> line across the page.', insert: '<hr>', ownLine: true},
+        link: {name: 'Link', explain: 'the one Markdown form the page honours: [the words](https://address).', open: '[', close: '](https://)', placeholder: 'link text'},
+        image: {name: 'Image', explain: 'a picture address alone on its line is shown as the picture.', insert: 'https://example.com/picture.jpg', ownLine: true},
+        note: {name: 'Note', explain: 'an nevent1… or note1… reference alone on its line is resolved.', insert: 'nostr:nevent1', ownLine: true},
+        poll: {name: 'Poll', explain: '[poll:Question|Choice|Choice] — up to six, or [poll2:…] to let each person pick two.', insert: '[poll:Your question here|First choice|Second choice]', ownLine: true, selectFrom: 'Your question'},
     };
 
     const field = () => document.getElementById('p_input');
@@ -1858,6 +1878,19 @@ document.getElementById('close_qr_button').addEventListener('click', function ()
         input.dispatchEvent(new Event('change', {bubbles: true}));
     }
 
+    /** How many bytes this text adds to the link once it is URL-encoded — a page lives in an NFC tag. */
+    function costOf(text) {
+        try {
+            return encodeURIComponent(text).length;
+        } catch (error) {
+            return text.length;
+        }
+    }
+
+    function describe(spec, text) {
+        return spec.name + ' — ' + spec.explain + ' Adds ' + costOf(text) + ' bytes to the link.';
+    }
+
     function apply(command) {
         const spec = COMMANDS[command];
         if (!spec) return;
@@ -1870,23 +1903,21 @@ document.getElementById('close_qr_button').addEventListener('click', function ()
 
         if (spec.first) {
             const items = selected ? selected.split('\n').filter(line => line.trim()) : [spec.placeholder];
-            write(input, lead + spec.first + items.join(spec.between) + spec.close + tail,
-                selected ? null : spec.placeholder);
-            hint('One item per line; select several lines to make several items at once.');
+            const text = lead + spec.first + items.join(spec.between) + spec.close + tail;
+            write(input, text, selected ? null : spec.placeholder);
+            hint(describe(spec, text));
             return;
         }
         if (spec.insert) {
-            write(input, lead + spec.insert + tail, spec.selectFrom || null);
-            hint(command === 'poll'
-                ? 'A poll reads [poll:Question|Choice|Choice] — up to six, or [poll2:…] to let each person pick two.'
-                : 'Paste the real address over the example.');
+            const text = lead + spec.insert + tail;
+            write(input, text, spec.selectFrom || null);
+            hint(describe(spec, text));
             return;
         }
         const body = selected || spec.placeholder;
-        write(input, lead + spec.open + body + spec.close + tail, selected ? null : spec.placeholder);
-        hint(command === 'link'
-            ? 'Write the address inside the brackets: [the words](https://the-address).'
-            : 'The page renders HTML; Markdown stays literal, except for links.');
+        const text = lead + spec.open + body + spec.close + tail;
+        write(input, text, selected ? null : spec.placeholder);
+        hint(describe(spec, text));
     }
 
     document.addEventListener('DOMContentLoaded', () => {
