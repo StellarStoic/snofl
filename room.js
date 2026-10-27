@@ -6,8 +6,22 @@
 // a leaked link leaks the room.
 
 import {
-  pageIdentity, pageId, pageSecret, roomDifficulty,
-  mineEvent, verifyProofOfWork, toHex, fromHex,
+  pageIdentity,
+  pageId,
+  pageSecret,
+  roomDifficulty,
+  mineEvent,
+  verifyProofOfWork,
+  toHex,
+  fromHex,
+  packPoll,
+  packPollVote,
+  unpackRoomMessage,
+  tallyPoll,
+  pollIsClosed,
+  newPollId,
+  POLL_MAX_OPTIONS,
+  POLL_MIN_OPTIONS,
 } from './roomlib.js';
 import { conversationKeyFromSecret, encryptPayload, decryptPayload, looksLikePayload } from './nip44.js';
 
@@ -26,17 +40,9 @@ function packMessage(pubkey, createdAt, text) {
   return JSON.stringify({ v: 1, p: pubkey, c: createdAt, m: text });
 }
 
+/** What one envelope carries: chat text, a poll, or an answer to one. None of the three is displayed twice. */
 function unpackMessage(plaintext, event) {
-  let body;
-  try {
-    body = JSON.parse(plaintext);
-  } catch {
-    return null;
-  }
-  if (!body || body.v !== 1 || typeof body.m !== 'string') return null;
-  if (String(body.p).toLowerCase() !== String(event.pubkey).toLowerCase()) return null;
-  if (Number(body.c) !== Number(event.created_at)) return null;
-  return body.m;
+  return unpackRoomMessage(plaintext, event);
 }
 
 /** How long this page's difficulty takes at the measured ~60k hashes/s, said plainly. */
@@ -309,6 +315,8 @@ export async function mount(options = {}) {
     count,
   );
 
+  const pollPanel = element('section', 'room__poll');
+  pollPanel.hidden = true;
   const list = element('div', 'room__list');
   const composer = element('form', 'room__composer');
   const input = element('textarea', 'room__input');
@@ -324,8 +332,11 @@ export async function mount(options = {}) {
   buttons.append(send, cancel);
   const status = element('p', 'room__status', '');
   status.setAttribute('role', 'status');
-  composer.append(input, buttons, status);
-  container.append(header, list, composer);
+  const pollToggle = element('button', 'room__poll-open', 'Poll');
+  pollToggle.type = 'button';
+  pollToggle.title = 'Ask the room a question';
+  composer.append(input, buttons, status, pollToggle);
+  container.append(header, pollPanel, list, composer);
   list.append(element('p', 'room__empty', 'Reading the room from the relays…'));
 
   let key;
@@ -340,6 +351,8 @@ export async function mount(options = {}) {
 
   const messages = new Map();      // note id -> { id, pubkey, created_at, text, powBits }
   const reactions = new Map();     // note id -> Map(pubkey -> { value, created_at })
+  const polls = new Map();         // poll id -> { id, pubkey, created_at, question, options, type, endsAt, noteId }
+  const pollAnswers = new Map();   // poll id -> Map(pubkey -> { options, created_at })
   let sortMode = 'new';
   let activeMining = null;         // { cancelled } while a post or a vote is mining
 
@@ -431,6 +444,7 @@ export async function mount(options = {}) {
       list.append(row);
     });
     count.textContent = messages.size ? `${messages.size} note${messages.size === 1 ? '' : 's'}` : '';
+    renderPoll();
   };
 
   const setSort = (mode) => {
@@ -442,24 +456,68 @@ export async function mount(options = {}) {
   sortNew.addEventListener('click', () => setSort('new'));
   sortTop.addEventListener('click', () => setSort('top'));
 
-  const accept = async (event) => {
-    if (messages.has(event.id)) return false;
+  const seenEvents = new Set();     // every event already read, whatever it carried
+
+  /** Verify and decrypt one event. Returns `{ payload, powBits }` or null; never stores anything. */
+  const readEvent = (event) => {
+    if (seenEvents.has(event.id)) return null;
     const verdict = verifyProofOfWork(event);
-    if (!verdict.ok) return false;
-    if (!looksLikePayload(event.content)) return false;
+    if (!verdict.ok) return null;
+    if (!looksLikePayload(event.content)) return null;
     let plaintext;
     try {
       plaintext = decryptPayload(event.content, key);
     } catch {
       // not this room's payload, or not a NIP-44 payload at all
-      return false;
+      return null;
     }
-    const text = unpackMessage(plaintext, event);
-    if (text === null) return false;
+    const payload = unpackMessage(plaintext, event);
+    if (!payload) return null;
+    return { payload, powBits: verdict.bits };
+  };
+
+  const storePoll = (event, payload, powBits) => {
+    // a newer poll on the same id replaces the older one (a re-post or a relay replay)
+    const known = polls.get(payload.poll.id);
+    if (!known || known.created_at <= event.created_at) {
+      polls.set(payload.poll.id, {
+        ...payload.poll,
+        pubkey: event.pubkey,
+        created_at: event.created_at,
+        powBits,
+      });
+    }
+  };
+
+  const storeAnswer = (event, payload) => {
+    // an answer to a poll this room cannot read is noise — but on a first load the relay may hand the answer
+    // over before the poll, so the load reads every poll before it reads any answer (see below)
+    if (!polls.has(payload.vote.pollId)) return false;
+    const answers = pollAnswers.get(payload.vote.pollId) || new Map();
+    const previous = answers.get(event.pubkey);
+    // NIP-88: one answer per pubkey and the newest wins, so a reader can change their mind
+    if (previous && previous.created_at > event.created_at) return false;
+    answers.set(event.pubkey, { options: payload.vote.options, created_at: event.created_at });
+    pollAnswers.set(payload.vote.pollId, answers);
+    return true;
+  };
+
+  const storeMessage = (event, payload, powBits) => {
     messages.set(event.id, {
       id: event.id, pubkey: event.pubkey, created_at: event.created_at,
-      text, powBits: verdict.bits,
+      text: payload.text, powBits,
     });
+  };
+
+  /** One event from anywhere: a poll, an answer, or something someone said. */
+  const accept = async (event) => {
+    const read = readEvent(event);
+    if (!read) return false;
+    const { payload, powBits } = read;
+    seenEvents.add(event.id);
+    if (payload.poll) storePoll(event, payload, powBits);
+    else if (payload.vote) storeAnswer(event, payload);
+    else storeMessage(event, payload, powBits);
     return true;
   };
 
@@ -543,9 +601,302 @@ export async function mount(options = {}) {
     }
   };
 
+
+  /* ---------------------------------------------------------------- the poll
+   *
+   * NIP-88 carried inside the room's own envelope: the question, the options and every answer stay
+   * encrypted, because a room whose question leaked to a relay would not be a room. The counting rule is
+   * NIP-88's — one answer per pubkey, the newest wins — and the answers are mined at the vote difficulty so
+   * answering costs a tap, not the page's full work.
+   */
+
+  const selectedPoll = () => {
+    let newest = null;
+    for (const poll of polls.values()) {
+      if (!newest || poll.created_at > newest.created_at) newest = poll;
+    }
+    return newest;
+  };
+
+  const myAnswer = (pollId) => pollAnswers.get(pollId)?.get(window.pub) || null;
+
+  let pollDraft = new Set();          // what is ticked but not yet sent
+  let pollDraftFor = null;            // which poll those ticks belong to
+
+  const closesIn = (endsAt) => {
+    if (!endsAt) return 'stays open';
+    const left = endsAt - Math.floor(Date.now() / 1000);
+    if (left <= 0) return 'closed';
+    if (left < 3600) return `closes in ${Math.max(1, Math.round(left / 60))} min`;
+    if (left < 86400) return `closes in ${Math.round(left / 3600)} h`;
+    return `closes in ${Math.round(left / 86400)} d`;
+  };
+
+  /** Paint the newest poll, or hide the panel when the room has none. */
+  function renderPoll() {
+    const poll = selectedPoll();
+    pollPanel.textContent = '';
+    if (!poll) {
+      pollPanel.hidden = true;
+      pollToggle.textContent = 'Poll';
+      return;
+    }
+    pollPanel.hidden = false;
+    pollToggle.textContent = 'New poll';
+
+    if (pollDraftFor !== poll.id) {
+      pollDraftFor = poll.id;
+      pollDraft = new Set(myAnswer(poll.id)?.options || []);
+    }
+
+    const answers = pollAnswers.get(poll.id) || new Map();
+    const { rows, voters } = tallyPoll(poll.options, answers);
+    const closed = pollIsClosed(poll);
+    const mine = myAnswer(poll.id);
+    const unchanged = mine
+      && mine.options.length === pollDraft.size
+      && mine.options.every((id) => pollDraft.has(id));
+
+    const head = element('div', 'room__poll-head');
+    head.append(
+      element('span', 'room__poll-tag', 'Poll'),
+      element('span', 'room__poll-meta',
+        `${shortAuthor(poll.pubkey, options.npubEncode || window.npubEncode)} · ${timeAgo(poll.created_at)}` +
+        ` · ${poll.type === 'multi' ? 'several answers' : 'one answer'} · ${closesIn(poll.endsAt)}`),
+    );
+
+    const question = element('p', 'room__poll-question', poll.question);
+    const list_ = element('div', 'room__poll-options');
+
+    rows.forEach((row) => {
+      const chosen = pollDraft.has(row.id);
+      const button = element('button', 'room__poll-option' + (chosen ? ' is-chosen' : '') + (closed ? ' is-closed' : ''));
+      button.type = 'button';
+      if (closed) button.disabled = true;
+      button.setAttribute('aria-pressed', chosen ? 'true' : 'false');
+      const bar = element('span', 'room__poll-bar');
+      bar.style.width = Math.round(row.share * 100) + '%';
+      bar.setAttribute('aria-hidden', 'true');
+      bar.classList.toggle('is-mine', !!mine && mine.options.includes(row.id));
+      button.append(
+        bar,
+        element('span', 'room__poll-label', row.label),
+        element('span', 'room__poll-count', `${row.count}`),
+      );
+      button.addEventListener('click', () => {
+        if (closed) return;
+        // this draft belongs to this poll now: without this, the next render would re-seed the ticks from
+        // the last counted answer and the tap would undo itself
+        pollDraftFor = poll.id;
+        if (poll.type === 'multi') {
+          if (pollDraft.has(row.id)) pollDraft.delete(row.id); else pollDraft.add(row.id);
+        } else {
+          pollDraft = new Set([row.id]);
+        }
+        renderPoll();
+      });
+      list_.append(button);
+    });
+
+    const actions = element('div', 'room__poll-actions');
+    if (closed) {
+      actions.append(element('span', 'room__poll-note', 'This poll has closed — the counts are final.'));
+    } else if (unchanged) {
+      actions.append(element('span', 'room__poll-note', 'Your answer is counted. Tick another to change it.'));
+    } else {
+      // the same control as Post, so it borrows that rule rather than inventing a second one
+      const sendVote = element('button', 'room__poll-send room__send', 'Send answer');
+      sendVote.type = 'button';
+      sendVote.disabled = !pollDraft.size;
+      sendVote.addEventListener('click', () => castPollAnswer(poll, [...pollDraft]));
+      actions.append(sendVote);
+    }
+    actions.append(element('span', 'room__poll-voters', `${voters} ${voters === 1 ? 'answer' : 'answers'}`));
+
+    pollPanel.append(head, question, list_, actions);
+  }
+
+  const castPollAnswer = async (poll, optionIds) => {
+    if (activeMining) {
+      status.textContent = 'Wait for the current post to finish or cancel it first.';
+      return;
+    }
+    if (!optionIds.length) return;
+    const mining = { cancelled: false };
+    activeMining = mining;
+    status.textContent = 'Sending your answer…';
+    try {
+      const createdAt = Math.floor(Date.now() / 1000);
+      const content = encryptPayload(packPollVote(window.pub, createdAt, poll.id, optionIds), key);
+      const draft = {
+        pubkey: window.pub,
+        created_at: createdAt,
+        kind: 1,
+        tags: [['h', roomId], ['t', 'snofl-room']],
+        content,
+      };
+      const { publishable, results } = await signAndPublish(draft, REACTION_BITS, mining);
+      accept(publishable);
+      render();
+      const accepted = results.filter((entry) => entry.ok).length;
+      status.textContent = accepted
+        ? `Answer sent to ${accepted} of ${results.length} relays`
+        : 'No relay accepted the answer: ' + (results.find((r) => r.detail)?.detail || 'all refused');
+    } catch (error) {
+      status.textContent = error?.cancelled ? 'Answer cancelled.' : 'Could not answer: ' + error.message;
+    } finally {
+      activeMining = null;
+    }
+  };
+
+  /* --- asking the room a question ------------------------------------------------ */
+
+  const pollForm = element('form', 'room__poll-form');
+  pollForm.hidden = true;
+  const pollQuestion = element('input', 'room__poll-question-input');
+  pollQuestion.type = 'text';
+  pollQuestion.placeholder = 'Your question';
+  pollQuestion.maxLength = 160;
+  const pollFields = element('div', 'room__poll-fields');
+  const pollType = element('select', 'room__poll-type');
+  [['single', 'One answer'], ['multi', 'Several answers']].forEach(([value, label]) => {
+    const option = element('option', '', label);
+    option.value = value;
+    pollType.append(option);
+  });
+  const pollCloses = element('select', 'room__poll-closes');
+  [['0', 'Stays open'], ['3600', 'Closes in an hour'], ['86400', 'Closes tomorrow'], ['604800', 'Closes in a week']]
+    .forEach(([value, label]) => {
+      const option = element('option', '', label);
+      option.value = value;
+      pollCloses.append(option);
+    });
+
+  const addOptionField = (value = '') => {
+    if (pollFields.children.length >= POLL_MAX_OPTIONS) return;
+    const field = element('input', 'room__poll-option-input');
+    field.type = 'text';
+    field.placeholder = `Option ${pollFields.children.length + 1}`;
+    field.maxLength = 90;
+    field.value = value;
+    pollFields.append(field);
+  };
+  addOptionField();
+  addOptionField();
+
+  const addOption = element('button', 'room__poll-add', 'Add an option');
+  addOption.type = 'button';
+  addOption.addEventListener('click', () => {
+    if (pollFields.children.length >= POLL_MAX_OPTIONS) return;
+    addOptionField();
+    // a fresh field takes the focus, and the button goes away at the ceiling
+    const fields = [...pollFields.children];
+    fields[fields.length - 1].focus();
+    addOption.disabled = fields.length >= POLL_MAX_OPTIONS;
+  });
+
+  const postPoll = element('button', 'room__send', `Post poll · ${estimateWork(difficulty)}`);
+  postPoll.type = 'submit';
+  const closePollForm = element('button', 'room__poll-cancel', 'Cancel');
+  closePollForm.type = 'button';
+  closePollForm.addEventListener('click', () => {
+    pollForm.hidden = true;
+    pollToggle.hidden = false;
+    pollQuestion.value = '';
+    [...pollFields.children].forEach((field) => { field.value = ''; });
+  });
+
+  const rowsWrap = element('div', 'room__poll-selects');
+  rowsWrap.append(pollType, pollCloses);
+  const pollFormButtons = element('div', 'room__poll-form-buttons');
+  pollFormButtons.append(postPoll, addOption, closePollForm);
+  pollForm.append(pollQuestion, pollFields, rowsWrap, pollFormButtons);
+
+  pollToggle.addEventListener('click', () => {
+    pollForm.hidden = false;
+    pollToggle.hidden = true;
+    [...pollFields.children].forEach((field) => { if (!field.value) field.value = ''; });
+    pollQuestion.focus();
+  });
+
+  pollForm.addEventListener('submit', async (submitEvent) => {
+    submitEvent.preventDefault();
+    if (activeMining) return;
+    const question = pollQuestion.value.trim();
+    const labels = [...pollFields.children].map((field) => field.value.trim()).filter(Boolean);
+    if (!question || labels.length < POLL_MIN_OPTIONS) {
+      status.textContent = 'A poll needs a question and at least two options.';
+      return;
+    }
+    const mining = {
+      cancelled: false,
+      onProgress: ({ attempts, ms }) => {
+        const rate = attempts / Math.max(1, ms / 1000);
+        const left = Math.max(0, (2 ** difficulty - attempts) / Math.max(1, rate));
+        status.textContent = `Mining ${difficulty} bits: ${attempts.toLocaleString()} hashes · ~${Math.ceil(left)}s left · Cancel stops it`;
+      },
+    };
+    activeMining = mining;
+    setBusy(true);
+    pollForm.hidden = true;
+    status.textContent = `Mining the poll at ${difficulty} bits… ${estimateWork(difficulty)}`;
+    try {
+      const createdAt = Math.floor(Date.now() / 1000);
+      const seconds = Number(pollCloses.value) || 0;
+      const pollId = newPollId();
+      const options = labels.map((label, index) => [String.fromCharCode(97 + index), label]);
+      const payload = packPoll(window.pub, createdAt, {
+        id: pollId,
+        question,
+        options,
+        type: pollType.value,
+        endsAt: seconds ? createdAt + seconds : 0,
+      });
+      const draft = {
+        pubkey: window.pub,
+        created_at: createdAt,
+        kind: 1,
+        tags: [['h', roomId], ['t', 'snofl-room']],
+        content: encryptPayload(payload, key),
+      };
+      const { publishable, results } = await signAndPublish(draft, difficulty, mining);
+      const accepted = results.filter((entry) => entry.ok).length;
+      if (!accepted) {
+        status.textContent = 'No relay accepted the poll: ' + (results.find((r) => r.detail)?.detail || 'all refused');
+        return;
+      }
+      accept(publishable);
+      pollDraftFor = null;
+      render();
+      status.textContent = `Poll sent to ${accepted} of ${results.length} relays`;
+      pollQuestion.value = '';
+      [...pollFields.children].forEach((field) => { field.value = ''; });
+    } catch (error) {
+      status.textContent = error?.cancelled
+        ? 'Mining cancelled — the poll was not sent.'
+        : 'Could not post the poll: ' + error.message;
+    } finally {
+      activeMining = null;
+      setBusy(false);
+      pollToggle.hidden = false;
+    }
+  });
+
+  container.insertBefore(pollForm, composer);
+
   const events = await fetchRoomEvents(relays, roomId);
-  // notes first: a vote can only be counted against a note that is already readable
-  for (const event of events) if (event.kind !== 7) await accept(event);
+  // Read in three passes, because relays answer in whatever order they like and each kind needs the one
+  // before it: the polls first (an answer cannot attach to a poll that has not been read yet), then the
+  // answers, then the chat. Then the reactions, which need the notes they point at.
+  const read = [];
+  for (const event of events) {
+    if (event.kind === 7) continue;
+    const row = readEvent(event);
+    if (row) read.push({ event, ...row });
+  }
+  for (const row of read) if (row.payload.poll) { seenEvents.add(row.event.id); storePoll(row.event, row.payload, row.powBits); }
+  for (const row of read) if (row.payload.vote) { seenEvents.add(row.event.id); storeAnswer(row.event, row.payload); }
+  for (const row of read) if (!row.payload.poll && !row.payload.vote) { seenEvents.add(row.event.id); storeMessage(row.event, row.payload, row.powBits); }
   for (const event of events) if (event.kind === 7) acceptReaction(event);
   render();
 
@@ -611,7 +962,10 @@ export async function mount(options = {}) {
     status.textContent = 'Stopping the mining…';
   });
 
-  return { roomId, difficulty, relays, conversationKey: key, messages, reactions, setSort };
+  return {
+    roomId, difficulty, relays, conversationKey: key, messages, reactions, setSort,
+    polls, pollAnswers, castPollAnswer, renderPoll,
+  };
 }
 
 if (typeof window !== 'undefined') {

@@ -232,3 +232,129 @@ export function verifyProofOfWork(event) {
   if (bits < tag.target) return { ok: false, bits, reason: `only ${bits} bits, claimed ${tag.target}` };
   return { ok: true, bits, target: tag.target };
 }
+
+/* ------------------------------------------------------------------ polls (NIP-88, carried in the room)
+ *
+ * NIP-88 puts a poll in a public `kind:1068` event and the answers in `kind:1018`. A snofl room is the
+ * opposite of public: its messages are NIP-44 envelopes only the link holders can read. So the poll rides
+ * inside the room's own envelope with NIP-88's *shape* — `option` ids and labels, `polltype`, `endsAt` — and
+ * its counting rule: one answer per pubkey, the newest wins. Nothing about the question, the options or who
+ * voted goes to a relay in readable form.
+ */
+
+export const POLL_MAX_OPTIONS = 6;
+export const POLL_MIN_OPTIONS = 2;
+const POLL_MAX_LABEL = 90;
+const POLL_MAX_QUESTION = 160;
+
+/** A short id for one poll, so an answer can name it without the poll event's id (unknown until it is mined). */
+export function newPollId() {
+  const bytes = new Uint8Array(5);
+  globalThis.crypto.getRandomValues(bytes);
+  return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function cleanOptions(options) {
+  if (!Array.isArray(options)) return null;
+  const rows = options
+    .map((entry) => (Array.isArray(entry) ? { id: String(entry[0] || '').trim(), label: String(entry[1] || '').trim() } : null))
+    .filter((entry) => entry && entry.id && entry.label);
+  if (rows.length < POLL_MIN_OPTIONS || rows.length > POLL_MAX_OPTIONS) return null;
+  const ids = new Set(rows.map((row) => row.id));
+  if (ids.size !== rows.length) return null;
+  return rows.map((row) => ({ ...row, label: row.label.slice(0, POLL_MAX_LABEL) }));
+}
+
+/** The message a poll posts: empty text, and the poll beside it. */
+export function packPoll(pubkey, createdAt, poll) {
+  const options = cleanOptions(poll.options);
+  if (!options) throw new Error(`a poll needs ${POLL_MIN_OPTIONS}-${POLL_MAX_OPTIONS} options with labels`);
+  const question = String(poll.question || '').trim();
+  if (!question) throw new Error('a poll needs a question');
+  return JSON.stringify({
+    v: 1,
+    p: pubkey,
+    c: createdAt,
+    m: '',
+    poll: {
+      id: String(poll.id || newPollId()),
+      q: question.slice(0, POLL_MAX_QUESTION),
+      o: options.map((option) => [option.id, option.label]),
+      t: poll.type === 'multi' ? 'multi' : 'single',
+      // `endsAt` is NIP-88's own tag name; 0 means it does not close on its own
+      e: Number.isFinite(poll.endsAt) && poll.endsAt > 0 ? Math.floor(poll.endsAt) : 0,
+    },
+  });
+}
+
+/** The message an answer posts: empty text, the poll it answers, and the option ids chosen. */
+export function packPollVote(pubkey, createdAt, pollId, optionIds) {
+  const chosen = [...new Set((optionIds || []).map((id) => String(id).trim()).filter(Boolean))];
+  if (!chosen.length) throw new Error('pick at least one option');
+  if (!pollId) throw new Error('an answer needs the poll it answers');
+  return JSON.stringify({ v: 1, p: pubkey, c: createdAt, m: '', pv: { id: String(pollId), s: chosen } });
+}
+
+/**
+ * Read a room envelope. Returns `{ text, poll, vote }` — `text` is what the chat shows, and a poll or an
+ * answer carries none. The author and timestamp inside the ciphertext must match the event's own fields.
+ */
+export function unpackRoomMessage(plaintext, event) {
+  let body;
+  try {
+    body = JSON.parse(plaintext);
+  } catch {
+    return null;
+  }
+  if (!body || body.v !== 1 || typeof body.m !== 'string') return null;
+  if (String(body.p).toLowerCase() !== String(event.pubkey).toLowerCase()) return null;
+  if (Number(body.c) !== Number(event.created_at)) return null;
+
+  if (body.poll) {
+    const options = cleanOptions(body.poll.o);
+    const question = String(body.poll.q || '').trim();
+    if (!options || !question) return null;
+    return {
+      text: '',
+      poll: {
+        id: String(body.poll.id || ''),
+        question: question.slice(0, POLL_MAX_QUESTION),
+        options,
+        type: body.poll.t === 'multi' ? 'multi' : 'single',
+        endsAt: Number(body.poll.e) > 0 ? Math.floor(Number(body.poll.e)) : 0,
+      },
+      vote: null,
+    };
+  }
+
+  if (body.pv) {
+    const pollId = String(body.pv.id || '');
+    const chosen = [...new Set((body.pv.s || []).map((id) => String(id)))].filter(Boolean);
+    if (!pollId || !chosen.length) return null;
+    return { text: '', poll: null, vote: { pollId, options: chosen } };
+  }
+
+  return { text: body.m, poll: null, vote: null };
+}
+
+/** NIP-88: one answer per pubkey, the newest wins; an answer after `endsAt` does not count. */
+export function tallyPoll(options, votes, { now = Math.floor(Date.now() / 1000) } = {}) {
+  const counts = new Map(options.map((option) => [option.id, 0]));
+  let voters = 0;
+  for (const answer of votes.values ? votes.values() : votes) {
+    voters += 1;
+    for (const id of answer.options) {
+      if (counts.has(id)) counts.set(id, counts.get(id) + 1);
+    }
+  }
+  const rows = options.map((option) => {
+    const count = counts.get(option.id) || 0;
+    return { ...option, count, share: voters ? count / voters : 0 };
+  });
+  return { rows, voters, now };
+}
+
+/** Has this poll closed on its own? */
+export function pollIsClosed(poll, now = Math.floor(Date.now() / 1000)) {
+  return !!(poll && poll.endsAt && poll.endsAt <= now);
+}

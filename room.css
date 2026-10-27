@@ -315,3 +315,225 @@
     opacity: 0.45;
     cursor: default;
 }
+
+/* ---------------------------------------------------------------- the poll
+ *
+ * A NIP-88 poll carried inside the room's own NIP-44 envelope, drawn in the room's materials: monospace,
+ * hairlines, the site accent for anything that is a control. The bar behind an option is the share of the
+ * answers so far - a number made visible, not a mood - and it is the only filled area in the room. */
+.room__poll {
+    margin: 16px 0 4px;
+    padding: 12px 0 14px;
+    border-top: 1px solid var(--room-rule, #333);
+    border-bottom: 1px solid var(--room-rule, #333);
+}
+
+.room__poll-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.room__poll-tag {
+    font-size: 10.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--room-accent, #ff6600);
+    border: 1px solid var(--room-accent, #ff6600);
+    padding: 1px 6px;
+}
+
+.room__poll-meta {
+    font-size: 11px;
+    opacity: 0.72;
+}
+
+.room__poll-question {
+    margin: 9px 0 11px;
+    font-size: 15.5px;
+    font-weight: bold;
+    line-height: 1.35;
+}
+
+.room__poll-options {
+    display: grid;
+    gap: 6px;
+}
+
+.room__poll-option {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    background: transparent;
+    border: 1px solid var(--room-rule, #333);
+    border-radius: 0;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    text-align: left;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.room__poll-option:hover:not(:disabled),
+.room__poll-option:focus-visible:not(:disabled) {
+    border-color: var(--room-accent, #ff6600);
+    outline: none;
+}
+
+.room__poll-option.is-chosen {
+    border-color: var(--room-accent, #ff6600);
+}
+
+.room__poll-option.is-closed,
+.room__poll-option:disabled {
+    cursor: default;
+}
+
+/* The share. It sits behind the label, so the row still reads as text first and as a chart second. */
+.room__poll-bar {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    background: var(--room-accent, #ff6600);
+    opacity: 0.16;
+    pointer-events: none;
+}
+
+.room__poll-bar.is-mine {
+    opacity: 0.32;
+}
+
+.room__poll-label {
+    position: relative;
+    font-size: 13.5px;
+}
+
+.room__poll-count {
+    position: relative;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.85;
+}
+
+.room__poll-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.room__poll-note {
+    font-size: 11px;
+    opacity: 0.75;
+}
+
+.room__poll-voters {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.6;
+}
+
+/* Starting one: a quiet control beside Post, and a small form that replaces nothing. */
+.room__poll-open,
+.room__poll-add,
+.room__poll-cancel {
+    align-self: flex-start;
+    background: transparent;
+    color: var(--room-accent, #ff6600);
+    border: 1px dashed var(--room-rule, #333);
+    border-radius: 0;
+    padding: 5px 11px;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.room__poll-open:hover,
+.room__poll-add:hover:not(:disabled),
+.room__poll-cancel:hover,
+.room__poll-open:focus-visible,
+.room__poll-add:focus-visible:not(:disabled),
+.room__poll-cancel:focus-visible {
+    border-color: var(--room-accent, #ff6600);
+    outline: none;
+}
+
+.room__poll-add:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+/* `display: grid` beats the `hidden` attribute (the UA rule loses to any author rule), so a form with no
+   `[hidden]` counterpart stays on screen from the first paint. Both the form and the panel need it. */
+.room__poll-form[hidden],
+.room__poll[hidden] {
+    display: none;
+}
+
+.room__poll-form {
+    display: grid;
+    gap: 8px;
+    margin: 14px 0 0;
+    padding: 12px;
+    border: 1px solid var(--room-rule, #333);
+}
+
+.room__poll-form input[type="text"],
+.room__poll-form select {
+    width: 100%;
+    padding: 7px 9px;
+    background: transparent;
+    color: inherit;
+    border: 1px solid var(--room-rule, #333);
+    border-radius: 0;
+    font-family: inherit;
+    font-size: 13px;
+}
+
+.room__poll-form input[type="text"]:focus-visible,
+.room__poll-form select:focus-visible {
+    outline: 2px solid var(--room-accent, #ff6600);
+    outline-offset: -1px;
+}
+
+.room__poll-fields {
+    display: grid;
+    gap: 6px;
+}
+
+.room__poll-selects {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.room__poll-selects select {
+    flex: 1 1 140px;
+}
+
+.room__poll-form-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+    .room__poll-question {
+        font-size: 14.5px;
+    }
+
+    .room__poll-label {
+        font-size: 13px;
+    }
+}
