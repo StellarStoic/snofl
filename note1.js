@@ -381,13 +381,15 @@ async function publishRsvp(button) {
     const note = block ? block.querySelector(".cal-event__rsvp-note") : null;
     const say = (text) => { if (note) note.textContent = text; };
 
+    const remote = !!(window.snoflIdentity && window.snoflIdentity.isRemote && window.snoflIdentity.isRemote());
     const pk = localStorage.getItem("nostr_pk");
     const pub = localStorage.getItem("nostr_pub");
-    if (!pk || !pub) {
-        say("RSVP needs a Nostr ID on this page — open the ID badge to make one.");
+    if (!remote && (!pk || !pub)) {
+        say("RSVP needs an identity on this page — sign in from the badge.");
+        if (window.snoflIdentity) window.snoflIdentity.openPrompt();
         return;
     }
-    if (typeof signEvent !== "function") {
+    if (!remote && typeof signEvent !== "function") {
         say("This page cannot sign right now.");
         return;
     }
@@ -412,7 +414,7 @@ async function publishRsvp(button) {
         if (author) tags.push(["p", author]);
 
         const event = {kind: 31925, content: "", created_at: Math.floor(Date.now() / 1000), tags, pubkey: pub};
-        const signed = await signEvent(event, pk);
+        const signed = remote ? await window.snoflIdentity.sign(event) : await signEvent(event, pk);
         const payload = {
             content: signed.content, created_at: signed.created_at, id: signed.id,
             kind: signed.kind, pubkey: signed.pubkey, sig: signed.sig, tags: signed.tags,

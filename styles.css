@@ -415,6 +415,215 @@ video[id^="embedded-video-"]:hover {
     background-color: #fff;
 }
 
+/* ---------------------------------------------------------------- the sign-in door
+
+   Shown before a page makes a random key. Cards rather than a list of links, because the choice matters and the note
+   under each name is the part that explains it. It scrolls inside itself: a phone with the keyboard up has very
+   little room, and the last thing in the sheet is the warning about nsec. */
+
+.snofl-login {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.82);
+    box-sizing: border-box;
+}
+
+.snofl-login *,
+.snofl-login *::before,
+.snofl-login *::after {
+    box-sizing: border-box;
+}
+
+/* `display: grid` on the pairing panel used to beat the `hidden` attribute, so the QR box sat open underneath
+   the three options before anything was chosen. The attribute wins now, explicitly. */
+.snofl-login__pairing[hidden],
+.snofl-login__options[hidden] {
+    display: none !important;
+}
+
+.snofl-login.is-open {
+    display: flex;
+}
+
+.snofl-login__card {
+    position: relative;
+    width: min(440px, 100%);
+    max-width: 100%;
+    max-height: min(88vh, 720px);
+    overflow-y: auto;
+    padding: 22px 20px 18px;
+    background: #131313;
+    border: 1px solid #272727;
+    border-radius: 16px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+.snofl-login__close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    font-size: 20px;
+    line-height: 1;
+    color: #9a9a9a;
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+
+.snofl-login__close:hover {
+    color: #f0f0f0;
+}
+
+.snofl-login__title {
+    margin: 0 34px 8px 0;
+    font-size: 18px;
+    line-height: 1.3;
+    color: #f2f2f2;
+}
+
+.snofl-login__lede {
+    margin: 0 0 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #a9a9a9;
+}
+
+.snofl-login__options {
+    display: grid;
+    gap: 8px;
+}
+
+.snofl-login__option {
+    display: grid;
+    gap: 3px;
+    padding: 12px 14px;
+    text-align: left;
+    font-family: inherit;
+    color: #e6e6e6;
+    background: #191919;
+    border: 1px solid #2e2e2e;
+    border-radius: 11px;
+    cursor: pointer;
+    transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.snofl-login__option:hover,
+.snofl-login__option:focus-visible {
+    border-color: var(--accent, #4caf50);
+    background: #1e1e1e;
+    outline: none;
+}
+
+.snofl-login__option-name {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.snofl-login__option-note {
+    font-size: 12px;
+    line-height: 1.45;
+    color: #9a9a9a;
+}
+
+.snofl-login__pairing {
+    display: grid;
+    gap: 10px;
+    justify-items: center;
+}
+
+.snofl-login__pairing-status {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    text-align: center;
+    color: #b4b4b4;
+}
+
+.snofl-login__qr {
+    padding: 10px;
+    background: #fff;
+    border-radius: 10px;
+    line-height: 0;
+}
+
+.snofl-login__qr:empty {
+    display: none;
+}
+
+.snofl-login__uri-label {
+    font-size: 12px;
+    color: #8f8f8f;
+}
+
+.snofl-login__uri {
+    width: 100%;
+    padding: 8px 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #c4c4c4;
+    background: #0e0e0e;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    resize: none;
+}
+
+.snofl-login__pairing-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.snofl-login__open-signer {
+    font-size: 12.5px;
+    color: var(--accent, #4caf50);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--accent, #4caf50);
+}
+
+.snofl-login__retry {
+    padding: 5px 10px;
+    font-family: inherit;
+    font-size: 12px;
+    color: #b08a3e;
+    background: #1c1c1c;
+    border: 1px solid #3a3325;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.snofl-login__back {
+    padding: 5px 10px;
+    font-family: inherit;
+    font-size: 12px;
+    color: #c4c4c4;
+    background: #1c1c1c;
+    border: 1px solid #2e2e2e;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.snofl-login__warning {
+    margin: 14px 0 0;
+    padding-top: 12px;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: #b08a3e;
+    border-top: 1px solid #242424;
+}
+
+.snofl-login__warning code {
+    color: #d8a24a;
+}
+
 /* ---------------------------------------------------------------- a NIP-52 calendar event
 
    A calendar entry is not a note: it has a date, a place and a summary rather than a body of text, so it gets its

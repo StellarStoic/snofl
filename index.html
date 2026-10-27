@@ -29,7 +29,7 @@
     <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
     <script src="https://bundle.run/browserify-cipher@1.0.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=14">
+    <link rel="stylesheet" href="styles.css?v=17">
     <link rel="stylesheet" href="room.css?v=8">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -40,7 +40,8 @@
     <script src="crypto-js.min.js"></script>                                                                                                                   
     <script src="dec.js"></script>                                                                                                                   
     <script src="bech32.js"></script>                                                                                                                   
-    <script src="note1.js?v=9"></script>
+    <script src="nostrLogin.js?v=3"></script>
+    <script src="note1.js?v=10"></script>
     <!-- <script src="footer.js"></script> // IS AT THE BOTTOM-->
 </head>
 
@@ -280,6 +281,20 @@ function getAvatarUrl(pubkey) {
 // Function to update the avatar
 function updateAvatar() {
     const avatar = document.getElementById("avatarIcon");
+
+    /*
+     * A real identity brings its own picture. Drawing a dicebear one over it — and publishing a kind-0 to match,
+     * as the anonymous path does — is the page overwriting somebody's profile, so a logged-in visitor's own
+     * picture wins and nothing is ever written back.
+     */
+    const profile = (typeof window.snoflIdentity === 'object' && window.snoflIdentity && window.snoflIdentity.snapshot)
+        ? window.snoflIdentity.snapshot().profile
+        : null;
+    if (window.snoflIdentity && window.snoflIdentity.isRemote && window.snoflIdentity.isRemote() && profile && profile.picture) {
+        avatar.src = profile.picture;
+        avatar.title = (profile.name || 'your identity') + ' — your own profile, untouched';
+        return;
+    }
 
     // Generate URL based on public key and chosen avatar style
     const avatarUrl = pub
@@ -1842,13 +1857,11 @@ document.getElementById("sendMessageBtn").onclick = async () => {
 
 
     // Proceed if parameters exist
-    if (!localStorage.getItem("nostr_pk")) {
-        alert(
-            "No private key found.\n\n\
-Private keys are needed to sign messages\n\n\
-Please generate a new ID by pressing OK."
-        );
-        generateNewKeys();
+    // a remote signer has no local key, and does not need one: it signs the request instead
+    const remoteIdentity = !!(window.snoflIdentity && window.snoflIdentity.isRemote && window.snoflIdentity.isRemote());
+    if (!remoteIdentity && !localStorage.getItem("nostr_pk")) {
+        if (window.snoflIdentity) window.snoflIdentity.openPrompt();
+        else generateNewKeys();
         return;
     }
 
@@ -1899,8 +1912,20 @@ Please generate a new ID by pressing OK."
             kind: 1,
             tags: tags,
             pubkey: pub,
-        }, // <- Here I can add additional attributes that needed to be signed
+        }; // <- Here I can add additional attributes that needed to be signed
+
+    // A remote identity signs the request, never a local key: the two paths differ only here.
+    let sev;
+    if (remoteIdentity) {
+        try {
+            sev = await window.snoflIdentity.sign(ev);
+        } catch (error) {
+            showPostStatus('The signer did not sign: ' + (error && error.message ? error.message : error));
+            return;
+        }
+    } else {
         sev = await signEvent(ev, pk);
+    }
 
     // Reorder attributes of the signed event here (optional)
     const orderedEvent = {
@@ -2020,6 +2045,12 @@ function closeEventSentDetails() {
     const statusMessage = document.getElementById("statusMessage");
     eventDetails.style.display = "none";
     statusMessage.style.display = "none";
+}
+
+function showPostStatus(text) {
+    const box = document.getElementById('statusMessage');
+    if (box) box.textContent = text;
+    else console.warn(text);
 }
 
 async function signEvent(ev, pk) {
@@ -2560,28 +2591,54 @@ document.addEventListener('DOMContentLoaded', () => {
     const userConsented = getCookie("snofl_random_Nostr_ID_cookie_consent"); // Check if consent exists
 
 
-if (!pkExists || !pubExists) {
-        // Ask for consent if no existing Nostr ID and no prior consent
-        if (!userConsented) {
-            const consent = confirm(
-                "This page requires a random Nostr ID to function, as only randomly generated Nostr IDs are allowed.\n\n" +
-                "Do you agree to create a random Nostr ID and store its private key in your device’s local storage? A consent cookie will also be saved.\n\n" +
-                "Without this, you will not be able to fully use this website."
-            );
+    /*
+     * A page used to mint a random key the moment it opened, which is wrong for anyone who already has an identity:
+     * their note went out under a throwaway name and the page published a profile for it. The door comes first now -
+     * extension, remote signer over a QR, or the same anonymous key as before - and the page only mints a key when
+     * the visitor picks "stay anonymous".
+     */
+    const identityReady = !!(window.snoflIdentity && window.snoflIdentity.hasIdentity());
+    if (identityReady) {
+        if (window.snoflIdentity.mode() === 'nip46') window.snoflIdentity.resumeRemote().catch(() => {});
+        loadKeys();
+        return;
+    }
 
-            if (consent) {
-                setCookie("snofl_random_Nostr_ID_cookie_consent", "true", 365); // Store consent to avoid asking again
-                generateNewKeys();
-            } else {
-                alert("You declined to create a random Nostr ID. Without one, you cannot use this page. Sorry. If you change your mind, reload the page or click on Avatar to create a new random ID");
-                return; // STOP execution if they decline
-            }
-        }
+    if (!pkExists || !pubExists) {
+        if (isReadablePageOnly()) return;                 // nothing to sign on a page with no visitor options
+        window.snoflIdentity.openPrompt();
     } else {
-        // If keys exist, load them
+        // an old anonymous key is still an identity: keep using it rather than asking again
+        try { localStorage.setItem('snofl_auth_mode', 'anon'); } catch (error) { /* fine */ }
         loadKeys();
     }
 });
+
+/**
+ * Does this page offer anything a signature is needed for? A page with public notes off and no visitor options is a
+ * poster, not a conversation: asking its reader to sign in would be noise.
+ */
+function isReadablePageOnly() {
+    const params = new URLSearchParams(location.search);
+    if (!params.toString()) return true;                  // the landing screen has nothing to post
+    return params.get('n') === '0' && !params.get('m');
+}
+
+// the anonymous path the login sheet calls when the visitor picks "stay anonymous"
+window.snoflBeginAnonymous = function () {
+    const userConsented = getCookie("snofl_random_Nostr_ID_cookie_consent");
+    if (!userConsented) {
+        const consent = confirm(
+            "This page can make a random Nostr ID for you.\n\n" +
+            "Do you agree to create a random Nostr ID and store its private key in this browser? A consent cookie will also be saved.\n\n" +
+            "Without it you can still read this page, but not post."
+        );
+        if (!consent) return;
+        setCookie("snofl_random_Nostr_ID_cookie_consent", "true", 365);
+    }
+    if (typeof window.snoflIdentity === 'function') window.snoflIdentity.useAnonymous();
+    generateNewKeys();
+};
 
 // Apply tilt after name update
 document.addEventListener('DOMContentLoaded', () => {
