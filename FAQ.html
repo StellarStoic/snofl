@@ -192,7 +192,46 @@
                 
             </div> 
 
-            <div class="faq-question urlmkr" onclick="toggleFaq('faq7')"><a href="#faqNTAGtype">Is NTAG memory showing wrong values?</a></div>
+            <div class="faq-question client" onclick="toggleFaq('faqVotes')"><a href="#faqVotes">What do the up and down arrows under a result do — and can one person vote a hundred times?</a></div>
+        <div id="faqVotes" class="faq-answer">
+            <p>
+                They are ordinary Nostr reactions (NIP-25, kind <code>7</code>) tagged with that note's id and its
+                author, signed by your own key — nothing about them belongs to snofl.
+                <br><br>
+                <strong>One npub counts once.</strong> The tally is kept per note as a map keyed by public key, so
+                publishing the same <code>+</code> fifty times, or from five different apps, still reads as one
+                upvote. NIP-25 says the latest reaction wins, so changing your mind <em>moves</em> your vote from one
+                side to the other instead of counting on both. Pressing the arrow you already pressed withdraws it:
+                that publishes a NIP-09 deletion (kind <code>5</code>) naming your reaction, and relays that honour
+                it stop serving the reaction — so it stops counting for everyone who loads the page afterwards, not
+                only for you.
+                <br><br>
+                The numbers sit inside the arrows themselves, <code>▲ 5 ▼ 1</code>, and tapping a number votes exactly
+                the way the arrow does. Your own vote tints its count green or red.
+                <br><br>
+                What you see is the union of what the relays src searches returned, so a vote that only reached one
+                relay shows once, and a relay that ignores a deletion keeps that vote alive on that relay. There is no
+                server of ours in the middle to arbitrate.
+            </p>
+        </div>
+
+        <div class="faq-question client" onclick="toggleFaq('faqSrcIdentity')"><a href="#faqSrcIdentity">Do I need an account to vote in src?</a></div>
+        <div id="faqSrcIdentity" class="faq-answer">
+            <p>
+                No account, no email, no sign-up. src uses the same identity a custom page does: a random key kept in
+                your browser with a name like <code>quiet_lake_07</code>, and it is held for 24 hours before it can be
+                replaced (the ring around the badge shows how far through those 24 hours it is).
+                <br><br>
+                The badge in the top right shows the key your votes are signed with, and it is also where you replace
+                it once the 24 hours are up. Reading and searching need no identity at all; only voting does, because
+                an unsigned reaction is something a relay has no way to attribute.
+                <br><br>
+                The same key is used by the pages you open from snofl links, so a vote here and a note there carry the
+                same name.
+            </p>
+        </div>
+
+        <div class="faq-question urlmkr" onclick="toggleFaq('faq7')"><a href="#faqNTAGtype">Is NTAG memory showing wrong values?</a></div>
             <div id="faq7" class="faq-answer">
                 <h4>NTAG memory has been set with a careful reading of the NXP <a href="https://www.nxp.com/docs/en/data-sheet/NTAG213_215_216.pdf" target="_blank" title="nxp ntags documentation papers"> documentation papers </a> </h4>
 
@@ -266,6 +305,105 @@
 
             </div>
                 <!-- New FAQ Question -->
+        <div class="faq-question urlmkr" onclick="toggleFaq('faqToolbar')"><a href="#faqToolbar">What do the buttons under "Your content" do?</a></div>
+        <div id="faqToolbar" class="faq-answer">
+            <p>
+                One button per thing a rendered page can actually show, and every one of them writes where your cursor
+                is. Select a few words first and the button wraps them; press it with nothing selected and it inserts
+                an example <em>already selected</em>, so you type straight over it. The name under each button says
+                what it does, so nothing depends on hovering — which matters on a phone.
+                <br><br>
+                <strong>A page renders HTML, not Markdown.</strong> <code>**bold**</code> and <code># heading</code>
+                would stay as literal characters, so the Bold button writes <code>&lt;b&gt;</code>, Heading writes
+                <code>&lt;h2&gt;</code>, and Table and Fold write a real <code>&lt;table&gt;</code> and
+                <code>&lt;details&gt;</code>. The one Markdown form the page honours is
+                <code>[the words](https://address)</code>, which is exactly what Link writes.
+                <br><br>
+                What is there: bold, italic, underline, strike, highlight, small, two heading levels, bulleted and
+                numbered lists, quote, inline code, preformatted, table, fold, horizontal rule, link, image, note
+                reference, the five QR prefixes and poll — 25 in all, in a row that scrolls sideways.
+                <code>Ctrl</code>/<code>Cmd</code> + <code>B</code>, <code>I</code> and <code>K</code> do the same as
+                the first three.
+                <br><br>
+                After each press the line under the strip tells you what it just added and what it cost: this text
+                lives in the link, and the link has to fit a tag. Around a word, <code>&lt;b&gt;…&lt;/b&gt;</code> is
+                16 bytes in the URL, <code>&lt;hr&gt;</code> is 14, and the table template is 182.
+            </p>
+        </div>
+
+        <div class="faq-question urlmkr" onclick="toggleFaq('faqPoll')"><a href="#faqPoll">How do I put a poll on my page?</a></div>
+        <div id="faqPoll" class="faq-answer">
+            <p>
+                Write it into the content, or press <strong>Poll</strong> and type over the three selected placeholders:
+                <br><br>
+                <code>[poll:Your question|First choice|Second choice]</code>
+                <br><br>
+                Two to six options. <code>[poll2:…]</code> lets each person pick two instead of one — the digit is how
+                many answers a person may give.
+                <br><br>
+                The poll is not a room message: the declaration travels inside the link, so every reader sees the same
+                question and nobody has to publish it first, and <em>only the answers</em> go to the room, using the
+                same NIP-88 payloads, mining and counting the room already uses. Its id is derived from what the poll
+                says, which means moving spaces or changing case cannot shift everybody's answers onto a different
+                question.
+                <br><br>
+                On the finished page the card sits above the notes with the question, the options and the counts. The
+                room's own "New poll" hides while a page poll is shown — the page's poll is the room's poll, and a
+                second one posted beside it would never be displayed.
+            </p>
+        </div>
+
+        <div class="faq-question urlmkr" onclick="toggleFaq('faqMsgLimit')"><a href="#faqMsgLimit">Can I write a suggested message and set a character limit at the same time?</a></div>
+        <div id="faqMsgLimit" class="faq-answer">
+            <p>
+                Yes. One is where the visitor starts, the other is how long their note may be, and they were once
+                mutually exclusive for no good reason — switching one off cleared the other.
+                <br><br>
+                There is one rule between them: the suggested message has to fit inside the limit. While you type, the
+                limit row says where you stand — <em>The suggested message is 44 characters, leaving 236 for the
+                visitor</em> — and turns amber when it no longer fits.
+                <br><br>
+                If it does not fit, no link is made at all and the reason is spelled out, rather than a link that would
+                quietly change what you wrote once the visitor's box caps the text.
+                <br><br>
+                Both controls live in <strong>Visitor options</strong>, together with Public notes, because a suggested
+                message only means something when a visitor may post at all: with Public notes off the message switch
+                is unavailable rather than merely pointless.
+            </p>
+        </div>
+
+        <div class="faq-question urlmkr" onclick="toggleFaq('faqEditor')"><a href="#faqEditor">The editor fills the whole screen. How do I get out without losing my page?</a></div>
+        <div id="faqEditor" class="faq-answer">
+            <p>
+                Press <strong>Done</strong> in its top right corner, press <code>Escape</code>, or click the dimmed
+                background. All three only close the editor — the content stays switched on, stays in the field and
+                stays in the link.
+                <br><br>
+                That is worth stating because it was not true before: the editor's open state <em>was</em> the content
+                switch, so the only way out also took <code>p</code> out of the link and the page you had just written
+                stopped existing. <strong>Write in full view</strong> opens the editor again without touching anything.
+                <br><br>
+                Inserting from the button strip never takes the screen either: the editor opens on a real flip of the
+                switch, not because a button enabled the field behind your back.
+            </p>
+        </div>
+
+        <div class="faq-question urlmkr" onclick="toggleFaq('faqDraft')"><a href="#faqDraft">I reloaded the maker by accident. Is my work gone?</a></div>
+        <div id="faqDraft" class="faq-answer">
+            <p>
+                Not while the browser session lasts. The content, title, subtitle, suggested message, the three
+                hashtags, the three relays and their switches are saved in <code>sessionStorage</code> as you type and
+                restored when the page loads — switches first, so no value lands in a field that is still disabled, and
+                the link is rebuilt with them. A reload never puts you back into the full-screen editor.
+                <br><br>
+                Close the browser and it is gone. That is deliberate: the draft never leaves your device, nothing is
+                stored on the server, and it does not follow you to another computer.
+                <br><br>
+                <strong>Clear draft</strong> throws it away on purpose. The styling choices — avatar, font, background,
+                Lightning address, encryption — are not part of the draft; those you pick per link.
+            </p>
+        </div>
+
                 <div class="faq-question uni" onclick="toggleFaq('faqFont')"><a href="#faqFont">What font does this website use?</a></div>
                 <div id="faqFont" class="faq-answer">
                     <p>The current font used on this website is <a id="fontLink" href="#" target="_blank">loading...</a>.</p>
@@ -384,6 +522,41 @@
 
 
 
+        <div class="faq-question index" onclick="toggleFaq('faqVisitorLimit')"><a href="#faqVisitorLimit">Can I decide what a visitor is allowed to post from my page?</a></div>
+        <div id="faqVisitorLimit" class="faq-answer">
+            <p>
+                Four controls, all optional, all in <strong>Visitor options</strong>:
+                <ul>
+                    <li><strong>Public notes</strong> — off writes <code>n=0</code> and the page offers only the
+                        encrypted room. On, a visitor may post a note anyone can find, with the hashtags you chose.</li>
+                    <li><strong>Suggested message</strong> — <code>m=</code>, the text they start from.</li>
+                    <li><strong>Visitor can edit it</strong> — off writes <code>mr=1</code> and the field becomes
+                        read-only: still readable, still selectable, still posted, just not rewritable. The page says
+                        the author wrote it.</li>
+                    <li><strong>Max characters</strong> — <code>l=</code>, between 1 and 5000, 280 if you say nothing.</li>
+                </ul>
+                They chain: no public notes means no suggested message, and no suggested message means no editability
+                choice. Each one says so next to itself instead of just sitting there greyed out.
+            </p>
+        </div>
+
+        <div class="faq-question index" onclick="toggleFaq('faqLinkTooLong')"><a href="#faqLinkTooLong">My link doesn't fit my tag. What can I do?</a></div>
+        <div id="faqLinkTooLong" class="faq-answer">
+            <p>
+                Watch the byte count above the buttons in the link panel — it reads
+                <code>Remaining bytes: … (Current bytes: …)</code> for the tag you picked, green while it fits and red
+                when it does not, and it updates as you type (on a phone too, where it sits in the pinned panel).
+                <br><br>
+                The content is usually the long part, and it is URL-encoded on top of that: every
+                <code>&lt;</code> and <code>&lt;/&gt;</code> becomes <code>%3C</code> / <code>%3E</code>, three bytes
+                each, and every space becomes <code>%20</code>. A table template on its own is 182 bytes.
+                <br><br>
+                In practice: drop whatever the page does not need, shorten the wording, skip a custom background or
+                avatar if you can live without it, choose a bigger tag (NTAG213 → 215 → 216), or shorten the finished
+                link with the built-in shortener — the long URL is stored on the server and you get a short one to
+                write.
+            </p>
+        </div>
         </div>
         </div>
     </div>
