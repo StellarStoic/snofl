@@ -23,7 +23,7 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=8">
-    <link rel="stylesheet" href="urlmkr.css?v=34">
+    <link rel="stylesheet" href="urlmkr.css?v=35">
     <script src="urlmkrAgreement.js?v=2"></script>
     <script src="backgroundImages.js"></script>
     <script src="crypto-js.min.js"></script>
@@ -168,32 +168,6 @@
                         </div>
                     </div>
 
-                    <div class="form-group mk__row">
-                        <label for="include_relays">Custom relays</label>
-                        <input type="checkbox" id="include_relays" title="if leaved empty, the default relays (greyed relays in the input) will be used by the main website where the user will post the note">
-                        <div class="mk__relays">
-                            <div class="relay-group">
-                                <input type="text" id="relay1" placeholder="wss://relay.nostr.band" disabled>
-                                <button type="button" id="random1" class="relay-random" title="Pick a random relay" aria-label="Pick a random relay" disabled><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 2l4 4-4 4V7H7a3 3 0 0 0-3 3v2H2v-2a5 5 0 0 1 5-5h10V2zm-10 20l-4-4 4-4v3h10a3 3 0 0 0 3-3v-2h2v2a5 5 0 0 1-5 5H7v3z"/></svg></button>
-                            </div>
-                            <div class="relay-group">
-                                <input type="text" id="relay2" placeholder="wss://bostr.bitcointxoko.com" disabled>
-                                <button type="button" id="random2" class="relay-random" title="Pick a random relay" aria-label="Pick a random relay" disabled><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 2l4 4-4 4V7H7a3 3 0 0 0-3 3v2H2v-2a5 5 0 0 1 5-5h10V2zm-10 20l-4-4 4-4v3h10a3 3 0 0 0 3-3v-2h2v2a5 5 0 0 1-5 5H7v3z"/></svg></button>
-                            </div>
-                            <div class="relay-group">
-                                <input type="text" id="relay3" placeholder="wss://bostr.nokotaro.com" disabled>
-                                <button type="button" id="random3" class="relay-random" title="Pick a random relay" aria-label="Pick a random relay" disabled><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 2l4 4-4 4V7H7a3 3 0 0 0-3 3v2H2v-2a5 5 0 0 1 5-5h10V2zm-10 20l-4-4 4-4v3h10a3 3 0 0 0 3-3v-2h2v2a5 5 0 0 1-5 5H7v3z"/></svg></button>
-                            </div>
-                            <div class="relay-group">
-                                <input type="text" id="relay4" placeholder="wss://ditto.pub/relay" disabled>
-                                <button type="button" id="random4" class="relay-random" title="Pick a random relay" aria-label="Pick a random relay" disabled><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 2l4 4-4 4V7H7a3 3 0 0 0-3 3v2H2v-2a5 5 0 0 1 5-5h10V2zm-10 20l-4-4 4-4v3h10a3 3 0 0 0 3-3v-2h2v2a5 5 0 0 1-5 5H7v3z"/></svg></button>
-                            </div>
-                            <div class="relay-group">
-                                <input type="text" id="relay5" placeholder="wss://relay.bostr.online/" disabled>
-                                <button type="button" id="random5" class="relay-random" title="Pick a random relay" aria-label="Pick a random relay" disabled><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 2l4 4-4 4V7H7a3 3 0 0 0-3 3v2H2v-2a5 5 0 0 1 5-5h10V2zm-10 20l-4-4 4-4v3h10a3 3 0 0 0 3-3v-2h2v2a5 5 0 0 1-5 5H7v3z"/></svg></button>
-                            </div>
-                        </div>
-                    </div>
                 </section>
 
 <section class="mk__section">
@@ -279,6 +253,24 @@
                             <input type="text" id="hashtag3" placeholder="third">
                         </div>
                     </div>
+                    <div class="form-group mk__row">
+                        <label for="include_relays">Custom relays</label>
+                        <input type="checkbox" id="include_relays" title="if leaved empty, the default relays (greyed relays in the input) will be used by the main website where the user will post the note">
+                        <div class="mk__relays">
+                            <div class="relay-group">
+                                <input type="text" id="relay1" placeholder="wss://relay.nostr.band" disabled>
+                                <button type="button" id="random1" class="relay-random" title="Pick a random relay" aria-label="Pick a random relay" disabled><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 2l4 4-4 4V7H7a3 3 0 0 0-3 3v2H2v-2a5 5 0 0 1 5-5h10V2zm-10 20l-4-4 4-4v3h10a3 3 0 0 0 3-3v-2h2v2a5 5 0 0 1-5 5H7v3z"/></svg></button>
+                            </div>
+                            <div class="relay-group">
+                                <input type="text" id="relay2" placeholder="wss://bostr.bitcointxoko.com" disabled>
+                                <button type="button" id="random2" class="relay-random" title="Pick a random relay" aria-label="Pick a random relay" disabled><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 2l4 4-4 4V7H7a3 3 0 0 0-3 3v2H2v-2a5 5 0 0 1 5-5h10V2zm-10 20l-4-4 4-4v3h10a3 3 0 0 0 3-3v-2h2v2a5 5 0 0 1-5 5H7v3z"/></svg></button>
+                            </div>
+                            <div class="relay-group">
+                                <input type="text" id="relay3" placeholder="wss://bostr.nokotaro.com" disabled>
+                                <button type="button" id="random3" class="relay-random" title="Pick a random relay" aria-label="Pick a random relay" disabled><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 2l4 4-4 4V7H7a3 3 0 0 0-3 3v2H2v-2a5 5 0 0 1 5-5h10V2zm-10 20l-4-4 4-4v3h10a3 3 0 0 0 3-3v-2h2v2a5 5 0 0 1-5 5H7v3z"/></svg></button>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
 <section class="mk__section">
@@ -352,8 +344,10 @@
         const messageInput = document.getElementById('message_input');
         const charactersInput = document.getElementById('characters_input');
         const hashtagInputs = [document.getElementById('hashtag1'), document.getElementById('hashtag2'), document.getElementById('hashtag3')];
-        const relayInputs = [document.getElementById('relay1'), document.getElementById('relay2'), document.getElementById('relay3'), document.getElementById('relay4'), document.getElementById('relay5')];
-        const randomRelayButtons = [document.getElementById('random1'), document.getElementById('random2'), document.getElementById('random3'), document.getElementById('random4'), document.getElementById('random5')];
+        // Read from the markup rather than listing ids: the relay rows are a design choice that has already
+        // changed once (five rows became three), and an array holding a null throws on the first .disabled.
+        const relayInputs = [...document.querySelectorAll('.mk__relays input[type="text"]')];
+        const randomRelayButtons = [...document.querySelectorAll('.mk__relays .relay-random')];
         const urlOutput = document.getElementById('url_output');
         const byteCounter = document.getElementById('byte_counter');
         const errorMessage = document.getElementById('error_message');

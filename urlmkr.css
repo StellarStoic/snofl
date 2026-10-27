@@ -1489,3 +1489,180 @@ body.mk .mk__row.is-expanded > label::after {
         padding: 10px 12px;
     }
 }
+
+/* ---------------------------------------------------------------- type scale */
+/* D reads this page on a phone and on a desktop monitor and found the text too small on both. The sizes were
+   scattered across a dozen rules (labels 15px, hints 13px, inputs 15px, panel text 12px), so the whole scale is
+   raised here in one place rather than chased rule by rule. Inputs go to 16px because anything smaller makes
+   iOS zoom the page when a field takes focus. */
+
+body.mk {
+    font-size: 17px;
+}
+
+body.mk .mk__head h1 {
+    font-size: 30px;
+}
+
+body.mk .mk__lede {
+    font-size: 16px;
+}
+
+body.mk .mk__about > summary {
+    font-size: 14px;
+}
+
+body.mk .mk__about-text {
+    font-size: 15px;
+}
+
+body.mk .mk__section > h2 {
+    font-size: 13px;
+}
+
+body.mk .mk__row > label {
+    font-size: 16px;
+}
+
+body.mk .mk__hint {
+    font-size: 14px;
+}
+
+body.mk .mk__tag {
+    font-size: 12px;
+}
+
+body.mk input[type="text"],
+body.mk input[type="password"],
+body.mk input[type="number"],
+body.mk textarea,
+body.mk #custom-background-url {
+    font-size: 16px;
+}
+
+body.mk #toggle_encryption {
+    font-size: 15px;
+}
+
+body.mk .ntag-group label {
+    font-size: 14.5px;
+}
+
+body.mk .relay-group small {
+    font-size: 13px;
+}
+
+body.mk .toggle-password {
+    font-size: 16px;
+}
+
+body.mk .password-strength {
+    font-size: 14px;
+}
+
+body.mk .copy-button {
+    font-size: 15px;
+}
+
+body.mk .mk__panel-title {
+    font-size: 13px;
+}
+
+body.mk #url_output {
+    font-size: 13px;
+}
+
+body.mk .url-output {
+    font-size: 13.5px;
+}
+
+body.mk #byte_counter {
+    font-size: 13px;
+}
+
+body.mk .error-message,
+body.mk .warning-message,
+body.mk .info-message {
+    font-size: 14px;
+}
+
+body.mk .mk__actions .copy-button {
+    font-size: 14px;
+}
+
+body.mk .font-preview {
+    font-size: 16px;
+}
+
+body.mk .bg-tools label,
+body.mk #color_picker_label,
+body.mk #custom_url_label {
+    font-size: 13px;
+}
+
+body.mk .avatar-label {
+    font-size: 12px;
+}
+
+body.mk .avatars-attribute {
+    font-size: 13px;
+}
+
+body.mk .mk__preview-title {
+    font-size: 13px;
+}
+
+body.mk .mk__preview-link,
+body.mk .mk__preview-close {
+    font-size: 14px;
+}
+
+body.mk .agreement-modal-content h4 {
+    font-size: 18px;
+}
+
+body.mk .agreement-modal-text,
+body.mk .agreement-modal-text li {
+    font-size: 15px;
+}
+
+body.mk .agreement-modal-text h1 {
+    font-size: 18px;
+}
+
+body.mk .agreement-modal-text h2 {
+    font-size: 16px;
+}
+
+body.mk .mk__read-label {
+    font-size: 13px;
+}
+
+body.mk .mk__row.is-expanded > label,
+body.mk .mk__row.is-expanded > textarea {
+    font-size: 17px;
+}
+
+body.mk .mk__row.is-expanded > label::after {
+    font-size: 13.5px;
+}
+
+/* Phones keep every one of those gains - 16px inputs included, or iOS zooms on focus - with the headings a
+   step down from the desktop sizes. */
+@media (max-width: 760px) {
+    body.mk .mk__head h1 {
+        font-size: 25px;
+    }
+
+    body.mk .mk__lede {
+        font-size: 15px;
+    }
+
+    body.mk #url_output {
+        font-size: 12.5px;
+    }
+
+    body.mk .mk__actions .copy-button {
+        font-size: 13px;
+    }
+}
