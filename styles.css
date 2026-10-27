@@ -415,6 +415,72 @@ video[id^="embedded-video-"]:hover {
     background-color: #fff;
 }
 
+/* ---------------------------------------------------------------- a NIP-52 calendar event
+
+   A calendar entry is not a note: it has a date, a place and a summary rather than a body of text, so it gets its
+   own quiet card instead of the note box. Values come off a relay, so each one is escaped where the card is built. */
+
+.cal-event {
+    display: grid;
+    gap: 6px;
+    margin: 14px 0;
+    padding: 14px 16px;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-left: 3px solid var(--accent, #4caf50);
+    border-radius: 12px;
+}
+
+.cal-event__label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a8a8a;
+}
+
+.cal-event__title {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: #f0f0f0;
+}
+
+.cal-event__when {
+    font-size: 13.5px;
+    color: var(--accent, #4caf50);
+}
+
+.cal-event__where {
+    font-size: 13px;
+    color: #c4c4c4;
+}
+
+.cal-event__summary {
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: #b4b4b4;
+    white-space: pre-wrap;
+}
+
+.cal-event__image {
+    max-width: min(100%, 360px);
+    height: auto;
+    border-radius: 10px;
+}
+
+.cal-event__link {
+    justify-self: start;
+    font-size: 12.5px;
+    color: #9a9a9a;
+    text-decoration: none;
+    border-bottom: 1px dotted #4a4a4a;
+}
+
+.cal-event__link:hover {
+    color: var(--accent, #4caf50);
+    border-color: var(--accent, #4caf50);
+}
+
 #messageArea {
     position: fixed;
     width: 85%;

@@ -29,7 +29,7 @@
     <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
     <script src="https://bundle.run/browserify-cipher@1.0.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=12">
+    <link rel="stylesheet" href="styles.css?v=13">
     <link rel="stylesheet" href="room.css?v=8">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -40,7 +40,7 @@
     <script src="crypto-js.min.js"></script>                                                                                                                   
     <script src="dec.js"></script>                                                                                                                   
     <script src="bech32.js"></script>                                                                                                                   
-    <script src="note1.js?v=5"></script>
+    <script src="note1.js?v=7"></script>
     <!-- <script src="footer.js"></script> // IS AT THE BOTTOM-->
 </head>
 
@@ -637,6 +637,17 @@ function fetchNote1Strings(content, relays) {
     // Two reference formats point at a note: note1 is an id on its own, nevent1 is an id plus the relays the
     // sharer suggested (what most clients emit now). nevent goes first in each case because its hints mean
     // the note is found without guessing which relay holds it.
+    // A calendar event (NIP-52) is an addressable event, so clients hand out an `naddr1` for it - kind, author and
+    // `d` identifier rather than an id. Those are fetched by coordinate; everything else by id.
+    const calendarMatches = content.match(/nostr:naddr1\w+/g) || [];
+    calendarMatches.forEach(reference => {
+        const decoded = decodeNaddr(reference);
+        if (!decoded) return;
+        const hinted = (decoded.relays || []).filter(url => /^wss?:\/\//i.test(url));
+        const ordered = [...new Set([...hinted, ...(relays || [])])];
+        fetchCalendarEvent(decoded, ordered, reference);
+    });
+
     const referenceMatches = content.match(/nostr:(?:note1|nevent1)\w+/g) || [];
     referenceMatches.forEach(reference => {
         const decoded = /nevent1/.test(reference) ? decodeNevent(reference) : decodeNote1(reference);
@@ -649,7 +660,7 @@ function fetchNote1Strings(content, relays) {
 
     // A bare reference stays text: a page should not open sockets for every id it merely mentions. The
     // nostr: forms are removed from the scan so their tails are not greyed out twice.
-    const withoutReferences = content.replace(/nostr:(?:note1|nevent1)\w+/g, '');
+    const withoutReferences = content.replace(/nostr:(?:note1|nevent1|naddr1)\w+/g, '');
     const plainNote1Matches = withoutReferences.match(/\b(?:note1|nevent1)\w+\b(?!:)/g) || [];
     plainNote1Matches.forEach(note1String => {
         content = content.replace(
@@ -669,14 +680,22 @@ async function truncateParagraph(paragraph) {
 
     if (!fullContent) return;
 
-    // Temporarily remove note1 placeholders for clean truncation
-    const tempContent = fullContent.replace(/<div class="note-box">[\s\S]*?<\/div>/g, '[note1]');
+    // Temporarily remove the blocks a reference resolved into, so the cut cannot land inside one: a calendar card
+    // carries its own markers, a note box is matched by its class. Truncating through a card used to leave its title
+    // and date on screen with the place, the summary and the link silently missing.
+    const tempContent = fullContent
+        .replace(/<!--ref:start-->[\s\S]*?<!--ref:end-->/g, '[reference]')
+        .replace(/<div class="note-box">[\s\S]*?<\/div>/g, '[note1]');
     let truncatedText = tempContent.length > maxLength
         ? `${tempContent.substring(0, maxLength)}...`
         : tempContent;
 
-    // Reinsert note1 placeholders into truncated content
+    // Reinsert them into the truncated content, in the order they appear
     let displayContent = truncatedText;
+    const referenceBlocks = [...fullContent.matchAll(/<!--ref:start-->[\s\S]*?<!--ref:end-->/g)];
+    referenceBlocks.forEach(block => {
+        displayContent = displayContent.replace('[reference]', block[0]);
+    });
     const noteBoxes = [...fullContent.matchAll(/<div class="note-box">[\s\S]*?<\/div>/g)];
     noteBoxes.forEach(noteBox => {
         displayContent = displayContent.replace('[note1]', noteBox[0]);

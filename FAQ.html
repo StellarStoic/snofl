@@ -321,13 +321,37 @@
                 <br><br>
                 What is there: bold, italic, underline, strike, highlight, small, two heading levels, bulleted and
                 numbered lists, quote, inline code, preformatted, table, fold, horizontal rule, link, image, note
-                reference, the five QR prefixes and poll — 25 in all, in a row that scrolls sideways.
+                reference, calendar event, the five QR prefixes and poll — 26 in all, in a row that scrolls sideways.
                 <code>Ctrl</code>/<code>Cmd</code> + <code>B</code>, <code>I</code> and <code>K</code> do the same as
                 the first three.
                 <br><br>
                 After each press the line under the strip tells you what it just added and what it cost: this text
                 lives in the link, and the link has to fit a tag. Around a word, <code>&lt;b&gt;…&lt;/b&gt;</code> is
                 16 bytes in the URL, <code>&lt;hr&gt;</code> is 14, and the table template is 182.
+            </p>
+        </div>
+
+        <div class="faq-question urlmkr" onclick="toggleFaq('faqCalendar')"><a href="#faqCalendar">Can my page show a Nostr calendar event?</a></div>
+        <div id="faqCalendar" class="faq-answer">
+            <p>
+                Yes — calendar events are NIP-52, kinds <code>31922</code> (whole days) and <code>31923</code> (a time),
+                and a page draws one as a card with the title, the date, the place, the summary and optionally an image,
+                instead of treating it as a note.
+                <br><br>
+                Press <strong>Event</strong> in the strip, or paste the reference yourself. Both forms work:
+                <ul>
+                    <li><code>nostr:naddr1…</code> — what clients hand you for a calendar event, because these events
+                        are <em>addressable</em>: the author can replace one, so its coordinate (kind + author +
+                        identifier) is the right handle rather than an id</li>
+                    <li><code>nostr:nevent1…</code> — an event id with relay hints, still drawn as a card if the event
+                        turns out to be a calendar entry</li>
+                </ul>
+                Times are shown in the event's own timezone when it names one (<code>start_tzid</code>), otherwise in
+                yours. A whole-day event's end date is <em>exclusive</em> in NIP-52, so "1 May to 4 May" is shown as
+                1–3 May, which is what the author meant.
+                <br><br>
+                The card is read-only for now: no RSVP (kind <code>31925</code>) and no adding it to a calendar app
+                from the page — "open in njump" is the way out.
             </p>
         </div>
 
