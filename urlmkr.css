@@ -433,9 +433,55 @@ body.mk #toggle_encryption {
     gap: 10px;
 }
 
-/* the legacy relay rows carry their own margins, which stacked into ~87px between fields */
+/* the legacy relay rows carry their own margins and 10px padding, which shift the field off the row's centre
+   (the repeat button then sits 4-5px low) and stack into ~87px between fields */
 body.mk .relay-group {
     margin: 0;
+    padding: 0;
+}
+
+body.mk .relay-group input[type="text"] {
+    margin: 0;
+}
+
+/* Choosing a relay at random is an action, not a state: a repeat icon you press, sized to the field beside it. */
+body.mk .relay-random {
+    display: grid;
+    place-items: center;
+    align-self: center;
+    width: 45px;
+    height: 45px;
+    padding: 0;
+    /* the shared sheet gives every button a 10px top margin, which lands this one 5px below the field it
+       belongs to (centring turns 10px into 5) */
+    margin: 0;
+    border: 1px solid #3a3a3a;
+    border-radius: 11px;
+    background: #1d1d1d;
+    color: #cfcfcf;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+body.mk .relay-random svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+body.mk .relay-random:hover:not(:disabled) {
+    border-color: #4caf50;
+    color: #4caf50;
+    background: #1f1f1f;
+}
+
+body.mk .relay-random:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+body.mk .relay-random:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 .relay-group {

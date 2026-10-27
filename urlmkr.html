@@ -23,7 +23,7 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=8">
-    <link rel="stylesheet" href="urlmkr.css?v=30">
+    <link rel="stylesheet" href="urlmkr.css?v=34">
     <script src="urlmkrAgreement.js?v=2"></script>
     <script src="backgroundImages.js"></script>
     <script src="crypto-js.min.js"></script>
@@ -174,28 +174,23 @@
                         <div class="mk__relays">
                             <div class="relay-group">
                                 <input type="text" id="relay1" placeholder="wss://relay.nostr.band" disabled>
-                                <input type="radio" id="random1" name="random_relay1" title="Pick a random online relay from nostr.watch" disabled>
-                                <small>random</small>
+                                <button type="button" id="random1" class="relay-random" title="Pick a random relay" aria-label="Pick a random relay" disabled><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 2l4 4-4 4V7H7a3 3 0 0 0-3 3v2H2v-2a5 5 0 0 1 5-5h10V2zm-10 20l-4-4 4-4v3h10a3 3 0 0 0 3-3v-2h2v2a5 5 0 0 1-5 5H7v3z"/></svg></button>
                             </div>
                             <div class="relay-group">
                                 <input type="text" id="relay2" placeholder="wss://bostr.bitcointxoko.com" disabled>
-                                <input type="radio" id="random2" name="random_relay2" title="Pick a random online relay from nostr.watch" disabled>
-                                <small>random</small>
+                                <button type="button" id="random2" class="relay-random" title="Pick a random relay" aria-label="Pick a random relay" disabled><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 2l4 4-4 4V7H7a3 3 0 0 0-3 3v2H2v-2a5 5 0 0 1 5-5h10V2zm-10 20l-4-4 4-4v3h10a3 3 0 0 0 3-3v-2h2v2a5 5 0 0 1-5 5H7v3z"/></svg></button>
                             </div>
                             <div class="relay-group">
                                 <input type="text" id="relay3" placeholder="wss://bostr.nokotaro.com" disabled>
-                                <input type="radio" id="random3" name="random_relay3" title="Pick a random online relay from nostr.watch" disabled>
-                                <small>random</small>
+                                <button type="button" id="random3" class="relay-random" title="Pick a random relay" aria-label="Pick a random relay" disabled><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 2l4 4-4 4V7H7a3 3 0 0 0-3 3v2H2v-2a5 5 0 0 1 5-5h10V2zm-10 20l-4-4 4-4v3h10a3 3 0 0 0 3-3v-2h2v2a5 5 0 0 1-5 5H7v3z"/></svg></button>
                             </div>
                             <div class="relay-group">
                                 <input type="text" id="relay4" placeholder="wss://ditto.pub/relay" disabled>
-                                <input type="radio" id="random4" name="random_relay4" title="Pick a random online relay from nostr.watch" disabled>
-                                <small>random</small>
+                                <button type="button" id="random4" class="relay-random" title="Pick a random relay" aria-label="Pick a random relay" disabled><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 2l4 4-4 4V7H7a3 3 0 0 0-3 3v2H2v-2a5 5 0 0 1 5-5h10V2zm-10 20l-4-4 4-4v3h10a3 3 0 0 0 3-3v-2h2v2a5 5 0 0 1-5 5H7v3z"/></svg></button>
                             </div>
                             <div class="relay-group">
                                 <input type="text" id="relay5" placeholder="wss://relay.bostr.online/" disabled>
-                                <input type="radio" id="random5" name="random_relay5" title="Pick a random online relay from nostr.watch" disabled>
-                                <small>random</small>
+                                <button type="button" id="random5" class="relay-random" title="Pick a random relay" aria-label="Pick a random relay" disabled><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 2l4 4-4 4V7H7a3 3 0 0 0-3 3v2H2v-2a5 5 0 0 1 5-5h10V2zm-10 20l-4-4 4-4v3h10a3 3 0 0 0 3-3v-2h2v2a5 5 0 0 1-5 5H7v3z"/></svg></button>
                             </div>
                         </div>
                     </div>
@@ -366,7 +361,20 @@
         const infoMessage = document.getElementById('info_message');
         const copyButton = document.getElementById('copy_button');
 
-        let relayList = [];
+        // The random button used to depend on fetch('https://api.nostr.watch/v1/nip/50'), which cannot work:
+        // that host answers 502 from its own proxy today and never sent CORS headers, so this list stayed empty
+        // and pressing the button did nothing at all. These are the relays that answered a real WebSocket with
+        // a kind-1 filter from this server -- note that relay.nostr.band, nos.lol and nostr.mom do NOT answer a
+        // browser, which is why they are absent here even though other clients use them.
+        let relayList = [
+            'wss://relay.ditto.pub',
+            'wss://relay.damus.io',
+            'wss://relay.primal.net',
+            'wss://relay.snort.social',
+            'wss://offchain.pub',
+            'wss://nostr-pub.wellorder.net',
+            'wss://relay.bostr.online'
+        ];
         let maxBytes = 0;
 
         // Background and font modals
@@ -1009,18 +1017,16 @@ function reverseString(str) {
             relayInputs.forEach((input, index) => {
                 input.disabled = !includeRelaysChecked;
                 randomRelayButtons[index].disabled = !includeRelaysChecked;
-                if (!includeRelaysChecked) {
-                    randomRelayButtons[index].checked = false; // Uncheck the radio buttons when disabled
-                }
             });
         }
 
+        // One handler per button: fill that field with a pool relay that is not the one already in it. The old
+        // handler was registered twice and guarded on a list that was always empty, so a press did nothing.
         randomRelayButtons.forEach((button, index) => {
             button.addEventListener('click', () => {
-                if (relayList.length > 0 && includeRelaysCheckbox.checked) {
-                    relayInputs[index].value = getRandomRelay();
-                    updateURL();
-                }
+                if (!includeRelaysCheckbox.checked) return;
+                relayInputs[index].value = getRandomRelay(relayInputs[index].value);
+                updateURL();
             });
         });
 
@@ -1030,7 +1036,6 @@ function reverseString(str) {
                 input.disabled = !this.checked;
                 randomRelayButtons[index].disabled = !this.checked;
                 if (!this.checked) {
-                    randomRelayButtons[index].checked = false; // Uncheck the radio buttons when disabled
                     input.value = '';  // Clear relay input value
                 }
             });
@@ -1046,15 +1051,6 @@ function reverseString(str) {
         hashtagInputs.forEach(input => input.addEventListener('input', updateURL));
         relayInputs.forEach(input => input.addEventListener('input', updateURL));
         copyButton.addEventListener('click', copyURL);
-
-        randomRelayButtons.forEach((button, index) => {
-            button.addEventListener('click', () => {
-                if (relayList.length > 0) {
-                    relayInputs[index].value = getRandomRelay();
-                    updateURL();
-                }
-            });
-        });
 
         const relayInvalidChars = /[^a-zA-Z0-9://.-]/;
         const hashtagInvalidChars = /[^a-zA-Z0-9]/;
@@ -1754,8 +1750,15 @@ document.getElementById('close_qr_button').addEventListener('click', function ()
 
 
 
-        function getRandomRelay() {
-            return relayList[Math.floor(Math.random() * relayList.length)];
+        function getRandomRelay(currentValue) {
+            const pool = relayList;
+            if (pool.length === 1) return pool[0];
+            let pick = pool[Math.floor(Math.random() * pool.length)];
+            // Pressing the button on a field that already holds a pool relay should not hand back the same one.
+            for (let attempt = 0; attempt < 6 && pick === currentValue; attempt++) {
+                pick = pool[Math.floor(Math.random() * pool.length)];
+            }
+            return pick;
         }
 
         // Was the old "What this tool does?" heading, which a click toggled. The explainer is a <details>
@@ -2014,22 +2017,6 @@ document.addEventListener('DOMContentLoaded', function () {
             updateBackground(); // Initialize background slider
             applyStoredBackground(); // Apply stored background on page load
             updateURL(); // Ensure the URL is updated on page load
-        });
-
-        // Fetch relay list from API
-        fetch('https://api.nostr.watch/v1/nip/50')
-        .then(response => response.json())
-        .then(data => {
-            relayList = data;
-
-            // Re-enable buttons only if "include_relays" checkbox is checked
-            const includeRelaysChecked = includeRelaysCheckbox.checked;
-            randomRelayButtons.forEach(button => {
-                button.disabled = !includeRelaysChecked;
-            });
-        })
-        .catch(error => {
-            console.error('Failed to fetch relays:', error);
         });
 
         // Initialize URL
