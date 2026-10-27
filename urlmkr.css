@@ -1680,3 +1680,17 @@ body.mk .mk__row.is-expanded > label::after {
         font-size: 13px;
     }
 }
+
+/* The QR modal is the one moment the short address exists, so the checker is offered there - on the modal's
+   own white card, where a text link needs a readable dark green rather than the page's accent. */
+body.mk #check_short_visits {
+    display: inline-block;
+    margin: 6px 0 2px;
+    font-size: 13px;
+    color: #0b6b12;
+    text-decoration: underline;
+}
+
+body.mk #check_short_visits:hover {
+    color: #08470c;
+}

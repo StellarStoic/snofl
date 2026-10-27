@@ -23,7 +23,7 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=8">
-    <link rel="stylesheet" href="urlmkr.css?v=38">
+    <link rel="stylesheet" href="urlmkr.css?v=39">
     <script src="urlmkrAgreement.js?v=2"></script>
     <script src="backgroundImages.js"></script>
     <script src="crypto-js.min.js"></script>
@@ -70,6 +70,7 @@
         <div style="z-index: 9999 !important; background: #fff; padding: 20px; border-radius: 8px; text-align: center;">
             <div id="qr-code"></div>
             <div id="qr-title">Spread it!</div>
+            <a id="check_short_visits" href="urlchckr.html" target="_blank" rel="noopener">Check this link's visits</a>
             <button id="save_qr_button" class="copy-button">Save QR Code</button>
             <button id="share_qr_button" class="copy-button">Share QR Code</button>
             <button id="close_qr_button" class="copy-button" style="background: #ff4d4d;">Close</button>
@@ -316,7 +317,8 @@
         <a href="about.html">About</a> | 
         <a href="FAQ.html">FAQ</a> | 
         <a href="urlmkr.html">URLmkr</a> | 
-        <a href="src.html">src</a>
+        <a href="src.html">src</a> | 
+        <a href="urlchckr.html">Visits</a>
         <!-- <button id="showHistoryBtn"  title="a History data of all the posted notes from this device">Show History</button> -->
     </footer>
 
@@ -1666,6 +1668,10 @@ function reverseString(str) {
             titleHeight: 30,
             titleTop: 15,
         });
+
+        // The checker is one click from here: this is the only moment the short address is in hand.
+        const checkLink = document.getElementById('check_short_visits');
+        if (checkLink) checkLink.href = `urlchckr.html?short=${encodeURIComponent(shortenedURL)}`;
 
         // Open modal and update dependent elements
         document.getElementById('shortURL-qr-modal').style.display = 'flex';

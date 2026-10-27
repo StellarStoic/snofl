@@ -218,6 +218,16 @@ footer a:hover {
                 errorContainer.style.display = 'block';
             }
         });
+
+        // A link can carry the code (?short=https://snofl.com/abc1234), so the maker's QR modal and any
+        // shared address arrive with the number already looked up instead of asking for a paste.
+        (function checkFromQuery() {
+            const params = new URLSearchParams(location.search);
+            const value = params.get('short') || params.get('u');
+            if (!value) return;
+            document.getElementById('short-url').value = value;
+            document.getElementById('check-btn').click();
+        })();
     </script>
     <script src="footer.js"></script>
 </body>
