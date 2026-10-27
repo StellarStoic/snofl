@@ -280,6 +280,29 @@
     return signWithLocalKey(template);
   }
 
+  // ------------------------------------------------------------------ what counts as using an ID
+  //
+  // The 24-hour hold on a random ID exists to stop a farm minting identities. Waiting is one way out; the other is
+  // doing something with the ID on a custom page, which is exactly what a farm will not do. This counter is that
+  // evidence: any signed event published from a page — a public note, a room message, a poll answer, an RSVP —
+  // increments it.
+
+  const ACTIONS_KEY = 'snofl_signed_actions_v1';
+
+  function markSignedAction(kind) {
+    let record = {count: 0, lastKind: null, lastAt: 0};
+    try { record = JSON.parse(localStorage.getItem(ACTIONS_KEY) || 'null') || record; } catch (error) { record = {count: 0}; }
+    record.count = (record.count || 0) + 1;
+    record.lastKind = kind == null ? null : Number(kind);
+    record.lastAt = Math.floor(Date.now() / 1000);
+    try { localStorage.setItem(ACTIONS_KEY, JSON.stringify(record)); } catch (error) { /* quota */ }
+    return record.count;
+  }
+
+  function signedActions() {
+    try { return (JSON.parse(localStorage.getItem(ACTIONS_KEY) || 'null') || {}).count || 0; } catch (error) { return 0; }
+  }
+
   // ------------------------------------------------------------------ NIP-46 pairing (nostrconnect://)
 
   function connectUri(session) {
@@ -638,6 +661,7 @@
     mode, pubkey, isRemote, hasIdentity, sign, onChange, snapshot,
     useExtension, useAnonymous, pairRemoteSigner, resumeRemote, fetchProfile,
     openPrompt, close,
+    markSignedAction, signedActions,
     signOut,
     // for probes and for the page's own legacy key paths
     localPrivateKey,

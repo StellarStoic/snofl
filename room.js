@@ -577,6 +577,10 @@ export async function mount(options = {}) {
       throw new Error('the signed event has a different id than the one that was mined');
     }
     const results = await publishTo(relays, publishable);
+    // a message or a poll answer is a signed event from a custom page: one of the ways out of the ID hold
+    if (results.some(result => result.ok) && window.snoflIdentity && window.snoflIdentity.markSignedAction) {
+      window.snoflIdentity.markSignedAction(publishable.kind);
+    }
     return { publishable, mined, results };
   };
 

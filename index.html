@@ -41,7 +41,7 @@
     <script src="dec.js"></script>                                                                                                                   
     <script src="bech32.js"></script>                                                                                                                   
     <script src="nostrLogin.js?v=3"></script>
-    <script src="note1.js?v=10"></script>
+    <script src="note1.js?v=11"></script>
     <!-- <script src="footer.js"></script> // IS AT THE BOTTOM-->
 </head>
 
@@ -1730,48 +1730,50 @@ document.getElementById("avatarIcon").onclick = function () {
         return;
     }
 
-    // If no keys exist, ask for consent
+    /*
+     * No identity yet: the avatar is a door, not a mint button. Tapping the picture used to create a key, publish a
+     * kind-0 and write a NIP-05 name on the server after one confirm() — an identity, a profile and a record for
+     * someone who had not decided to have one. It opens the same sign-in sheet everything else uses.
+     */
     if (!pkExists || !pubExists) {
-        if (!userConsented) {
-            const consent = confirm(
-                "This page requires a random Nostr ID to function, as only randomly generated Nostr IDs are allowed.\n\n" +
-                "Do you agree to create a random Nostr ID and store its private key in your device’s local storage? A consent cookie will also be saved.\n\n" +
-                "Without this, you will not be able to fully use this website."
-            );
-
-            if (consent) {
-                setCookie("snofl_random_Nostr_ID_cookie_consent", "true", 365); // Store consent
-                generateNewKeys(); // Generate only after consent
-            } else {
-                alert("You declined to create a Nostr ID. If you change your mind, click the Avatar again.");
-            }
-        }
-        return; // Stop execution if no consent
+        if (window.snoflIdentity) window.snoflIdentity.openPrompt();
+        return;
     }
 
-    const hasPosts = checkIfPostsExist();
-    const remainingMinutes = checkAccountAge();
+    /*
+     * Changing the ID is the one thing a farm would do in a loop, so it is held. Two doors open it, and the message
+     * says both plainly instead of printing a number of minutes and hoping: wait out the 24 hours, or do something
+     * with this ID on a custom page. One signed event is enough — that is the evidence a farm cannot fake cheaply.
+     */
+    const createdAt = getAccountCreationTime();
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const ageSeconds = createdAt ? nowSeconds - createdAt : 0;
+    const unlockAt = createdAt ? new Date((createdAt + 86400) * 1000) : null;
+    const hoursLeft = createdAt ? Math.max(1, Math.ceil((86400 - ageSeconds) / 3600)) : 24;
+    const actions = (window.snoflIdentity && window.snoflIdentity.signedActions)
+        ? window.snoflIdentity.signedActions()
+        : 0;
+    const heldForTime = !createdAt || ageSeconds < 86400;
 
-    // console.log("Remaining Minutes:", remainingMinutes);
-    // console.log("Has Posts:", hasPosts);
-
-    // Check if account is too new
-    if (remainingMinutes > 0 && remainingMinutes < 21000000) {
+    if (heldForTime && actions < 1) {
         alert(
-            `Your account is too new to generate a new ID. Please retry after ${remainingMinutes} minute(s).`
+            "You are still holding this random ID.\n\n" +
+            "There are two ways to be allowed a new one:\n\n" +
+            "1. Wait out the 24 hours — " + hoursLeft + " hour(s) to go" +
+            (unlockAt ? ", so a new ID is allowed at " + unlockAt.toLocaleString() : "") + ".\n\n" +
+            "2. Do one thing with this ID on a custom snofl page. Any one of these counts:\n" +
+            "   • answer a poll on a page\n" +
+            "   • post a public note from a page\n" +
+            "   • write in a page's room\n" +
+            "   • RSVP to a calendar event\n\n" +
+            "One signed event is all it takes: that is what shows the ID belongs to a person and is not being farmed.\n\n" +
+            "You have not done any of those with this ID yet."
         );
         return;
-    } else if (remainingMinutes >= 21000000) {
-        alert(
-            "Your account is not eligible to generate a new ID yet. Please post something first."
-        );
-        return;
     }
 
-    if (!hasPosts) {
-        alert("You must post at least once before generating a new ID.\n\nIf you need a suggestion, just post GM or GN.");
-        return;
-    }
+    // Nothing else gates this: 24 hours OR one signed action, exactly. A second check here used to keep blocking an
+    // ID that had already waited out the full day, which is not the rule.
 
     // Confirm ID regeneration
     if (
@@ -1947,6 +1949,8 @@ document.getElementById("sendMessageBtn").onclick = async () => {
 
     // Save hash to prevent duplicate posts
     saveHash(contentHash);
+    // and remember that this ID has now been used for something: it is one of the ways out of the 24-hour hold
+    if (window.snoflIdentity && window.snoflIdentity.markSignedAction) window.snoflIdentity.markSignedAction(1);
 
     // // Update the status message
     // const statusMessage = document.getElementById("statusMessage");
@@ -2657,7 +2661,7 @@ updateAvatar();
 </script>
 <script src="footer.js"></script>       
 
-    <script type="module" src="room.js?v=8"></script>
+    <script type="module" src="room.js?v=9"></script>
 </body>
 
 </html>

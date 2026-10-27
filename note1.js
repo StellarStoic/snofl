@@ -454,6 +454,9 @@ async function publishRsvp(button) {
         tally.set(pub, {status, at: Math.floor(Date.now() / 1000)});
         rsvpTally.set(coordinate, tally);
         paintRsvps(coordinate);
+        if (accepted > 0 && window.snoflIdentity && window.snoflIdentity.markSignedAction) {
+            window.snoflIdentity.markSignedAction(31925);
+        }
         say(accepted > 0
             ? `Answered ${RSVP_STATUSES[status].toLowerCase()} — accepted by ${accepted} of ${targets.length} relays.`
             : "No relay accepted the answer. Try again in a moment.");
