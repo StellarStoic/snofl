@@ -1049,11 +1049,14 @@ body {
 }
 
 .note-votes .vote {
-    display: grid;
-    place-items: center;
-    width: 34px;
+    /* the number sits inside the arrow's own button, so tapping a count votes the same way the arrow does */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-width: 46px;
     height: 30px;
-    padding: 0;
+    padding: 0 8px;
     color: var(--ink-dim);
     background: #232323;
     border: 1px solid var(--edge);
@@ -1092,11 +1095,19 @@ body {
 }
 
 .vote-count {
-    min-width: 30px;
+    min-width: 9px;
     font-size: 12.5px;
     font-variant-numeric: tabular-nums;
     text-align: center;
     color: var(--ink-faint);
+}
+
+.note-votes .vote-up.is-mine .vote-count-up {
+    color: var(--accent);
+}
+
+.note-votes .vote-down.is-mine .vote-count-down {
+    color: var(--danger);
 }
 
 @media (max-width: 640px) {

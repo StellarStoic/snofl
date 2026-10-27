@@ -18,7 +18,7 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="searchNostr.css?v=10">
+    <link rel="stylesheet" href="searchNostr.css?v=11">
     <!-- the same signer the custom pages use, so a vote here carries the same identity it would there -->
     <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
 
@@ -1297,10 +1297,11 @@ function updateNotes() {
             <div class="note-votes" data-note-id="${note.id}" data-note-pubkey="${note.pubkey}">
                 <button type="button" class="vote vote-up" data-dir="+" title="Upvote this note" aria-label="Upvote">
                     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5l7 8h-4v6H9v-6H5l7-8Z"/></svg>
+                    <span class="vote-count vote-count-up">0</span>
                 </button>
-                <span class="vote-count">·</span>
                 <button type="button" class="vote vote-down" data-dir="-" title="Downvote this note" aria-label="Downvote">
                     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 19l-7-8h4V5h6v6h4l-7 8Z"/></svg>
+                    <span class="vote-count vote-count-down">0</span>
                 </button>
             </div>
             <div class="note-icons">
@@ -1957,6 +1958,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
 
 </script>
-<script src="srcActions.js?v=1" defer></script>
+<script src="srcActions.js?v=3" defer></script>
 </body>
 </html>

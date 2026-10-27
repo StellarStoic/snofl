@@ -322,79 +322,172 @@
 
     // ---------------------------------------------------------------- votes
 
-    const counts = new Map();   // note id -> {up: Set(pubkey), down: Set(pubkey)}
+    /*
+     * One person, one vote.
+     *
+     * The tally is note id -> (pubkey -> that key's newest reaction). A Map, not a counter, so the same npub can
+     * never be worth more than one: publishing the same "+" a hundred times, or once from ten clients, still reads
+     * as one upvote, and a key that changes its mind counts once — as its newest reaction — instead of once on each
+     * side. NIP-25 says the latest reaction wins and NIP-09 lets a key take it back; both are honoured here, so a
+     * withdrawn vote stops counting for everyone who loads the page, not only for the person who withdrew it.
+     */
+    const tallies = new Map();      // note id -> Map(pubkey -> {dir, at, id})
+    const voided = new Set();       // reaction ids a kind-5 event asked the relays to drop
     let inFlight = false;
 
+    function tallyFor(noteId) {
+        let map = tallies.get(noteId);
+        if (!map) {
+            map = new Map();
+            tallies.set(noteId, map);
+        }
+        return map;
+    }
+
+    /** Keep one reaction per author: the newest, tie-broken by id so equal timestamps cannot flip with arrival order. */
+    function record(noteId, pubkey, dir, at, id) {
+        if (!noteId || !pubkey || (id && voided.has(id))) return;
+        const map = tallyFor(noteId);
+        const current = map.get(pubkey);
+        if (current && (at < current.at || (at === current.at && String(id) <= String(current.id)))) return;
+        map.set(pubkey, {dir, at, id});
+    }
+
+    /** Forget a key's vote, but only the reaction that is actually being withdrawn. */
+    function forget(noteId, pubkey, id) {
+        const map = tallies.get(noteId);
+        const current = map && map.get(pubkey);
+        if (!current) return;
+        if (id && current.id && current.id !== id) return;   // an older reaction cannot erase a newer vote
+        map.delete(pubkey);
+    }
+
+    /** A kind-5 named this reaction: it stops counting, and it cannot come back during this visit. */
+    function voidReaction(id) {
+        if (!id) return;
+        voided.add(id);
+        tallies.forEach((map) => {
+            map.forEach((vote, pubkey) => {
+                if (vote.id === id) map.delete(pubkey);
+            });
+        });
+    }
+
     function countFor(noteId) {
-        return counts.get(noteId) || { up: new Set(), down: new Set() };
+        const map = tallies.get(noteId);
+        let up = 0;
+        let down = 0;
+        if (map) {
+            map.forEach((vote) => {
+                if (vote.dir === '-') down += 1;
+                else up += 1;   // "+", an emoji or an empty reaction all mean up in NIP-25
+            });
+        }
+        return {up, down};
     }
 
     function paintVotes() {
         const me = readIdentity();
-        document.querySelectorAll(".note-votes").forEach((block) => {
+        document.querySelectorAll('.note-votes').forEach((block) => {
             const noteId = block.dataset.noteId;
-            const entry = countFor(noteId);
-            const number = block.querySelector(".vote-count");
-            const up = block.querySelector(".vote-up");
-            const down = block.querySelector(".vote-down");
-            const upCount = entry.up.size;
-            const downCount = entry.down.size;
-            if (number) number.textContent = upCount + downCount === 0 ? "·" : `${upCount}/${downCount}`;
-            if (up) up.classList.toggle("is-mine", !!(me && entry.up.has(me.pub)));
-            if (down) down.classList.toggle("is-mine", !!(me && entry.down.has(me.pub)));
+            const counts = countFor(noteId);
+            const upButton = block.querySelector('.vote-up');
+            const downButton = block.querySelector('.vote-down');
+            const upLabel = block.querySelector('.vote-count-up');
+            const downLabel = block.querySelector('.vote-count-down');
+            const mine = me ? (tallies.get(noteId) || new Map()).get(me.pub) : null;
+
+            if (upLabel) upLabel.textContent = String(counts.up);
+            if (downLabel) downLabel.textContent = String(counts.down);
+            if (upButton) {
+                upButton.classList.toggle('is-mine', !!(mine && mine.dir !== '-'));
+                upButton.title = counts.up === 1 ? '1 upvote' : counts.up + ' upvotes';
+            }
+            if (downButton) {
+                downButton.classList.toggle('is-mine', !!(mine && mine.dir === '-'));
+                downButton.title = counts.down === 1 ? '1 downvote' : counts.down + ' downvotes';
+            }
         });
     }
 
-    /** Ask the relays for the kind-7 reactions of the notes on screen. */
-    async function refresh(force) {
-        if (inFlight && !force) return;
-        const ids = [...document.querySelectorAll(".note-votes")].map((block) => block.dataset.noteId).filter(Boolean);
-        if (!ids.length) return;
-        inFlight = true;
-        const targets = relays();
-        const seen = new Set();
-        await Promise.all(targets.map((relay) => new Promise((resolve) => {
+    /** One REQ over one relay, settling at EOSE, a timeout or an error. */
+    function query(relay, subscription, filter, onEvent, timeoutMs) {
+        return new Promise((resolve) => {
             let socket;
             try {
                 socket = new WebSocket(relay);
             } catch {
                 return resolve();
             }
+            let settled = false;
+            let timer = null;
             const done = () => {
+                if (settled) return;
+                settled = true;
+                if (timer) clearTimeout(timer);
                 try { socket.close(); } catch { /* gone */ }
                 resolve();
             };
-            const timer = setTimeout(done, 7000);
+            timer = setTimeout(done, timeoutMs || 7000);
             socket.onopen = () => {
                 try {
-                    socket.send(JSON.stringify(["REQ", "src-votes", { kinds: [7], "#e": ids, limit: 1000 }]));
+                    socket.send(JSON.stringify(['REQ', subscription, filter]));
                 } catch { done(); }
             };
             socket.onmessage = (message) => {
                 try {
                     const data = JSON.parse(message.data);
-                    if (data[0] === "EOSE") {
-                        clearTimeout(timer);
-                        return done();
-                    }
-                    if (data[0] !== "EVENT") return;
-                    const reaction = data[2];
-                    if (!reaction || reaction.kind !== 7 || seen.has(reaction.id)) return;
-                    seen.add(reaction.id);
-                    const target = (reaction.tags || []).find((tag) => tag[0] === "e");
-                    if (!target || !ids.includes(target[1])) return;
-                    const entry = counts.get(target[1]) || { up: new Set(), down: new Set() };
-                    if (reaction.content === "-") entry.down.add(reaction.pubkey);
-                    else entry.up.add(reaction.pubkey);   // "+", an emoji or empty all mean up (NIP-25)
-                    counts.set(target[1], entry);
+                    if (data[0] === 'EOSE') return done();
+                    if (data[0] !== 'EVENT' || !data[2]) return;
+                    onEvent(data[2]);
                 } catch { /* not ours */ }
             };
             socket.onerror = done;
-            socket.onclose = () => {
-                clearTimeout(timer);
-                resolve();
-            };
-        })));
+            socket.onclose = done;
+        });
+    }
+
+    /** Ask the relays for the reactions on the notes on screen, then for any that were deleted. */
+    async function refresh(force) {
+        if (inFlight && !force) return;
+        const ids = [...document.querySelectorAll('.note-votes')].map((block) => block.dataset.noteId).filter(Boolean);
+        if (!ids.length) return;
+        inFlight = true;
+        const targets = relays();
+        const seen = new Set();
+        const authors = new Set();
+
+        // A refresh rebuilds each note's tally instead of adding to it. Adding was a real bug: a reaction that a
+        // kind-5 removed stops being served by the relays, so an additive tally kept counting a vote that no
+        // longer existed for the rest of the visit.
+        ids.forEach((noteId) => tallies.set(noteId, new Map()));
+
+        await Promise.all(targets.map((relay) => query(relay, 'src-votes',
+            {kinds: [7], '#e': ids, limit: 1000},
+            (reaction) => {
+                if (reaction.kind !== 7 || seen.has(reaction.id)) return;
+                seen.add(reaction.id);
+                const target = (reaction.tags || []).find((tag) => tag[0] === 'e');
+                if (!target || !ids.includes(target[1])) return;
+                if (reaction.pubkey) authors.add(reaction.pubkey);
+                record(target[1], reaction.pubkey, reaction.content === '-' ? '-' : '+',
+                    Number(reaction.created_at) || 0, reaction.id);
+            }, 7000)));
+
+        // Only an author we actually saw can have published a withdrawal, so this is one small REQ per relay and
+        // it is skipped entirely when no reaction turned up.
+        if (authors.size) {
+            const known = new Set([...seen]);
+            await Promise.all(targets.map((relay) => query(relay, 'src-vote-deletions',
+                {kinds: [5], authors: [...authors], limit: 500},
+                (deletion) => {
+                    if (deletion.kind !== 5) return;
+                    (deletion.tags || []).forEach((tag) => {
+                        if (tag[0] === 'e' && known.has(tag[1])) voidReaction(tag[1]);
+                    });
+                }, 5000)));
+        }
+
         inFlight = false;
         paintVotes();
     }
@@ -407,85 +500,39 @@
         try {
             const identity = await ensureIdentity();
             if (!identity) return;
-            const entry = counts.get(noteId) || { up: new Set(), down: new Set() };
-            const same = direction === "+" ? entry.up : entry.down;
-            const other = direction === "+" ? entry.down : entry.up;
+            const wanted = direction === '-' ? '-' : '+';
+            const mine = (tallies.get(noteId) || new Map()).get(identity.pub);
 
-            // pressing the arrow you already pressed withdraws the vote, as on any other client
-            const withdrawing = same.has(identity.pub);
-            const tags = [["e", noteId]];
-            if (notePubkey) tags.push(["p", notePubkey]);
-
-            if (withdrawing) {
-                same.delete(identity.pub);
-            } else {
-                same.add(identity.pub);
-                other.delete(identity.pub);
-            }
-            paintVotes();
-
-            if (withdrawing) {
+            // pressing the arrow you already pressed takes the vote back, as on any other client
+            if (mine && mine.dir === wanted) {
+                forget(noteId, identity.pub, mine.id);
+                paintVotes();
                 // NIP-09: ask the relays to drop the reaction this key published
-                const previous = await findOwnReaction(noteId, identity.pub);
+                const previous = mine.id || await findOwnReaction(noteId, identity.pub);
                 if (previous) {
-                    const deletion = await sign(identity, 5, "", [["e", previous], ["k", "7"]]);
+                    voidReaction(previous);
+                    const deletion = await sign(identity, 5, '', [['e', previous], ['k', '7']]);
                     await publish(deletion);
                 }
                 return;
             }
 
-            const event = await sign(identity, 7, direction, tags);
+            // one person, one vote: the new direction replaces the old one instead of being added beside it
+            const tags = [['e', noteId]];
+            if (notePubkey) tags.push(['p', notePubkey]);
+            const event = await sign(identity, 7, wanted, tags);
+            record(noteId, identity.pub, wanted, Number(event.created_at) || 0, event.id);
+            paintVotes();
+
             const accepted = await publish(event);
             if (accepted > 0) {
-                const counted = parseInt(localStorage.getItem("src_signed_actions") || "0", 10);
-                localStorage.setItem("src_signed_actions", String(counted + 1));
+                const counted = parseInt(localStorage.getItem('src_signed_actions') || '0', 10);
+                localStorage.setItem('src_signed_actions', String(counted + 1));
             }
         } finally {
             button.disabled = false;
             refresh(true);
         }
-    }
-
-    /** The id of this key's existing reaction to a note, so a vote can be withdrawn. */
-    async function findOwnReaction(noteId, pubkey) {
-        const targets = relays();
-        return new Promise((resolve) => {
-            let found = null;
-            let settled = 0;
-            if (!targets.length) return resolve(null);
-            const finish = () => {
-                settled += 1;
-                if (settled === targets.length) resolve(found);
-            };
-            targets.forEach((relay) => {
-                let socket;
-                try {
-                    socket = new WebSocket(relay);
-                } catch {
-                    return finish();
-                }
-                const timer = setTimeout(finish, 5000);
-                const done = () => {
-                    clearTimeout(timer);
-                    try { socket.close(); } catch { /* gone */ }
-                    finish();
-                };
-                socket.onopen = () => {
-                    try {
-                        socket.send(JSON.stringify(["REQ", "src-own", { kinds: [7], "#e": [noteId], authors: [pubkey], limit: 5 }]));
-                    } catch { done(); }
-                };
-                socket.onmessage = (message) => {
-                    try {
-                        const data = JSON.parse(message.data);
-                        if (data[0] === "EVENT" && data[2] && data[2].pubkey === pubkey) found = data[2].id;
-                        if (data[0] === "EOSE") done();
-                    } catch { /* not ours */ }
-                };
-                socket.onerror = done;
-                socket.onclose = done;
-            });
-        });
     }
 
     // ---------------------------------------------------------------- wiring
