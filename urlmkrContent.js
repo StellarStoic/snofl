@@ -188,6 +188,7 @@
     });
     // gates that depend on another switch are applied last, after both sides have their restored state
     if (typeof window.syncSuggestedMessage === 'function') window.syncSuggestedMessage();
+    if (typeof window.syncMessageLimit === 'function') window.syncMessageLimit();
     if (typeof window.updateURL === 'function') window.updateURL();
   }
 
@@ -210,6 +211,7 @@
     closeEditor();
     clearButton.hidden = true;
     if (typeof window.syncSuggestedMessage === 'function') window.syncSuggestedMessage();
+    if (typeof window.syncMessageLimit === 'function') window.syncMessageLimit();
     if (typeof window.updateURL === 'function') window.updateURL();
   }
 

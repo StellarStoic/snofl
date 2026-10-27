@@ -1400,6 +1400,10 @@ body.mk .mk__group .mk__row:first-child {
     padding-top: 0;
 }
 
+body.mk .mk__hint.is-warning {
+    color: #e0a030;
+}
+
 /* inside the narrower group these two stretch to absurd widths: a character count needs a few digits, and three
    hashtags read better in one row for as long as they fit */
 body.mk .mk__group input[type="number"] {

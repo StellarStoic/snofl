@@ -23,7 +23,7 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=10">
-    <link rel="stylesheet" href="urlmkr.css?v=48">
+    <link rel="stylesheet" href="urlmkr.css?v=49">
     <script src="urlmkrAgreement.js?v=2"></script>
     <script src="backgroundImages.js"></script>
     <script src="crypto-js.min.js"></script>
@@ -278,6 +278,7 @@
                         <label for="custom_characters">Max characters (default 280)</label>
                         <input type="checkbox" id="custom_characters">
                         <input type="number" id="characters_input" placeholder="1–5000" min="1" max="5000" disabled>
+                        <p class="mk__hint" id="characters_note" hidden></p>
 
 
 <div class="form-group mk__row">
@@ -1040,6 +1041,39 @@ function reverseString(str) {
         // the draft restore runs from its own deferred script and has to be able to re-apply the gate
         window.syncSuggestedMessage = syncSuggestedMessage;
 
+        /*
+         * Both can be on, but the message has to fit inside the limit — otherwise the visitor's box is capped below
+         * the text the maker just wrote, and what got published would not be what was written. The note under the
+         * limit says which way it is, so nobody has to discover it from a refused link.
+         */
+        function syncMessageLimit() {
+            const note = document.getElementById('characters_note');
+            if (!note) return;
+            const both = includeMessageCheckbox.checked && customCharactersCheckbox.checked;
+            if (!both) {
+                note.hidden = true;
+                return;
+            }
+            const messageLength = messageInput.value.length;
+            const limit = parseInt(charactersInput.value, 10);
+            note.hidden = false;
+            if (!Number.isNaN(limit) && messageLength > limit) {
+                note.textContent = 'The suggested message is ' + messageLength + ' characters, longer than this limit — raise the limit or shorten the message.';
+                note.classList.add('is-warning');
+            } else {
+                const left = Number.isNaN(limit) ? null : Math.max(0, limit - messageLength);
+                note.textContent = 'The suggested message is ' + messageLength + ' characters' +
+                    (left === null ? '.' : ', leaving ' + left + ' for the visitor.');
+                note.classList.remove('is-warning');
+            }
+        }
+        window.syncMessageLimit = syncMessageLimit;
+
+        [messageInput, charactersInput].forEach((node) => {
+            if (node) node.addEventListener('input', syncMessageLimit);
+        });
+        customCharactersCheckbox.addEventListener('change', syncMessageLimit);
+
         includeMessageCheckbox.addEventListener('change', function () {
         if (typeof syncSuggestedMessage === 'function') syncSuggestedMessage();
         const isChecked = this.checked;
@@ -1058,13 +1092,11 @@ function reverseString(str) {
             messageInput.style.width = '';
         }
 
-        customCharactersCheckbox.disabled = isChecked; // Disable the checkbox for custom characters
-        customCharactersCheckbox.disabled = isChecked; // Also disable the input for character limit if message is included
-        charactersInput.disabled = isChecked;
-
-        if (isChecked) {
-            customCharactersCheckbox.checked = false;
-        }
+        // A suggested message and a character limit are not rivals: one is where the visitor starts, the other is how
+        // long their note may be. They can both be on — the message simply has to fit, which syncMessageLimit says
+        // out loud and updateURL refuses to publish otherwise.
+        charactersInput.disabled = !customCharactersCheckbox.checked;
+        syncMessageLimit();
 
         // if (isChecked) {
         //     customCharactersCheckbox.checked = false; 
@@ -1083,11 +1115,7 @@ function reverseString(str) {
         const isChecked = this.checked;
         charactersInput.disabled = !isChecked;
 
-        if (isChecked) {
-            includeMessageCheckbox.checked = false; // Uncheck include_message if custom_characters is selected
-            messageInput.disabled = true;
-        }
-        
+        syncMessageLimit();
         updateURL();
     });
 
@@ -1341,6 +1369,23 @@ function reverseString(str) {
             let url = 'https://snofl.com/index.html?';
             let currentBytes = url.length;
             errorMessage.textContent = '';
+
+            // A message longer than the limit could never be posted whole, so no link is built at all rather than
+            // one that quietly changes what the maker wrote.
+            if (includeMessageCheckbox.checked && customCharactersCheckbox.checked) {
+                const limit = parseInt(charactersInput.value, 10);
+                const messageLength = messageInput.value.length;
+                if (!Number.isNaN(limit) && messageLength > limit) {
+                    errorMessage.textContent = 'The suggested message is ' + messageLength + ' characters, longer than the ' + limit + ' limit. Raise the limit or shorten the message.';
+                    errorMessage.style.color = 'orange';
+                    errorMessage.style.fontSize = '0.6rem';
+                    scrollToMessage(errorMessage);
+                    // the link from the last good state stays on screen otherwise, and it no longer matches the form
+                    urlOutput.textContent = '';
+                    byteCounter.textContent = '';
+                    return;
+                }
+            }
             warningMessage.textContent = '';
             infoMessage.textContent = '';
             maxBytes = parseInt(selectedNtag.dataset.bytes, 10);
@@ -1413,7 +1458,7 @@ function reverseString(str) {
             }
 
             // Add custom message
-            if (includeMessageCheckbox.checked && !customCharactersCheckbox.checked) {
+            if (includeMessageCheckbox.checked) {
                 const messageValue = messageInput.value;
                 const encodedMessageValue = encodeURIComponent(messageValue);
                 url += `m=${encodedMessageValue}&`;
@@ -2284,7 +2329,7 @@ document.addEventListener('DOMContentLoaded', function () {
         updateURL();
     </script>
     <script src="urlmkrPreview.js?v=1" defer></script>
-    <script src="urlmkrContent.js?v=5" defer></script>
+    <script src="urlmkrContent.js?v=6" defer></script>
 </body>
 
 
