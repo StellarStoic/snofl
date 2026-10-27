@@ -1,544 +1,890 @@
-        @import url(https://fonts.bunny.net/css?family=athiti:200);
-        /* Root font-size scaling based on viewport width */
-        html {
-            font-size: calc(1vw + 1vh + 0.5vmin); /* Adjusts base font size based on the viewport */
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            font-family: 'Athiti', sans-serif;
-            background-color: black;
-            color: rgb(255, 255, 255);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .container {
-            width: 99vw;
-            max-width: 800px;
-            height: 100vh;
-            overflow-y: scroll;
-            scrollbar-width: none;  /* For Firefox */
-            -ms-overflow-style: none;  /* For Internet Explorer/Edge */
-            border: 1px solid transparent;  /* Default no border */
-            transition: border-color 0.3s, box-shadow 0.3s;  /* Smooth transitions */
-            padding: 20px;
-            box-sizing: border-box;
-            position: relative;
-        }
+/* ============================================================================
+   snofl discovery client
+   ----------------------------------------------------------------------------
+   The page a snofl page links to when it carries hashtags: it searches the
+   relays for notes using those tags. It shipped with a 2010-era sheet - flat
+   black, 1rem viewport-scaled root, orange counters, 200px avatars, controls
+   scattered over three rows - so this is the maker's visual language applied
+   here: #141414 ground, #1d1d1d cards, one green accent, 17px type, 12-16px
+   radii, and a search bar that stays put.
 
-        .container::-webkit-scrollbar {
-            display: none;  /* For Chrome, Safari, and Opera */
-        }
+   One structural rule is load-bearing: .container stays the scrolling element
+   (100dvh + overflow-y), because scrollToTop() calls container.scrollTo(),
+   handleScroll() listens on it for the scroll-to-top button, and the sticky
+   search bar only sticks inside it. Moving the scroll to the window would
+   take all three with it.
+   ========================================================================== */
 
-        #notes {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            margin-bottom: 40px;
-        }
+:root {
+    --ground: #141414;
+    --card: #1d1d1d;
+    --card-hover: #232323;
+    --edge: #2e2e2e;
+    --edge-strong: #3a3a3a;
+    --ink: #f1f1f1;
+    --ink-dim: #a9a9a9;
+    --ink-faint: #7d7d7d;
+    --accent: #4caf50;
+    --accent-dim: #3d8b40;
+    --accent-ink: #0d1f0e;
+    --danger: #ff4d4d;
+    --radius-lg: 16px;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 10px 26px rgba(0, 0, 0, 0.16);
+}
 
-        .note {
-            background-color: #333;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            position: relative;
-        }
+* {
+    box-sizing: border-box;
+}
 
-        .highlight {
-            font-weight: bold;
-            color: rgb(216, 101, 255);
-        }
+html {
+    height: 100%;
+    -webkit-text-size-adjust: 100%;
+}
 
-        .hashtag {
-            font-weight: bold;
-            color: rgb(46, 233, 46);
-        }
+body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+}
 
-        .note-header {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 5px;
-        }
-        .note-header img {
-            width: 30px;
-            height: 30px;
-            border-radius: 3px;
-            margin-right: 10px;
-        }
-        .note-content {
-            word-wrap: break-word;
-            margin-top: 10px;
-            text-align: left;
-        }
-        .title {
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 1rem;
-        }
-        .nip05 {
-            font-size: 0.6rem;
-            color: #aaa;
-            margin-left: 40px;
-        }
+/* ---------------------------------------------------------------- the scrolling column */
 
-        .profile-img:hover {
-            cursor: pointer;
-            opacity: 0.8;
-        }
+.container {
+    width: min(760px, 100%);
+    height: 100dvh;
+    margin: 0 auto;
+    padding: 0 16px 96px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #3a3a3a transparent;
+}
 
-        .note-content img {
-            max-width: 100px;
-            max-height: 100px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        .fullscreen {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .fullscreen img {
-            max-width: 90%;
-            max-height: 90%;
-        }
-        .fullscreen.active {
-            display: flex;
-        }
-        .copy-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: transparent;
-            border: none;
-            cursor: pointer;
-            color: green;
-        }
-        .copy-button img {
-            width: 20px;
-            height: 20px;
-        }
-        .new-notes-button {
-            position: sticky;
-            top: 7px;
-            right: 13px;
-            background-color: green;
-            color: black;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-            z-index: 99999;
-            display: none;
-        }
+.container::-webkit-scrollbar {
+    width: 10px;
+}
 
-        .note-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 10px;
-        }
+.container::-webkit-scrollbar-thumb {
+    background: #333333;
+    border: 3px solid var(--ground);
+    border-radius: 999px;
+}
 
-        .note-icons {
-            display: flex;
-            gap: 15px;
-            font-size: 0.5rem;
-        }
+/* ---------------------------------------------------------------- masthead */
 
-        .icon:hover {
-            cursor: pointer;
-            opacity: 0.7;
-        }
-
-        .note-timestamp {
-            font-size: 0.5rem;
-            color: #aaa;
-            text-align: right;
-        }
-
-        .keyword {
-            margin: 0 5px;
-            cursor: pointer;
-            border-bottom: 1px dashed transparent;
-            transition: all 0.3s ease;
-        }
-
-        .keyword.active {
-            color: green;
-            /* border-bottom: 1px dashed green; */
-        }
-
-        .keyword.toggled {
-            color: rgb(157, 157, 157);
-            font-style: italic;
-        }
-
-        .highlight {
-            color: rgb(222, 0, 222);
-            font-weight: bold;
-        }
-
-        .inactive {
-            color: rgb(157, 157, 157);
-            font-style: italic;
-        }
-
-
-        .search-bar {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
-            width: 100%;
-        }
-
-        .search-bar input {
-            width: 60%;
-            padding: 10px;
-            font-size: 1rem;
-            border: 1px solid green;
-            background-color: black;
-            color: purple;
-            border-radius: 5px;
-            outline: none;
-        }
-
-        .search-bar button {
-            margin-left: 10px;
-            padding: 10px 15px;
-            font-size: 0.7rem;
-            background-color: green;
-            color: black;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .search-bar button:hover {
-            opacity: 0.9;
-        }
-
-        /* <!-- Slider Styles --> */
-        #timeFilterButton {
-            padding: 10px 15px;
-            font-size: 0.7rem;
-            background-color: green;
-            color: black;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.8);
-        }
-
-        .modal-content {
-            background-color: #222;
-            margin: 15% auto;
-            padding: 20px;
-            border-radius: 10px;
-            width: 60%;
-            text-align: center;
-            color: white;
-        }
-
-        .close {
-            float: right;
-            font-size: 1.5rem;
-            font-weight: bold;
-            cursor: pointer;
-            color: green;
-        }
-
-        .slider {
-            -webkit-appearance: none;
-            width: 90%;
-            height: 12px;
-            background: #444;
-            outline: none;
-            border-radius: 10px;
-            margin-top: 20px;
-        }
-
-        .slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 40px;
-            height: 40px;
-            background: green;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-
-        .slider-labels {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-            font-size: 0.7rem;
-        }
-
-
-        .apply-btn:hover {
-            opacity: 0.9;
-        }
-
-        /* sroll to top btn */
-        .scroll-top-btn {
-            position: fixed;  /* Ensure it's fixed to viewport */
-            bottom: 4%;
-            background-color: rgba(240, 255, 240, 0.552);
-            right: 4%;
-            border: none;
-            border-radius: 5px;
-            font-size: 1.3rem;
-            cursor: pointer;
-            z-index: 999;
-            display: none;  /* Hidden by default */
-
-        }
-
-        .scroll-top-btn:hover {
-            background-color: rgba(86, 168, 86, 0.798);
-            transform: scale(1.1);
-        }
-
-        /* Counters container */
-        #counters {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.557);
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            z-index: 1000;
-            border: 1px solid #666;
-            gap: 15px;
-            display: none; /* Single display property */
-            flex-direction: row; /* Add this to specify flex layout */
-        }
-
-
-        /* Matches counter */
-        #matchesCounter {
-            color: #FF9900;  /* Light blue */
-        }
-
-        .filters {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            font-size: 0.5rem;
-            margin-bottom: 10px;
-        }
-
-        .filter-toggle-btn {
-            padding: 5px 10px;
-            border: none;
-            font-size: 0.5rem;
-            background-color: rgba(128, 128, 128, 0.414);
-            color: white;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-
-        .filter-toggle-btn.active {
-            background-color: green; /*  FORCE Green when active */
-        }
-
-        .magnetButton {
-            padding: 5px 10px;
-            border: none;
-            font-size: 0.5rem;
-            background-color: rgba(128, 128, 128, 0.414);
-            color: white;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-
-        /*  Specific Fix for Magnet Button */
-        #magnetButton {
-            background-color: rgba(128, 128, 128, 0.414); /* Default Gray */
-        }
-
-        #magnetButton.active {
-            background-color: green !important; /*  Ensure Green when Active */
-        }
-
-
-        /* long notes truncation */
-        /* Truncated note content */
-        .truncated {
-            position: relative;
-            max-height: 100px; /* Adjust for a better preview size */
-            overflow: hidden;
-            display: block;
-            text-overflow: ellipsis;
-            white-space: normal;
-            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0));
-            -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0));
-            transition: max-height 0.3s ease-in-out;
-        }
-
-        /* Expand button */
-        .expand-note {
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            font-size: 14px;
-            padding: 3px 8px;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: opacity 0.2s ease-in-out;
-        }
-
-        /* Expanded note (removes blur effect) */
-        .note-content:not(.truncated) {
-            max-height: none;
-            mask-image: none;
-            -webkit-mask-image: none;
-        }
-
-        /* Hide button styling */
-        .hide-eye-button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            transition: opacity 0.2s ease-in-out;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto; /*  Center the button */
-            position: relative;
-        }
-
-        .hide-eye-button img {
-            width: 24px;
-            height: 24px;
-            transition: opacity 0.2s ease-in-out;
-        }
-
-        .hide-eye-button:hover {
-            opacity: 0.7;
-        }
-
-        /* Initially hide collapsed notes */
-        .collapsed-note {
-            display: none;
-            font-weight: bold;
-            font-size: 14px;
-            text-align: center;
-            padding: 8px 0;
-            cursor: pointer;
-        }
-
-        /* Hide the full note when toggled */
-        .note.hidden .note-content,
-        .note.hidden .note-footer,
-        .note.hidden .note-header {
-            display: none; /* Hide everything related to the note */
-        }
-
-        /* Show the collapsed version */
-        .note.hidden .collapsed-note {
-            display: block;
-            font-weight: bold;
-            font-size: 14px;
-            text-align: center;
-            padding: 8px 0;
-            cursor: pointer;
-        }
-
-
-/* Bomb icon styling */
-.ban-profile-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    width: 35px;
-    height: 35px;
+.title {
     display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0;
+    padding: 22px 2px 14px;
+    font-size: 23px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+}
+
+.title::before {
+    content: "snofl · nostr search";
+    flex-basis: 100%;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- search bar */
+
+.search-bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    gap: 8px;
     align-items: center;
-    justify-content: center;
-    margin-left: 5px; /*  Space it from the left edge */
+    margin: 0 -16px 14px;
+    padding: 12px 16px;
+    background: rgba(20, 20, 20, 0.88);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--edge);
 }
 
-.ban-profile-button img {
-    width: 35px;
-    height: 35px;
-    transition: opacity 0.2s ease-in-out;
+.search-bar input,
+#keywordSearch {
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    padding: 0 14px;
+    font: inherit;
+    font-size: 16px;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--edge-strong);
+    border-radius: var(--radius);
+    outline: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-.ban-profile-button:hover img {
-    opacity: 0.7;
+#keywordSearch::placeholder {
+    color: #bcbcbc;
+    opacity: 1;
 }
 
-/* Pagination Controls */
-.pagination-controls {
+#keywordSearch:focus {
+    background: #202020;
+    border-color: var(--accent);
+}
+
+.search-bar button {
+    height: 44px;
+    min-width: 44px;
+    padding: 0 14px;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--edge-strong);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.search-bar button:hover {
+    background: var(--card-hover);
+    border-color: var(--ink-faint);
+}
+
+#searchButton {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+#searchButton:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+}
+
+#sortButton {
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- filters */
+
+.filters {
     display: flex;
-    justify-content: center;
     align-items: center;
     gap: 10px;
-    margin: 20px 0;
-    padding: 15px;
-    background-color: rgba(0, 0, 0, 0.8);
-    border-radius: 10px;
-    border: 1px solid #333;
+    flex-wrap: wrap;
+    margin: 0 0 12px;
+    padding: 0 2px;
+    font-size: 14px;
+    color: var(--ink-dim);
+}
+
+.filters label {
+    font-size: 14px;
+    color: var(--ink-dim);
+}
+
+.filters button,
+.filter-toggle-btn {
+    height: 34px;
+    min-width: 42px;
+    padding: 0 12px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--edge-strong);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.filters button:hover,
+.filter-toggle-btn:hover {
+    background: var(--card-hover);
+    border-color: var(--ink-faint);
+}
+
+.filter-toggle-btn.toggled {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+/* the magnet: OR by default, green once every keyword is required */
+#magnetButton.active,
+.magnetButton.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+}
+
+/* ---------------------------------------------------------------- counters */
+
+/* the script sets display:flex / none on this element, so the default here is only a resting state */
+#counters {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0 0 14px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--ink-dim);
+    background: var(--card);
+    border: 1px solid var(--edge);
+    border-radius: var(--radius-sm);
+}
+
+#matchesCounter {
+    font-size: 13px;
+    color: var(--ink-dim);
+}
+
+/* ---------------------------------------------------------------- a note */
+
+#notes {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 40px;
+}
+
+.note {
+    position: relative;
+    padding: 16px 18px;
+    background: var(--card);
+    border: 1px solid var(--edge);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    transition: border-color 0.15s ease;
+}
+
+.note:hover {
+    border-color: var(--edge-strong);
+}
+
+/* the corner controls: hide, ban, copy */
+.note > button {
+    position: absolute;
+    top: 12px;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    background: #232323;
+    border: 1px solid var(--edge);
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.note:hover > button,
+.note > button:focus-visible {
+    opacity: 1;
+}
+
+.note > button:hover {
+    background: #2a2a2a;
+    border-color: var(--ink-faint);
+}
+
+.note > button img {
+    width: 15px;
+    height: 15px;
+    filter: invert(1) opacity(0.78);
+}
+
+.note > .hide-eye-button {
+    right: 50px;
+}
+
+.note > .ban-profile-button {
+    right: 88px;
+}
+
+.note > .copy-button {
+    right: 12px;
+}
+
+/* ---------------------------------------------------------------- note header */
+
+.note-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 10px;
+    padding-right: 96px;
+}
+
+.note-header img,
+.profile-img {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+    margin: 0;
+    object-fit: cover;
+    background: #262626;
+    border: 1px solid var(--edge);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.profile-img:hover {
+    opacity: 0.85;
+}
+
+.note-header > div {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+.note-header > div > span {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nip05 {
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- note body */
+
+.note-content {
+    position: relative;
+    margin-top: 4px;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #e8e8e8;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.note-content.truncated,
+.truncated {
+    max-height: 11.5em;
+    overflow: hidden;
+    mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+    transition: max-height 0.25s ease;
+}
+
+.note-content:not(.truncated) {
+    max-height: none;
+    mask-image: none;
+    -webkit-mask-image: none;
+}
+
+/* the expand affordance lives inside the clipped block, so it has to be positioned to stay visible */
+.expand-note {
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 2px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    background: rgba(20, 20, 20, 0.92);
+    border: 1px solid var(--edge-strong);
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.expand-note:hover {
+    border-color: var(--accent);
+}
+
+.note-image,
+.note-content img {
+    display: block;
+    max-width: min(100%, 420px);
+    max-height: 420px;
+    height: auto;
+    margin: 10px 0;
+    border: 1px solid var(--edge);
+    border-radius: var(--radius);
+    cursor: zoom-in;
+}
+
+/* keyword and hashtag highlighting, done in the note text by the page */
+.hashtag {
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.highlight {
+    padding: 0 2px;
+    font-weight: 550;
+    color: #d9c9ff;
+    background: rgba(124, 77, 255, 0.18);
+    border-radius: 3px;
+}
+
+.inactive {
+    color: var(--ink-faint);
+    font-style: italic;
+    text-decoration: line-through;
+}
+
+/* ---------------------------------------------------------------- note footer */
+
+.note-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--edge);
+}
+
+.note-icons {
+    display: flex;
+    gap: 14px;
+    font-size: 15px;
+}
+
+.icon {
+    cursor: pointer;
+    opacity: 0.8;
+}
+
+.icon:hover {
+    opacity: 1;
+}
+
+.note-timestamp {
+    font-size: 13px;
+    color: var(--ink-faint);
+    text-align: right;
+}
+
+/* ---------------------------------------------------------------- a hidden note */
+
+.note.hidden {
+    background: #181818;
+    border-style: dashed;
+}
+
+.note.hidden .note-header,
+.note.hidden .note-content,
+.note.hidden .note-footer {
+    display: none;
+}
+
+.collapsed-note {
+    display: none;
+    padding: 8px 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px;
+    text-align: center;
+    color: var(--ink-faint);
+    cursor: pointer;
+}
+
+.note.hidden .collapsed-note {
+    display: block;
+}
+
+/* ---------------------------------------------------------------- empty state */
+
+.no-notes {
+    padding: 44px 24px;
+    font-size: 15px;
+    font-style: normal;
+    text-align: center;
+    color: var(--ink-dim);
+    background: var(--card);
+    border: 1px dashed var(--edge-strong);
+    border-radius: var(--radius-lg);
+}
+
+/* ---------------------------------------------------------------- pagination */
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 22px 0 8px;
+    padding: 12px;
+    background: var(--card);
+    border: 1px solid var(--edge);
+    border-radius: var(--radius);
 }
 
 .pagination-controls button {
-    padding: 8px 15px;
-    background-color: green;
-    color: black;
-    border: none;
-    border-radius: 5px;
+    height: 38px;
+    padding: 0 16px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    background: #262626;
+    border: 1px solid var(--edge-strong);
+    border-radius: 999px;
     cursor: pointer;
-    font-size: 0.8rem;
-}
-
-.pagination-controls button:disabled {
-    background-color: #555;
-    color: #999;
-    cursor: not-allowed;
+    transition: border-color 0.15s ease, color 0.15s ease;
 }
 
 .pagination-controls button:hover:not(:disabled) {
-    background-color: #00cc00;
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.pagination-controls button:disabled {
+    color: #6a6a6a;
+    background: #1b1b1b;
+    border-color: #262626;
+    cursor: not-allowed;
 }
 
 .page-info {
-    color: white;
-    font-size: 0.9rem;
-    margin: 0 15px;
+    margin: 0 12px;
+    font-size: 14px;
+    color: var(--ink-dim);
 }
 
-.no-notes {
-    text-align: center;
-    color: #999;
-    padding: 40px;
+.new-notes-button {
+    display: none;
+    margin: 0 auto 14px;
+    padding: 9px 18px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--accent-ink);
+    background: var(--accent);
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.new-notes-button:hover {
+    background: var(--accent-dim);
+}
+
+.apply-btn {
+    height: 40px;
+    padding: 0 18px;
+    font: inherit;
+    font-size: 15px;
+    color: var(--accent-ink);
+    background: var(--accent);
+    border: 0;
+    border-radius: var(--radius);
+    cursor: pointer;
+}
+
+.apply-btn:hover {
+    background: var(--accent-dim);
+}
+
+/* ---------------------------------------------------------------- scroll to top */
+
+.scroll-top-btn {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 25;
+    display: none;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    font-size: 15px;
+    color: var(--accent);
+    background: #1c1c1c;
+    border: 1px solid var(--edge-strong);
+    border-radius: 50%;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+}
+
+.scroll-top-btn:hover {
+    background: #222222;
+    border-color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- fullscreen image */
+
+.fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: none;
+    place-items: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.92);
+    backdrop-filter: blur(6px);
+    cursor: zoom-out;
+}
+
+.fullscreen.active {
+    display: grid;
+}
+
+.fullscreen img {
+    max-width: 96vw;
+    max-height: 92vh;
+    border-radius: var(--radius);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
+}
+
+/* ---------------------------------------------------------------- the time-range dialog */
+
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: none;
+    place-items: center;
+    padding: 24px;
+    overflow: auto;
+    background: rgba(0, 0, 0, 0.78);
+}
+
+.modal[style*="block"],
+.modal[style*="flex"],
+.modal.active {
+    display: grid;
+}
+
+.modal-content {
+    position: relative;
+    width: min(420px, 100%);
+    margin: 0;
+    padding: 22px;
+    text-align: left;
+    color: var(--ink);
+    background: #121212;
+    border: 1px solid #262626;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+}
+
+.modal-content h4 {
+    margin: 0 0 4px;
+    font-size: 17px;
+    font-weight: 650;
+    color: var(--ink);
+}
+
+.modal-content p {
+    margin: 0 0 16px;
+    font-size: 14px;
+    color: var(--ink-dim);
+}
+
+.modal-content .close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    float: none;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    font-size: 19px;
+    line-height: 1;
+    color: var(--danger);
+    background: transparent;
+    border: 1px solid var(--edge-strong);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.modal-content .close:hover {
+    color: #140000;
+    background: var(--danger);
+    border-color: var(--danger);
+}
+
+.slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    margin: 10px 0 4px;
+    background: var(--edge-strong);
+    border-radius: 999px;
+    outline: none;
+    cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--accent);
+    border: 0;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--accent);
+    border: 0;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.slider-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--ink-faint);
+}
+
+/* ---------------------------------------------------------------- keyword chips, if the page shows them */
+
+.keyword {
+    margin: 0 5px;
+    cursor: pointer;
+    border-bottom: 1px dashed transparent;
+}
+
+.keyword.active {
+    color: var(--accent);
+}
+
+.keyword.toggled {
+    color: var(--ink-faint);
     font-style: italic;
+}
+
+/* ---------------------------------------------------------------- phones */
+
+@media (max-width: 640px) {
+    body {
+        font-size: 16px;
+    }
+
+    .container {
+        padding: 0 12px 90px;
+    }
+
+    .search-bar {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas:
+            "time input search"
+            "sort sort sort";
+        gap: 8px;
+        margin: 0 -12px 12px;
+        padding: 10px 12px;
+    }
+
+    #timeFilterButton {
+        grid-area: time;
+    }
+
+    #keywordSearch {
+        grid-area: input;
+    }
+
+    #searchButton {
+        grid-area: search;
+    }
+
+    #sortButton {
+        grid-area: sort;
+        width: 100%;
+    }
+
+    .note {
+        padding: 14px;
+        border-radius: 14px;
+    }
+
+    /* no hover on a phone: the note controls are always reachable there */
+    .note > button {
+        width: 34px;
+        height: 34px;
+        opacity: 1;
+    }
+
+    .note-header {
+        padding-right: 0;
+        margin-bottom: 12px;
+    }
+
+    .note > .hide-eye-button {
+        top: 10px;
+        right: 50px;
+    }
+
+    .note > .copy-button {
+        top: 10px;
+        right: 10px;
+    }
+
+    .note-icons {
+        gap: 10px;
+    }
+
+    .note-footer {
+        flex-wrap: wrap;
+    }
+}
+
+/* one sentence saying what this page is, under the tag chips */
+.client-lede {
+    margin: -6px 2px 14px;
+    font-size: 14px;
+    color: var(--ink-dim);
+}
+
+.client-lede a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(76, 175, 80, 0.35);
+}
+
+.client-lede a:hover {
+    border-bottom-color: var(--accent);
+}
+
+/* the control icons are inline SVG: this page loads no icon font, and an emoji label becomes an empty box on
+   any machine without an emoji font (a bare Linux desktop, this project's own server). */
+.search-bar button svg,
+.filters button svg,
+.scroll-top-btn svg {
+    width: 18px;
+    height: 18px;
+    vertical-align: -3px;
+    fill: currentColor;
+}
+
+.filters button svg {
+    width: 15px;
+    height: 15px;
+    vertical-align: -2px;
 }
