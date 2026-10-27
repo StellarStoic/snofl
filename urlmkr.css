@@ -1374,6 +1374,48 @@ body.mk .mk__row.is-expanded > label::after {
    nothing else, and "Write in full view" reopens it. They are real buttons in the row, so they are in reach on a
    phone, and `hidden` is honoured rather than overridden by the display below. */
 
+/* A group is one idea made of several switches: a suggested message and a character limit only mean anything
+   when a visitor may post a public note at all. An inset panel says "these belong together" without a heading. */
+body.mk .mk__group {
+    display: grid;
+    gap: 2px;
+    margin: 4px 0 10px;
+    padding: 10px 12px 12px;
+    background: #161616;
+    border: 1px solid var(--edge-strong, #333);
+    border-radius: 12px;
+}
+
+body.mk .mk__group .mk__row {
+    padding: 6px 0;
+    border-bottom: 1px solid #232323;
+}
+
+body.mk .mk__group .mk__row:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+body.mk .mk__group .mk__row:first-child {
+    padding-top: 0;
+}
+
+/* inside the narrower group these two stretch to absurd widths: a character count needs a few digits, and three
+   hashtags read better in one row for as long as they fit */
+body.mk .mk__group input[type="number"] {
+    max-width: 160px;
+}
+
+body.mk .mk__group .mk__trio {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 520px) {
+    body.mk .mk__group .mk__trio {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
 /* the question mark beside a switch and the sentence it opens */
 body.mk .mk__help {
     width: 20px;
