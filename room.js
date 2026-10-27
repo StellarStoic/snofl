@@ -114,6 +114,23 @@ function shortAuthor(pubkey, encodeNpub) {
   return pubkey.slice(0, 8) + '…' + pubkey.slice(-4);
 }
 
+/** The page's own title: the room is named after the page it sits under. */
+function pageTitle(search) {
+  try {
+    const params = new URLSearchParams(search);
+    const fromQuery = params.get('t');
+    if (fromQuery) {
+      const text = decodeURIComponent(fromQuery.replace(/\+/g, ' ')).trim();
+      if (text) return text.slice(0, 60);
+    }
+  } catch { /* an encrypted page carries no readable title in the query */ }
+
+  // an encrypted page (`data=`) only has a title once it has been decrypted into the heading
+  const heading = document.querySelector('#mainTitle');
+  const rendered = heading && heading.textContent ? heading.textContent.trim() : '';
+  return rendered && rendered.toLowerCase() !== 'snofl' ? rendered.slice(0, 60) : '';
+}
+
 function timeAgo(seconds) {
   const delta = Math.max(0, Math.floor(Date.now() / 1000) - seconds);
   if (delta < 60) return `${delta}s ago`;
@@ -268,6 +285,7 @@ export async function mount(options = {}) {
   }
 
   const roomId = pageId(search);
+  const roomName = pageTitle(search);
   const difficulty = roomDifficulty(search, options.difficulty ?? 20);
   const relays = options.relays?.length ? options.relays : relaysFor(search);
 
@@ -285,7 +303,7 @@ export async function mount(options = {}) {
   sorting.append(sortNew, sortTop);
   const count = element('span', 'room__count', '');
   header.append(
-    element('span', 'room__title', 'Room'),
+    element('span', 'room__title', roomName ? `Room · ${roomName}` : 'Room'),
     element('span', 'room__meta', `${roomId.slice(0, 10)} · ${difficulty} bits · ${relays.length} relay${relays.length === 1 ? '' : 's'}`),
     sorting,
     count,

@@ -939,3 +939,170 @@ body {
     color: var(--accent);
     background: #1d1d1d;
 }
+
+/* ---------------------------------------------------------------- the identity badge
+   Top right, smaller than the custom pages' avatar, but the same idea: this browser's npub and name, and a
+   click to change it. It sits outside the scrolling column so it stays put as the notes scroll. */
+
+.src-id {
+    position: fixed;
+    top: 12px;
+    right: 14px;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    max-width: 42vw;
+    padding: 4px 9px 4px 4px;
+    background: rgba(24, 24, 24, 0.9);
+    border: 1px solid var(--edge-strong);
+    border-radius: 999px;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.src-id:hover,
+.src-id:focus-visible {
+    background: #232323;
+    border-color: var(--accent);
+    outline: none;
+}
+
+/* The ring is the ID's age. hsl() runs red -> orange -> yellow -> green across 0-120deg of hue, so one
+   number (`--ring-hue`) carries the colour: red in the first hours, green once a replacement is allowed.
+   The bright arc is the fraction of the 24 hours elapsed; the remainder is the same hue held dark, so a
+   brand-new ID still reads as a red ring rather than as no ring at all. */
+.src-avatar-ring {
+    position: relative;
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: conic-gradient(
+        hsl(var(--ring-hue, 0) 82% 52%) var(--ring-progress, 4%),
+        hsl(var(--ring-hue, 0) 34% 17%) 0
+    );
+}
+
+.src-avatar-ring img {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #262626;
+    object-fit: cover;
+    display: block;
+}
+
+/* a locked ID pulses very slightly, so the ring reads as a countdown rather than decoration */
+.src-avatar-ring.is-locked {
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+.src-id span {
+    font-size: 12px;
+    font-weight: 550;
+    letter-spacing: 0.01em;
+    color: var(--ink-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.src-id:hover span {
+    color: var(--ink);
+}
+
+.src-id.is-empty .src-avatar-ring {
+    display: none;
+}
+
+.src-id.is-empty {
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.src-id.is-empty span {
+    color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- votes on a search result */
+
+.note-votes {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.note-votes .vote {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 30px;
+    padding: 0;
+    color: var(--ink-dim);
+    background: #232323;
+    border: 1px solid var(--edge);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.note-votes .vote svg {
+    width: 15px;
+    height: 15px;
+    fill: currentColor;
+}
+
+.note-votes .vote:hover:not(:disabled) {
+    color: var(--ink);
+    border-color: var(--edge-strong);
+    background: #2a2a2a;
+}
+
+.note-votes .vote-up.is-mine {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(76, 175, 80, 0.16);
+}
+
+.note-votes .vote-down.is-mine {
+    color: var(--danger);
+    border-color: var(--danger);
+    background: rgba(255, 77, 77, 0.14);
+}
+
+.note-votes .vote:disabled {
+    opacity: 0.5;
+    cursor: progress;
+}
+
+.vote-count {
+    min-width: 30px;
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    color: var(--ink-faint);
+}
+
+@media (max-width: 640px) {
+    .src-id {
+        top: 8px;
+        right: 8px;
+        max-width: 52vw;
+    }
+
+    .src-avatar-ring {
+        width: 24px;
+        height: 24px;
+    }
+
+    .src-avatar-ring img {
+        width: 20px;
+        height: 20px;
+    }
+}

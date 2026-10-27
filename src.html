@@ -18,12 +18,20 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="searchNostr.css?v=8">
+    <link rel="stylesheet" href="searchNostr.css?v=9">
+    <!-- the same signer the custom pages use, so a vote here carries the same identity it would there -->
+    <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
 
     <title>src · snofl</title>
 
 </head>
 <body>
+    <!-- this browser's identity: the same keys and name the custom pages use, small and out of the way -->
+    <div class="src-id" id="srcId" title="Your Nostr ID · click to change it" role="button" tabindex="0">
+        <span class="src-avatar-ring" id="srcAvatarRing" aria-hidden="true"><img id="srcAvatar" alt=""></span>
+        <span id="srcName">…</span>
+    </div>
+
     <div class="container">
         <div class="title">Loading...</div>  <!-- Placeholder initially -->
         <p class="src-lede">Notes from anywhere on Nostr that carry these hashtags.
@@ -1283,6 +1291,15 @@ function updateNotes() {
 
         <!-- Icons and timestamp container -->
         <div class="note-footer">
+            <div class="note-votes" data-note-id="${note.id}" data-note-pubkey="${note.pubkey}">
+                <button type="button" class="vote vote-up" data-dir="+" title="Upvote this note" aria-label="Upvote">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5l7 8h-4v6H9v-6H5l7-8Z"/></svg>
+                </button>
+                <span class="vote-count">·</span>
+                <button type="button" class="vote vote-down" data-dir="-" title="Downvote this note" aria-label="Downvote">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 19l-7-8h4V5h6v6h4l-7 8Z"/></svg>
+                </button>
+            </div>
             <div class="note-icons">
                 <!-- <span class="icon" title="Thumbs Up" onclick="handleIconClick('upvote', '${
                     note.id
@@ -1322,6 +1339,9 @@ function updateNotes() {
         // Every render refreshes the counter, and it counts the cards actually on the page: displayedNotes
         // lagged behind here once and produced "Showing 69 of 22 filtered notes".
         updateCounters();
+
+        // ...and the votes, which live on the relays rather than in this page's state
+        if (window.snoflSrcVotes) window.snoflSrcVotes.refresh();
 }
 
 function toggleHide(noteId) {
@@ -1934,5 +1954,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
 
 </script>
+<script src="srcActions.js?v=1" defer></script>
 </body>
 </html>
