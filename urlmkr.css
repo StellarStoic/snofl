@@ -1367,6 +1367,72 @@ body.mk .mk__row.is-expanded > label::after {
     letter-spacing: 0.02em;
 }
 
+/* ---------------------------------------------------------------- closing the editor
+
+   The editor used to close only by switching the content OFF, which also removed it from the link. It has its
+   own controls now: Done (also Escape, also a click on the dimmed background) closes the panel and changes
+   nothing else, and "Write in full view" reopens it. They are real buttons in the row, so they are in reach on a
+   phone, and `hidden` is honoured rather than overridden by the display below. */
+
+body.mk .mk__editor-close,
+body.mk .mk__editor-open,
+body.mk .mk__editor-clear {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 12px;
+    font-family: inherit;
+    font-size: 12.5px;
+    line-height: 1.2;
+    color: #dcdcdc;
+    background: #1b1b1b;
+    border: 1px solid var(--edge-strong, #3a3a3a);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+body.mk .mk__editor-close:not([hidden]),
+body.mk .mk__editor-open:not([hidden]),
+body.mk .mk__editor-clear:not([hidden]) {
+    display: inline-flex;
+}
+
+body.mk .mk__editor-close {
+    border-color: var(--accent, #4caf50);
+    color: var(--accent, #4caf50);
+    font-weight: 600;
+}
+
+body.mk .mk__editor-clear {
+    align-self: flex-start;
+    color: #8f8f8f;
+    border-color: #2e2e2e;
+}
+
+body.mk .mk__editor-close:hover,
+body.mk .mk__editor-open:hover {
+    background: #242424;
+}
+
+/* while expanded the row is a two-row grid (label, field) — the buttons must not become grid rows */
+body.mk .mk__row.is-expanded > .mk__editor-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    z-index: 2;
+}
+
+body.mk .mk__row.is-expanded > .mk__editor-open,
+body.mk .mk__row.is-expanded > .mk__editor-clear {
+    display: none;
+}
+
+/* and the label must not run under the Done button */
+body.mk .mk__row.is-expanded > label {
+    padding-right: 96px;
+}
+
 /* ---------------------------------------------------------------- phones */
 
 /* The maker had no viewport meta at all, so a phone rendered it at a 980px virtual width and shrank the
