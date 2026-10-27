@@ -1374,6 +1374,14 @@ body.mk .mk__row.is-expanded > label::after {
    nothing else, and "Write in full view" reopens it. They are real buttons in the row, so they are in reach on a
    phone, and `hidden` is honoured rather than overridden by the display below. */
 
+/* an explanation inside the label, so a disabled switch is not a mystery */
+body.mk .mk__label-note {
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    color: #8a8a8a;
+}
+
 body.mk .mk__editor-close,
 body.mk .mk__editor-open,
 body.mk .mk__editor-clear {

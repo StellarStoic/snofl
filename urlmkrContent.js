@@ -106,6 +106,7 @@
   // ------------------------------------------------------------------ the draft
 
   const FIELDS = [
+    ['allow_notes', null],
     ['include_p', 'p_input'],
     ['include_h1', 'h1_input'],
     ['include_h3', 'h3_input'],
@@ -166,21 +167,26 @@
     }
     if (!draft) return;
 
-    // switches first, then the text they enable, so the field is never disabled when its value lands
+    // every switch first, then every value: a value must never land in a field its own switch has not enabled yet
+    const switches = [];
+    const values = [];
     Object.keys(draft).forEach(key => {
-      if (!key.startsWith('include_')) return;
-      const box = document.getElementById(key);
-      if (!box) return;
+      const node = document.getElementById(key);
+      if (!node) return;
+      const isSwitch = node.type === 'checkbox';
+      (isSwitch ? switches : values).push([key, node]);
+    });
+    switches.forEach(([key, box]) => {
       box.checked = Boolean(draft[key]);
       box.dispatchEvent(new Event('change', {bubbles: true}));
     });
-    Object.keys(draft).forEach(key => {
-      if (key.startsWith('include_')) return;
-      const node = document.getElementById(key);
-      if (!node || typeof draft[key] !== 'string') return;
+    values.forEach(([key, node]) => {
+      if (typeof draft[key] !== 'string') return;
       node.value = draft[key];
       node.dispatchEvent(new Event('input', {bubbles: true}));
     });
+    // gates that depend on another switch are applied last, after both sides have their restored state
+    if (typeof window.syncSuggestedMessage === 'function') window.syncSuggestedMessage();
     if (typeof window.updateURL === 'function') window.updateURL();
   }
 
@@ -202,6 +208,7 @@
     });
     closeEditor();
     clearButton.hidden = true;
+    if (typeof window.syncSuggestedMessage === 'function') window.syncSuggestedMessage();
     if (typeof window.updateURL === 'function') window.updateURL();
   }
 

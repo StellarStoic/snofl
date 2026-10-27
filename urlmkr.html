@@ -23,7 +23,7 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=10">
-    <link rel="stylesheet" href="urlmkr.css?v=43">
+    <link rel="stylesheet" href="urlmkr.css?v=44">
     <script src="urlmkrAgreement.js?v=2"></script>
     <script src="backgroundImages.js"></script>
     <script src="crypto-js.min.js"></script>
@@ -248,7 +248,7 @@
                     </div>
 
                     <div class="form-group mk__row">
-                        <label for="include_message">Suggested message</label>
+                        <label for="include_message">Suggested message <span class="mk__label-note" id="include_message_note" hidden>— needs Public notes on</span></label>
                         <input type="checkbox" id="include_message">
                         <textarea id="message_input" placeholder="Pre-filled for the visitor, who can edit it before posting" disabled></textarea>
                     </div>
@@ -979,6 +979,34 @@ function reverseString(str) {
             p_Input.disabled = !this.checked;
             updateURL();
         });
+
+        /*
+         * A suggested message is text pre-filled for the note the visitor posts. With public notes turned off there
+         * is no note to suggest anything for, so the switch is unavailable — not merely pointless — and switching
+         * public notes off takes an already-enabled message with it, or the link would carry text nothing can post.
+         */
+        function syncSuggestedMessage() {
+            const allowed = !allowNotesCheckbox || allowNotesCheckbox.checked;
+            includeMessageCheckbox.disabled = !allowed;
+            if (!allowed && includeMessageCheckbox.checked) {
+                includeMessageCheckbox.checked = false;
+                includeMessageCheckbox.dispatchEvent(new Event('change', {bubbles: true}));
+            }
+            if (!includeMessageCheckbox.checked) {
+                messageInput.disabled = true;
+                messageInput.style.height = '';
+                messageInput.style.width = '';
+            }
+            const note = document.getElementById('include_message_note');
+            if (note) note.hidden = allowed;
+        }
+
+        if (allowNotesCheckbox) {
+            allowNotesCheckbox.addEventListener('change', syncSuggestedMessage);
+        }
+        syncSuggestedMessage();
+        // the draft restore runs from its own deferred script and has to be able to re-apply the gate
+        window.syncSuggestedMessage = syncSuggestedMessage;
 
         includeMessageCheckbox.addEventListener('change', function () {
         const isChecked = this.checked;
@@ -2201,7 +2229,7 @@ document.addEventListener('DOMContentLoaded', function () {
         updateURL();
     </script>
     <script src="urlmkrPreview.js?v=1" defer></script>
-    <script src="urlmkrContent.js?v=3" defer></script>
+    <script src="urlmkrContent.js?v=4" defer></script>
 </body>
 
 
