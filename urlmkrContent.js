@@ -111,6 +111,7 @@
     ['include_h1', 'h1_input'],
     ['include_h3', 'h3_input'],
     ['include_message', 'message_input'],
+    ['message_editable', null],
     ['include_relays', 'relay1'],
     ['include_relays', 'relay2'],
     ['include_relays', 'relay3'],

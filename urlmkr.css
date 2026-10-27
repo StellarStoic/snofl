@@ -1374,6 +1374,56 @@ body.mk .mk__row.is-expanded > label::after {
    nothing else, and "Write in full view" reopens it. They are real buttons in the row, so they are in reach on a
    phone, and `hidden` is honoured rather than overridden by the display below. */
 
+/* the question mark beside a switch and the sentence it opens */
+body.mk .mk__help {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    margin-left: 6px;
+    vertical-align: middle;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--ink-soft, #a9a9a9);
+    background: #1b1b1b;
+    border: 1px solid var(--edge-strong, #3a3a3a);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+body.mk .mk__help:hover,
+body.mk .mk__help.is-open {
+    color: var(--accent, #4caf50);
+    border-color: var(--accent, #4caf50);
+}
+
+body.mk .mk__help-text {
+    grid-column: 1 / -1;
+    margin: 6px 0 2px;
+    padding: 10px 12px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: #c4c4c4;
+    background: #161616;
+    border-left: 2px solid var(--accent, #4caf50);
+    border-radius: 0 8px 8px 0;
+}
+
+body.mk .mk__subswitch {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: 12.5px;
+    color: var(--ink-soft, #a9a9a9);
+}
+
+body.mk .mk__subswitch input[type="checkbox"] {
+    margin: 0;
+}
+
 /* an explanation inside the label, so a disabled switch is not a mystery */
 body.mk .mk__label-note {
     font-size: 12px;

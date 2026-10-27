@@ -29,7 +29,7 @@
     <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
     <script src="https://bundle.run/browserify-cipher@1.0.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=11">
+    <link rel="stylesheet" href="styles.css?v=12">
     <link rel="stylesheet" href="room.css?v=8">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -89,6 +89,7 @@
         <textarea id="userMessage" maxlength="280" oninput="updateMarkdown()" placeholder="Type your message..."></textarea>
         <div id="markdownPreview" class="overlay markdown-preview"></div>
     </div>
+    <p id="messageLockedNote" class="message-locked-note" hidden>The person who made this page wrote this message, and it is sent as it is. You can still read it, select it and post it.</p>
     <div id="charCount">0/280</div>
     <button id="sendMessageBtn" disabled>send
         <img src="https://user-images.githubusercontent.com/99301796/219719339-5eff628c-3470-4cc3-81eb-404f8902de9f.gif" id="animatedImg"/>
@@ -377,6 +378,7 @@ function getQueryParams() {
         s: params.has("s") ? params.get("s") : null, // Include subtitle only if present
         p: params.get("p") || "",  // Paragraph
         m: params.get("m") || "", // Message
+        mr: params.get("mr") === "1", // ...and the author asked that it not be edited
         h: params.get("h") ? params.get("h").split(",").filter(Boolean) : [], // Hashtag
         r: params.get("r") ? params.get("r").split(",") : [], // Relay
         l: parseInt(params.get("l")) || 280, // Length of a message
@@ -572,12 +574,19 @@ async function setDynamicContent() {
     userMessage.setAttribute("data-hashtags", h.join(","));
     userMessage.setAttribute("maxlength", l);
 
+    const { mr } = getQueryParams();
     if (m) {
         // A suggested message, not a locked one: the note is published under the visitor's own key, so the
         // visitor gets the last word. One press still sends it unchanged, which is what this was for.
         userMessage.value = m;
         userMessage.disabled = false;
         document.getElementById("sendMessageBtn").disabled = false;
+        if (mr) {
+            // the author chose a fixed message: still readable and still selectable, just not rewritable
+            userMessage.readOnly = true;
+            const lockNote = document.getElementById("messageLockedNote");
+            if (lockNote) lockNote.hidden = false;
+        }
     }
 
     // the counter must reflect what is actually in the box, prefilled text included

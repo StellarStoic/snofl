@@ -23,7 +23,7 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=10">
-    <link rel="stylesheet" href="urlmkr.css?v=44">
+    <link rel="stylesheet" href="urlmkr.css?v=46">
     <script src="urlmkrAgreement.js?v=2"></script>
     <script src="backgroundImages.js"></script>
     <script src="crypto-js.min.js"></script>
@@ -251,6 +251,10 @@
                         <label for="include_message">Suggested message <span class="mk__label-note" id="include_message_note" hidden>— needs Public notes on</span></label>
                         <input type="checkbox" id="include_message">
                         <textarea id="message_input" placeholder="Pre-filled for the visitor, who can edit it before posting" disabled></textarea>
+                        <label class="mk__subswitch" for="message_editable">Visitor can edit it
+                            <input type="checkbox" id="message_editable" checked disabled>
+                            <span class="mk__label-note" id="message_editable_note" hidden>— needs a suggested message</span>
+                        </label>
                     </div>
                 </section>
 
@@ -258,7 +262,8 @@
                     <h2>Visitor options</h2>
 
                     <div class="form-group mk__row">
-                        <label for="allow_notes">Public notes</label>
+                        <label for="allow_notes">Public notes <button type="button" class="mk__help" id="allow_notes_help_btn" aria-expanded="false" aria-controls="allow_notes_help" title="What do public notes do?">?</button></label>
+                        <p class="mk__help-text" id="allow_notes_help" hidden>Lets a visitor post a public note (kind&nbsp;1) from your page — either with the hashtags you chose, or with the suggested message you wrote, which they can edit or not, as you decide below. A public note is readable by anyone on the relays; the room above stays encrypted.</p>
                         <input type="checkbox" id="allow_notes" checked
                             title="On: visitors can post a note anyone can find. Off: they can only talk in the private room.">
                         <p class="mk__hint">On: a visitor can post a note anyone can find. Off: the page offers only the private room.</p>
@@ -364,6 +369,7 @@
         const includeH3Checkbox = document.getElementById('include_h3');
         const include_p_Checkbox = document.getElementById('include_p');
         const includeMessageCheckbox = document.getElementById('include_message');
+        const messageEditableCheckbox = document.getElementById('message_editable');
         const includeRelaysCheckbox = document.getElementById('include_relays');
         const allowNotesCheckbox = document.getElementById('allow_notes');
         // every other control redraws the link on change; this one has to as well, or the output keeps
@@ -999,16 +1005,28 @@ function reverseString(str) {
             }
             const note = document.getElementById('include_message_note');
             if (note) note.hidden = allowed;
+
+            // editing only means something when there is a message to edit
+            if (messageEditableCheckbox) {
+                messageEditableCheckbox.disabled = !includeMessageCheckbox.checked;
+                const editableNote = document.getElementById('message_editable_note');
+                if (editableNote) editableNote.hidden = includeMessageCheckbox.checked;
+            }
         }
 
         if (allowNotesCheckbox) {
             allowNotesCheckbox.addEventListener('change', syncSuggestedMessage);
+        }
+        // every other control redraws the link on change; this one decides whether mr=1 travels, so it must too
+        if (messageEditableCheckbox) {
+            messageEditableCheckbox.addEventListener('change', updateURL);
         }
         syncSuggestedMessage();
         // the draft restore runs from its own deferred script and has to be able to re-apply the gate
         window.syncSuggestedMessage = syncSuggestedMessage;
 
         includeMessageCheckbox.addEventListener('change', function () {
+        if (typeof syncSuggestedMessage === 'function') syncSuggestedMessage();
         const isChecked = this.checked;
         messageInput.disabled = !isChecked;
 
@@ -1381,6 +1399,11 @@ function reverseString(str) {
                 const encodedMessageValue = encodeURIComponent(messageValue);
                 url += `m=${encodedMessageValue}&`;
                 currentBytes += `m=${encodedMessageValue}&`.length;
+                // mr=1: the visitor may not rewrite it. Absent means editable, so every existing link is unchanged.
+                if (messageEditableCheckbox && !messageEditableCheckbox.checked) {
+                    url += `mr=1&`;
+                    currentBytes += `mr=1&`.length;
+                }
             }
 
             // Add character limit
@@ -1832,6 +1855,19 @@ document.getElementById('close_qr_button').addEventListener('click', function ()
             });
         }
 
+        // A question mark that opens a sentence, not a tooltip: a phone has no hover, and this explains a choice
+        // that changes what a visitor can do.
+        const allowNotesHelpButton = document.getElementById('allow_notes_help_btn');
+        const allowNotesHelpText = document.getElementById('allow_notes_help');
+        if (allowNotesHelpButton && allowNotesHelpText) {
+            allowNotesHelpButton.addEventListener('click', function () {
+                const open = allowNotesHelpText.hidden;
+                allowNotesHelpText.hidden = !open;
+                allowNotesHelpButton.setAttribute('aria-expanded', String(open));
+                allowNotesHelpButton.classList.toggle('is-open', open);
+            });
+        }
+
         document.getElementById('encrypt_url').addEventListener('change', function () {
             const passwordInput = document.getElementById('encryption_password');
             passwordInput.disabled = !this.checked;
@@ -2229,7 +2265,7 @@ document.addEventListener('DOMContentLoaded', function () {
         updateURL();
     </script>
     <script src="urlmkrPreview.js?v=1" defer></script>
-    <script src="urlmkrContent.js?v=4" defer></script>
+    <script src="urlmkrContent.js?v=5" defer></script>
 </body>
 
 
