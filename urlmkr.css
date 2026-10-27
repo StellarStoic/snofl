@@ -243,9 +243,18 @@ body.mk textarea {
     resize: vertical;
 }
 
+/* A placeholder is guidance, not decoration. #868686 on the #1d1d1d field was 4.63:1 - passing AA, but at 16px
+   against a nearly black field D read the greyed examples as empty ones. #bcbcbc is 8.88:1, and 7.09:1 when the
+   field has focus and the guidance should step back a little. */
 body.mk input::placeholder,
 body.mk textarea::placeholder {
-    color: #868686;
+    color: #bcbcbc;
+    opacity: 1; /* Firefox dims placeholders on its own */
+}
+
+body.mk input:focus::placeholder,
+body.mk textarea:focus::placeholder {
+    color: #a8a8a8;
 }
 
 body.mk input:focus,
@@ -257,7 +266,9 @@ body.mk textarea:focus {
 
 body.mk input:disabled,
 body.mk textarea:disabled {
-    opacity: 0.45;
+    /* a disabled field here is a hint ("these are the defaults"), not a dead control: at 0.45 the text was
+       unreadable against the dark field */
+    opacity: 0.7;
     cursor: not-allowed;
 }
 
@@ -1526,6 +1537,9 @@ body.mk .mk__row > label {
 
 body.mk .mk__hint {
     font-size: 14px;
+    /* the sentence under a row explains what the switch does. #8a8a8a on the row card was 5.34:1; #a9a9a9 is
+       7.84:1, which reads as explanation rather than as disabled text. */
+    color: #a9a9a9;
 }
 
 body.mk .mk__tag {
