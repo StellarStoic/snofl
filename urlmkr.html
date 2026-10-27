@@ -23,7 +23,7 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=10">
-    <link rel="stylesheet" href="urlmkr.css?v=52">
+    <link rel="stylesheet" href="urlmkr.css?v=53">
     <script src="urlmkrAgreement.js?v=2"></script>
     <script src="backgroundImages.js"></script>
     <script src="crypto-js.min.js"></script>
@@ -1552,7 +1552,11 @@ function reverseString(str) {
                 console.error("urlOutput element not found!");
             }
             byteCounter.textContent = `Remaining bytes: ${remainingBytes} (Current bytes: ${currentBytes})`;
-            byteCounter.style.color = remainingBytes >= 0 ? 'green' : 'red';
+            // the site's own green and red rather than the CSS keywords: 'green' is #008000 and sits at about 4:1
+            // on this panel, while the accent is legible at a glance
+            byteCounter.style.color = remainingBytes >= 0
+                ? 'var(--accent, #4caf50)'
+                : 'var(--danger, #ff4d4d)';
         }
 
 
