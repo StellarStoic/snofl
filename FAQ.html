@@ -350,7 +350,10 @@
                 and a page draws one as a card with the title, the date, the place, the summary and optionally an image,
                 instead of treating it as a note.
                 <br><br>
-                Press <strong>Calendar</strong> in the strip, or paste the reference yourself — the button only inserts a <em>reference</em> to an event somebody already published, it does not create one. Both forms work:
+                Press <strong>Calendar</strong> in the strip: it opens a short form — title, time or whole days, timezone,
+                place, summary — publishes the event under your own identity and drops its reference into the content.
+                If you already have a reference from somewhere else, that form's second button hands you the caret with
+                <code>nostr:</code> ready. Both forms work:
                 <ul>
                     <li><code>nostr:naddr1…</code> — what clients hand you for a calendar event, because these events
                         are <em>addressable</em>: the author can replace one, so its coordinate (kind + author +
@@ -371,6 +374,26 @@
                 rather than adding one. RSVP needs a Nostr ID on the page; without one the card says so instead of
                 failing quietly. Adding an event to a calendar app from the page is not there yet — "open in njump" is
                 the way out.
+            </p>
+        </div>
+
+        <div class="faq-question urlmkr" onclick="toggleFaq('faqCalendarAuthor')"><a href="#faqCalendarAuthor">The Calendar button publishes an event? As whom?</a></div>
+        <div id="faqCalendarAuthor" class="faq-answer">
+            <p>
+                As you. The form in the maker signs with whatever identity you chose in the maker — a browser extension,
+                a remote signer, or the anonymous key that lives in this browser — and publishes kind
+                <code>31923</code> (a time) or <code>31922</code> (whole days) to the relays in the maker, or to the
+                defaults when you have not set any. The status line under the form says how many relays took it, and
+                when none did, it repeats what they said instead of failing quietly.
+                <br><br>
+                Because these events are <em>addressable</em>, the reference is a coordinate (kind + author + identifier),
+                not an id: republish the same identifier and every page pointing at it shows the new details. That also
+                means the event belongs to the identity that signed it — publish it anonymously and it stays with that
+                anonymous key, so it is worth signing in first if the event matters.
+                <br><br>
+                Times are sent in unix seconds with <code>start_tzid</code> so a reader in another country sees their own
+                clock time. For a whole-day event the form turns the last day you picked into an exclusive end date,
+                which is what NIP-52 expects — pick one day and the card shows one day, not two.
             </p>
         </div>
 
