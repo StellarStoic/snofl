@@ -1675,10 +1675,15 @@ body.mk .mk-cal__status {
 }
 
 body.mk .mk-cal__actions {
+    position: sticky;
+    bottom: -16px;
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-top: 12px;
+    margin: 12px -18px -16px;
+    padding: 10px 18px 16px;
+    background: #131313;
+    border-top: 1px solid #222;
 }
 
 body.mk .mk-cal__publish,
@@ -1715,6 +1720,12 @@ body.mk .mk-cal__plain {
     body.mk .mk-cal__field select,
     body.mk .mk-cal__field textarea {
         font-size: 16px;
+    }
+
+    /* a datetime-local control needs the width of the card: two of them side by side on a phone clip both to
+       "10/28/2026, 1" and the writer cannot see what they picked */
+    body.mk .mk-cal__pair {
+        grid-template-columns: 1fr;
     }
 }
 
