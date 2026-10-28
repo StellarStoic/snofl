@@ -1,7 +1,8 @@
 /* The room under a page.
-   Same materials as the page: monospace, the site's orange for anything that is a control, hairline
-   rules instead of boxes, and no animation that pretends to be progress. The mining indicator is text
-   because it is a number, not a mood. */
+   Same materials as the page: monospace, the site's own accent (green, #4caf50 — the colour every other page on
+   snofl uses for a control, a link and an active state) for anything that is a control, hairline rules instead of
+   boxes, and no animation that pretends to be progress. The mining indicator is text because it is a number, not a
+   mood. The room carried its own orange (#ff6600) and read as a different site bolted under the page. */
 
 /* This page scales its root font with the viewport — `html { font-size: calc(1vw + 1vh + 0.5vmin) }`,
    which is ~34px on a desktop window. So `rem` here is not 16px, and a room sized in rem came out
@@ -76,7 +77,7 @@
 }
 
 .room__author {
-    color: var(--room-accent, #ff6600);
+    color: var(--room-accent, #4caf50);
 }
 
 .room__pow {
@@ -114,15 +115,15 @@
 }
 
 .room__input:focus-visible {
-    outline: 2px solid var(--room-accent, #ff6600);
+    outline: 2px solid var(--room-accent, #4caf50);
     outline-offset: 1px;
 }
 
 .room__send {
     align-self: flex-start;
     background: transparent;
-    color: var(--room-accent, #ff6600);
-    border: 1px solid var(--room-accent, #ff6600);
+    color: var(--room-accent, #4caf50);
+    border: 1px solid var(--room-accent, #4caf50);
     border-radius: 0;
     padding: 6.4px 14.4px;
     font-family: inherit;
@@ -134,7 +135,7 @@
 
 .room__send:hover:not(:disabled),
 .room__send:focus-visible:not(:disabled) {
-    background: var(--room-accent, #ff6600);
+    background: var(--room-accent, #4caf50);
     color: #000;
 }
 
@@ -154,7 +155,7 @@
 [data-theme="light"] .room {
     --room-ink: #000;
     --room-rule: #d4d4d4;
-    --room-accent: #b34700;
+    --room-accent: #2e7d32;   /* #4caf50 on white is ~2.8:1; this is ~5.1:1 and still the site's green */
 }
 
 [data-theme="light"] .room__message {
@@ -208,8 +209,9 @@
 
 .room__sort.is-on {
     opacity: 1;
-    color: #00ff55;
-    border-color: rgba(0, 255, 85, 0.45);
+    /* one green, the site's: a neon #00ff55 beside the accent read as a second, louder green in the same bar */
+    color: var(--room-accent, #4caf50);
+    border-color: color-mix(in srgb, var(--room-accent, #4caf50) 45%, transparent);
 }
 
 .room__count {
@@ -250,8 +252,9 @@
 
 .room__vote.is-mine {
     opacity: 1;
-    border-color: rgba(255, 102, 0, 0.75);
-    color: #ff6600;
+    /* your own vote is an active state, and this site marks active states green */
+    border-color: color-mix(in srgb, var(--room-accent, #4caf50) 75%, transparent);
+    color: var(--room-accent, #4caf50);
 }
 
 /* The note's own id and text are copyable: a note is a Nostr event, and an event with no id to quote
@@ -339,8 +342,8 @@
     font-size: 10.5px;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--room-accent, #ff6600);
-    border: 1px solid var(--room-accent, #ff6600);
+    color: var(--room-accent, #4caf50);
+    border: 1px solid var(--room-accent, #4caf50);
     padding: 1px 6px;
 }
 
@@ -381,12 +384,12 @@
 
 .room__poll-option:hover:not(:disabled),
 .room__poll-option:focus-visible:not(:disabled) {
-    border-color: var(--room-accent, #ff6600);
+    border-color: var(--room-accent, #4caf50);
     outline: none;
 }
 
 .room__poll-option.is-chosen {
-    border-color: var(--room-accent, #ff6600);
+    border-color: var(--room-accent, #4caf50);
 }
 
 .room__poll-option.is-closed,
@@ -400,7 +403,7 @@
     top: 0;
     bottom: 0;
     left: 0;
-    background: var(--room-accent, #ff6600);
+    background: var(--room-accent, #4caf50);
     opacity: 0.16;
     pointer-events: none;
 }
@@ -447,7 +450,7 @@
 .room__poll-cancel {
     align-self: flex-start;
     background: transparent;
-    color: var(--room-accent, #ff6600);
+    color: var(--room-accent, #4caf50);
     border: 1px dashed var(--room-rule, #333);
     border-radius: 0;
     padding: 5px 11px;
@@ -464,7 +467,7 @@
 .room__poll-open:focus-visible,
 .room__poll-add:focus-visible:not(:disabled),
 .room__poll-cancel:focus-visible {
-    border-color: var(--room-accent, #ff6600);
+    border-color: var(--room-accent, #4caf50);
     outline: none;
 }
 
@@ -475,6 +478,7 @@
 
 /* `display: grid` beats the `hidden` attribute (the UA rule loses to any author rule), so a form with no
    `[hidden]` counterpart stays on screen from the first paint. Both the form and the panel need it. */
+.room__poll-open[hidden],
 .room__poll-form[hidden],
 .room__poll[hidden] {
     display: none;
@@ -502,7 +506,7 @@
 
 .room__poll-form input[type="text"]:focus-visible,
 .room__poll-form select:focus-visible {
-    outline: 2px solid var(--room-accent, #ff6600);
+    outline: 2px solid var(--room-accent, #4caf50);
     outline-offset: -1px;
 }
 

@@ -337,6 +337,8 @@ export async function mount(options = {}) {
   const pollToggle = element('button', 'room__poll-open', 'Poll');
   pollToggle.type = 'button';
   pollToggle.title = 'Ask the room a question';
+  // kept in the DOM for the form it opens, but never shown: a poll is written in the maker, not asked from the page
+  pollToggle.hidden = true;
   composer.append(input, buttons, status, pollToggle);
   container.append(header, pollPanel, list, composer);
   list.append(element('p', 'room__empty', 'Reading the room from the relays…'));
@@ -626,16 +628,13 @@ export async function mount(options = {}) {
    */
 
   const selectedPoll = () => {
-    // the page declares at most one poll it means; a room poll is what happens when nobody wrote one
+    // Polls belong to the maker: a page shows a poll only when its link declares one. The room used to offer its own
+    // ("Poll" in the composer, newest room poll wins) and that put a poll on pages whose maker never asked for one, so
+    // nothing renders unless `[poll:…]` / `[poll2:…]` travelled in the content.
     const fromPage = [...polls.values()].filter(poll => poll.source === 'page').sort((a, b) => (
       declaredPolls.findIndex(entry => entry.id === a.id) - declaredPolls.findIndex(entry => entry.id === b.id)
     ));
-    if (fromPage.length) return fromPage[0];
-    let newest = null;
-    for (const poll of polls.values()) {
-      if (!newest || poll.created_at > newest.created_at) newest = poll;
-    }
-    return newest;
+    return fromPage[0] || null;
   };
 
   const myAnswer = (pollId) => pollAnswers.get(pollId)?.get(window.pub) || null;
@@ -658,19 +657,14 @@ export async function mount(options = {}) {
     pollPanel.textContent = '';
     if (!poll) {
       pollPanel.hidden = true;
-      pollToggle.textContent = 'Poll';
+      pollToggle.hidden = true;
+      pollForm.hidden = true;
       return;
     }
     pollPanel.hidden = false;
-    // A poll declared by the page is the room's poll: offering "New poll" beside it would post a room poll
-    // that the panel never shows, because the page's one wins. Say so instead of hiding the reason.
-    if (poll.source === 'page') {
-      pollToggle.hidden = true;
-      pollForm.hidden = true;
-    } else {
-      pollToggle.hidden = false;
-      pollToggle.textContent = 'New poll';
-    }
+    // never offer a second poll beside a declared one: the page's question is the room's question
+    pollToggle.hidden = true;
+    pollForm.hidden = true;
 
     if (pollDraftFor !== poll.id) {
       pollDraftFor = poll.id;
@@ -866,7 +860,7 @@ export async function mount(options = {}) {
   closePollForm.type = 'button';
   closePollForm.addEventListener('click', () => {
     pollForm.hidden = true;
-    pollToggle.hidden = false;
+    pollToggle.hidden = true;   // never back: the composer has no poll control on a page
     pollQuestion.value = '';
     [...pollFields.children].forEach((field) => { field.value = ''; });
   });

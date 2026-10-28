@@ -30,7 +30,7 @@
     <script src="https://bundle.run/browserify-cipher@1.0.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=17">
-    <link rel="stylesheet" href="room.css?v=8">
+    <link rel="stylesheet" href="room.css?v=11">
     <link rel="stylesheet" href="history.css?v=5">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -851,23 +851,45 @@ function closeIframe(id) {
 }
 
 // Add this after the retryIframe() function
+// Newlines become <br> so a plain multi-line paragraph keeps its lines — but only newlines that are *text*.
+// Markup indentation is not text: a list written as
+//     <ul>\n  <li>one</li>\n  <li>two</li>\n</ul>
+// carries a newline between every item, and turning each of those into <br> put an empty line between the items on the
+// rendered page. A whitespace-only text node whose neighbours are block elements is layout, and drops out entirely.
 function convertNewlinesToBreaks(htmlString) {
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = htmlString;
+  const BLOCK = new Set(['ADDRESS', 'ARTICLE', 'ASIDE', 'BLOCKQUOTE', 'DD', 'DETAILS', 'DIV', 'DL', 'DT', 'FIELDSET',
+    'FIGCAPTION', 'FIGURE', 'FOOTER', 'FORM', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'HEADER', 'HR', 'LI', 'MAIN', 'NAV',
+    'OL', 'P', 'PRE', 'SECTION', 'SUMMARY', 'TABLE', 'TBODY', 'TD', 'TFOOT', 'TH', 'THEAD', 'TR', 'UL']);
+  const isBlock = (node) => node && node.nodeType === Node.ELEMENT_NODE && BLOCK.has(node.tagName);
+
   function processNode(node) {
     if (node.nodeType === Node.TEXT_NODE) {
-      if (/[\n\u2028\u2029]/.test(node.textContent)) {
-        const fragments = node.textContent.split(/[\n\u2028\u2029]/);
-        const fragment = document.createDocumentFragment();
-        fragments.forEach((frag, index) => {
-          fragment.appendChild(document.createTextNode(frag));
-          // Insert a <br> between each line (but not after the last fragment)
-          if (index < fragments.length - 1) {
-            fragment.appendChild(document.createElement('br'));
-          }
-        });
-        node.parentNode.replaceChild(fragment, node);
+      if (!/[\n\u2028\u2029]/.test(node.textContent)) return;
+      const prev = node.previousSibling;
+      const next = node.nextSibling;
+      // whitespace sitting between block-level elements (or alone inside one) is indentation, not a line
+      if (/^\s*$/.test(node.textContent) && (isBlock(prev) || isBlock(next))) {
+        node.parentNode.removeChild(node);
+        return;
       }
+      const parent = node.parentNode;
+      const parts = node.textContent.split(/[\n\u2028\u2029]/);
+      // the indentation newline after <li> and before </li> is not the writer's line break either
+      if (isBlock(parent) && parts.length > 1) {
+        if (/^\s*$/.test(parts[0])) parts.shift();
+        if (parts.length > 1 && /^\s*$/.test(parts[parts.length - 1])) parts.pop();
+      }
+      const fragment = document.createDocumentFragment();
+      parts.forEach((frag, index) => {
+        fragment.appendChild(document.createTextNode(frag));
+        // Insert a <br> between each line (but not after the last fragment)
+        if (index < parts.length - 1) {
+          fragment.appendChild(document.createElement('br'));
+        }
+      });
+      parent.replaceChild(fragment, node);
     } else if (node.nodeType === Node.ELEMENT_NODE) {
       // Do not process inside elements that already render content (like iframes, videos, images, or links)
       if (!['iframe', 'video', 'img', 'a'].includes(node.tagName.toLowerCase())) {
@@ -2716,7 +2738,7 @@ updateAvatar();
 </script>
 <script src="footer.js"></script>       
 
-    <script type="module" src="room.js?v=9"></script>
+    <script type="module" src="room.js?v=10"></script>
 </body>
 
 </html>

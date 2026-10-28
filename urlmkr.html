@@ -1992,7 +1992,7 @@ document.getElementById('close_qr_button').addEventListener('click', function ()
         ecash: {name: 'eCash', explain: 'type or paste the eCash address straight after ecash: for a QR with the eCash mark.', insert: 'ecash:', ownLine: true, prefix: true},
         monero: {name: 'Monero', explain: 'type or paste the Monero address straight after monero: for a QR with the Monero mark.', insert: 'monero:', ownLine: true, prefix: true},
         qrcode: {name: 'Any QR', explain: 'anything after qr: becomes a plain QR — a link, a message, a key. Four other prefixes draw their own mark.', insert: 'qr:', ownLine: true, prefix: true},
-        poll: {name: 'Poll', explain: '[poll:Question|Choice|Choice] — up to six, or [poll2:…] to let each person pick two.', insert: '[poll:Your question here|First choice|Second choice]', ownLine: true, selectFrom: 'Your question'},
+        poll: {name: 'Poll', explain: '[poll:Question|Choice|Choice] — up to six, or [poll2:…] to let each person pick two. The poll exists only if the link carries one, so this is where it comes from.', insert: '[poll:Your question here|First choice|Second choice]', ownLine: true, selectFrom: 'Your question'},
     };
 
     const field = () => document.getElementById('p_input');

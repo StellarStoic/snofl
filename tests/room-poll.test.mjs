@@ -193,15 +193,28 @@ test('the id is derived from the declaration, not from a clock or a random sourc
   assert.match(declaredPollId('[poll:Q|a|b]'), /^p[0-9a-f]{8}$/);
 });
 
-test('a page poll is the room poll, so the room does not offer a second one', async () => {
+test('a poll exists only where the maker declared one', async () => {
   const {readFile} = await import('node:fs/promises');
   const room = await readFile(new URL('../room.js', import.meta.url), 'utf8');
-  assert.match(room, /if \(poll\.source === 'page'\) \{/);
-  assert.match(room, /pollToggle\.hidden = true;/);
-  assert.match(room, /pollToggle\.textContent = 'New poll';/);
-  // and the declared poll wins over anything a visitor posted in the room
+  // the page's declaration is the only source: a room poll used to win when nobody declared one, which put a poll on
+  // pages whose maker never asked for it
   assert.match(room, /const fromPage = \[\.\.\.polls\.values\(\)\]\.filter\(poll => poll\.source === 'page'\)/);
-  assert.match(room, /if \(fromPage\.length\) return fromPage\[0\];/);
+  assert.match(room, /return fromPage\[0\] \|\| null;/);
+  assert.doesNotMatch(room, /newest\.created_at/, 'no room poll may be selected');
+  // nothing offers to create one from the page any more
+  assert.doesNotMatch(room, /'New poll'/, 'the composer must not offer a poll');
+  assert.match(room, /pollToggle\.hidden = true;/);
+  // and the toggle keeps its [hidden] counterpart, or a class-level display rule wins
+  const css = await readFile(new URL('../room.css', import.meta.url), 'utf8');
+  assert.match(css, /\.room__poll-open\[hidden\]/);
   // the page's tokens reach the room through one global, read at mount
   assert.match(room, /parseDeclaredPolls\(Array\.isArray\(window\.SNOFL_PAGE_POLLS\)/);
+});
+
+test('markup indentation is not a line break on the page', async () => {
+  const {readFile} = await import('node:fs/promises');
+  const page = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  // a list written with newlines between its items must not put an empty line between them
+  assert.match(page, /const BLOCK = new Set\(\['ADDRESS'/);
+  assert.match(page, /if \(\/\^\\s\*\$\/\.test\(node\.textContent\) && \(isBlock\(prev\) \|\| isBlock\(next\)\)\)/);
 });
