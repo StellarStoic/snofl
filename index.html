@@ -29,7 +29,7 @@
     <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
     <script src="https://bundle.run/browserify-cipher@1.0.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=18">
+    <link rel="stylesheet" href="styles.css?v=20">
     <link rel="stylesheet" href="room.css?v=12">
     <link rel="stylesheet" href="history.css?v=5">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
@@ -48,9 +48,15 @@
 
 <body>
     <div id="dim-overlay" class="dim-overlay"></div>
-    <div>
-        <img id="avatarIcon" class="avatar-icon" src="" alt="Avatar" title="Change ID">
-        <p id="nostrNameDisplay" class="nostr-name"></p>  <!-- Display for nostr_name -->
+    <div id="pageContent">
+        <!-- The identity badge, in the corner: the same 26px ring src wears, the avatar at 22px inside it and the
+             name small beside it. It used to be a 160px portrait in the middle of the page, above the title. -->
+        <div id="identityBadge" class="id-badge">
+            <p id="nostrNameDisplay" class="nostr-name"></p>  <!-- Display for nostr_name -->
+            <span id="avatarRing" class="id-ring" role="img" aria-label="Your identity and its age">
+                <img id="avatarIcon" class="avatar-icon" src="" alt="Avatar" title="Change ID">
+            </span>
+        </div>
         <h1 id="mainTitle"></h1>
         <h4 id="subTitle"></h4>
         <div id="paragraphContainer">
@@ -309,6 +315,57 @@ function updateAvatar() {
     console.log("Updated Avatar URL:", avatarUrl);
 }
 
+/* The ring around the avatar is the ID's age, drawn the way src draws it: hsl runs red -> orange -> yellow ->
+   green across 0-120 degrees of hue, so one number carries the colour — red in the first hours, green once a
+   replacement is allowed — and the bright arc is the fraction of the 24 hours elapsed. The arc never drops below
+   4%, because at a true zero a conic-gradient paints nothing and a brand-new ID would look ringless instead of red. */
+const ID_COOLDOWN_SECONDS = 86400;
+
+function humanDuration(seconds) {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const parts = [];
+    if (days) parts.push(days + ' day' + (days === 1 ? '' : 's'));
+    if (hours) parts.push(hours + ' hour' + (hours === 1 ? '' : 's'));
+    if (!days && minutes) parts.push(minutes + ' minute' + (minutes === 1 ? '' : 's'));
+    return parts.length ? parts.join(' ') : 'less than a minute';
+}
+
+/* The ring is two pixels wide around the picture, so the whole badge is the target: a tap anywhere on the ring
+   reaches the avatar's own handler — except when that handler is deliberately disabled (no page in the URL), which
+   it signals with pointer-events: none on the image. */
+function wireIdRingTap() {
+    const ring = document.getElementById('avatarRing');
+    const avatar = document.getElementById('avatarIcon');
+    if (!ring || !avatar || ring.dataset.tapWired) return;
+    ring.dataset.tapWired = '1';
+    ring.addEventListener('click', (event) => {
+        if (event.target === avatar) return;
+        if (getComputedStyle(avatar).pointerEvents === 'none') return;
+        if (typeof avatar.onclick === 'function') avatar.click();
+    });
+}
+
+function paintIdRing() {
+    const ring = document.getElementById('avatarRing');
+    if (!ring) return;
+    const created = getAccountCreationTime();
+    // an ID with no recorded birthday (minted before acc_created_at existed) counts as fully aged, not as locked
+    const age = created ? Math.max(0, Math.floor(Date.now() / 1000) - created) : ID_COOLDOWN_SECONDS;
+    const progress = created ? Math.min(1, age / ID_COOLDOWN_SECONDS) : 1;
+    const remaining = Math.max(0, ID_COOLDOWN_SECONDS - age);
+    ring.style.setProperty('--ring-progress', Math.max(4, Math.round(progress * 100)) + '%');
+    ring.style.setProperty('--ring-hue', Math.round(progress * 120));
+    ring.classList.toggle('is-locked', remaining > 0 && !!(localStorage.getItem('nostr_pub')));
+    const name = localStorage.getItem('nostr_name') || 'this identity';
+    ring.title = localStorage.getItem('nostr_pub')
+        ? name + ' · age ' + humanDuration(age) + ' · '
+          + (remaining > 0 ? 'new ID in ' + humanDuration(remaining) : 'new ID available')
+          + ' — click to change it'
+        : 'No identity yet — click the picture to choose one';
+}
+
 // Function to update the displayed nostr_name under the avatar
 function updateNostrNameDisplay() {
     const nostrNameDisplay = document.getElementById("nostrNameDisplay");
@@ -381,10 +438,12 @@ function renderLandingNotice() {
     lastParagraph.append(link, document.createTextNode(" and share it with your tribe."));
 }
 
+/* The name used to be tilted by up to 15 degrees at random — a playful touch when it was a label under a 160px
+   portrait. In the corner badge, beside a ring, a tilted chip reads as a rendering fault (and its rotated bounding box
+   is what made the element measure 29px for a 19px line), so it sits straight. */
 function applyRandomTiltForNostrName() {
     const nostrName = document.getElementById('nostrNameDisplay');
-    const randomTilt = Math.floor(Math.random() * 31) - 15;  // Tilt between -30 to 30 degrees
-    nostrName.style.transform = `rotate(${randomTilt}deg)`;
+    if (nostrName) nostrName.style.transform = 'none';
 }
 
 const randomAvatarStyle = Math.floor(Math.random() * Object.keys(avatarStyles).length) + 1;
@@ -1012,6 +1071,9 @@ document.addEventListener('click', (e) => {
 
 // Modal for media content
 document.addEventListener("DOMContentLoaded", () => {
+    wireIdRingTap();
+    paintIdRing();
+    setInterval(paintIdRing, 60000);   // the ring is a countdown; it must not freeze at load
     // console.log("DOM fully loaded and parsed.");
 
     // Select the existing modal elements
@@ -1460,6 +1522,7 @@ async function generateNewKeys() {
 
     updateAvatar();
     updateNostrNameDisplay();  // Update the nostr_name display immediately
+    paintIdRing();
 
 }
 
