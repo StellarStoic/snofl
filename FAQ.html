@@ -124,39 +124,38 @@
             
 
             <div class="faq-question showhistory" onclick="toggleFaq('faq4')">
-                <a href="#faqShowHistory">What are all the features in ShowHistory?</a>
+                <a href="#faq4">What are all the features in ShowHistory?</a>
             </div>
             <div id="faq4" class="faq-answer">
                 <p>
-                    The <strong>ShowHistory</strong> section contains all the Nostr events you have posted.  
+                    <strong>ShowHistory</strong> is everything this browser posted, and nothing else — it is read out of
+                    this device's storage, not from a server or from the relays.
                     <br><br>
-                    If you have created and used multiple Nostr IDs, each ID will have a different **color** to distinguish them. Each ID is given a **randomly generated name**, which consists of:
+                    Each ID you have used gets its own card:
                     <ul>
-                        <li>A random adjective</li>
-                        <li>A random noun</li>
-                        <li>A random number from <strong>01 to 21</strong></li>
+                        <li>a coloured dot and the random name it was given (<strong>weepy_bumph_13</strong>), with the
+                            number of notes posted as that ID beside it</li>
+                        <li>your <strong>public key</strong>, in full — click it to copy</li>
+                        <li><strong>Reveal private key</strong>: asks first, shows the key for ten seconds with a
+                            countdown beside it, then hides it again</li>
+                        <li>a <strong>QR</strong> button that draws the key as a code, so you can import the ID into a
+                            signer or another Nostr client</li>
                     </ul>
-                    This name is always displayed under your avatar like <strong>weepy_bumph_13</strong>.  
+                    Under the card, every note is a row: when it was posted, its kind, the text you wrote, and a
+                    <strong>Raw event</strong> line that opens the whole event as JSON if you want to inspect it.
                     <br><br>
-                    In the ShowHistory section, you will see a **number** in front of each name, which represents the **total number of notes** you have posted with that specific ID.  
+                    At the bottom of the sheet, two actions:
+                    <ul>
+                        <li><strong>Download history</strong> — exports everything as a JSON file</li>
+                        <li><strong>Delete all data</strong> — wipes every ID and note this browser holds, after two
+                            confirmations</li>
+                    </ul>
+                    Close the sheet with the <strong>×</strong>, the Escape key, or a click outside it.
                     <br><br>
-                    The details also include:
-                    <ul>
-                        <li>Your **private key** (masked with <code>*****</code> for security). Click to reveal it.</li>
-                        <li>A **QR code** on the other side, which allows you to easily import the ID into any Nostr client.</li>
-                        <li>Basic **Nostr event details** (following <a href="https://github.com/nostr-protocol/nips/blob/master/01.md" target="_blank">Kind 1 Nostr Events</a> specifications).</li>
-                    </ul>
-                    <br>
-                    <strong>I am aware of the security risks associated with storing private keys in plain sight, but these are disposable IDs, and you should treat them as such.</strong>
-                    <br>
-                    <strong>Extra Features:</strong>
-                    <ul>
-                        <li>A large **Download** button at the top to export your full history in JSON format.</li>
-                        <li>A **Delete All (Panic Button)** at the bottom if you want to erase everything quickly.</li>
-                    </ul>
+                    <strong>I am aware of the security risks of keeping private keys in a browser, but these are
+                    disposable IDs, and you should treat them as such.</strong>
                 </p>
             </div>
-            
 
             <div class="faq-question index" onclick="toggleFaq('faq5')">
                 <a href="#faqNotePosting">I posted a Note, but where did it go?</a>
