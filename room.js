@@ -311,7 +311,7 @@ export async function mount(options = {}) {
   sorting.append(sortNew, sortTop);
   const count = element('span', 'room__count', '');
   header.append(
-    element('span', 'room__title', roomName ? `Room · ${roomName}` : 'Room'),
+    element('span', 'room__title', roomName ? `Let's debate about: ${roomName}` : `Let's debate about this page`),
     element('span', 'room__meta', `${roomId.slice(0, 10)} · ${difficulty} bits · ${relays.length} relay${relays.length === 1 ? '' : 's'}`),
     sorting,
     count,

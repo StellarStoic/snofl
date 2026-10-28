@@ -2107,7 +2107,7 @@ th {
     padding: 10px 0;
     font-size: clamp(13px, 0.42rem, 16px);
     letter-spacing: 0.05em;
-    color: #ff6600;
+    color: var(--accent, #4caf50);
     opacity: 0.75;
     border-top: 1px dotted rgba(255, 255, 255, 0.14);
 }

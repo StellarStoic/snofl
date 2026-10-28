@@ -29,10 +29,13 @@
 }
 
 .room__title {
+    /* "Let's debate about: <the page's title>" is a sentence, so it is set as one: the old label was two words and
+       could carry 0.18em of tracking in capitals, which turns a whole question into a shout. */
     font-weight: bold;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    font-size: 12.8px;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    font-size: 14px;
+    line-height: 1.35;
 }
 
 .room__meta,
