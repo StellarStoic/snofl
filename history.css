@@ -1,0 +1,489 @@
+/* history.css — the "Show History" sheet on index.html, and nothing else.
+
+   The panel lists what THIS browser posted: one card per anonymous identity, its public key, the notes, and the two
+   housekeeping actions. The markup and the builder in index.html own the ids; this sheet owns how it looks, so the
+   legacy rules in the shared stylesheet (monospace 0.5rem JSON, `#notesModalContent button { padding: 40px 20px }`,
+   `margin: 15% auto`, red block buttons) are overridden here at the same or higher specificity, later in the cascade.
+
+   Metric rules: nothing is sized in rem (index.html's root font is viewport-scaled to ~34px), every tap target is at
+   least 44px, and a monospace key wraps instead of pushing the page sideways. */
+
+#notesModal {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: none;
+    padding: clamp(8px, 3vh, 34px) 12px;
+    background: rgba(6, 6, 6, 0.76);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    overflow: hidden;
+    box-sizing: border-box;
+    text-align: left;
+    font-family: var(--main-font, system-ui, -apple-system, "Segoe UI", sans-serif);
+}
+
+#notesModal *,
+#notesModal *::before,
+#notesModal *::after {
+    box-sizing: border-box;
+}
+
+#notesModalContent {
+    display: flex;
+    flex-direction: column;
+    width: min(760px, 100%);
+    height: min(880px, calc(100dvh - 2 * clamp(8px, 3vh, 34px)));
+    max-height: none;
+    margin: 0 auto;
+    padding: 0;
+    background: #141414;
+    border: 1px solid #262626;
+    border-radius: 18px;
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6);
+    color: #ececec;
+    font-size: 15px;
+    line-height: 1.5;
+    text-align: left;
+    overflow: hidden;
+    /* the shared sheet sets these on the same id, and `pre-wrap` reaches every child */
+    word-wrap: normal;
+    white-space: normal;
+}
+
+#notesModalContent button {
+    padding: 0;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+#notesModalContent h5 {
+    font-family: inherit;
+    font-size: inherit;
+}
+
+/* ---------------------------------------------------------------- the bar */
+
+.hist__bar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex: 0 0 auto;
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid #232323;
+    background: #141414;
+}
+
+.hist__title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: #f2f2f2;
+}
+
+.hist__sub {
+    margin: 3px 0 0;
+    font-size: 12.5px;
+    color: #9a9a9a;
+}
+
+.hist__close {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    font-size: 20px;
+    line-height: 1;
+    color: #a8a8a8;
+    background: #1c1c1c;
+    border: 1px solid #2b2b2b;
+    border-radius: 9px;
+    cursor: pointer;
+}
+
+.hist__close:hover,
+.hist__close:focus-visible {
+    color: #f2f2f2;
+    border-color: #3a3a3a;
+}
+
+/* ---------------------------------------------------------------- the list */
+
+.hist__list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 14px;
+    display: grid;
+    gap: 12px;
+}
+
+.hist__empty {
+    margin: 22px 6px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #9a9a9a;
+}
+
+.hist-id {
+    --id-color: var(--accent, #4caf50);
+    padding: 14px 15px 12px;
+    background: #1b1b1b;
+    border: 1px solid #272727;
+    border-radius: 14px;
+}
+
+.hist-id__top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 10px;
+}
+
+.hist-id__who {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.hist-id__dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--id-color);
+    flex: 0 0 auto;
+}
+
+.hist-id__name {
+    font-size: 14.5px;
+    font-weight: 600;
+    color: #f0f0f0;
+    overflow-wrap: anywhere;
+}
+
+.hist-id__count {
+    padding: 2px 8px;
+    font-size: 11.5px;
+    color: #bdbdbd;
+    background: #232323;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.hist-id__pub {
+    display: block;
+    flex: 1 1 100%;
+    margin-top: 2px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: #8f8f8f;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+}
+
+.hist-id__pub.is-copied {
+    color: var(--accent, #4caf50);
+}
+
+/* the key row: one quiet button, the QR mark, and the countdown slot */
+
+.hist-id__key {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    min-height: 44px;
+}
+
+.hist-key {
+    flex: 1 1 auto;
+    min-height: 44px;
+    padding: 10px 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    text-align: left;
+    color: #b9b9b9;
+    background: #202020;
+    border: 1px solid #2e2e2e;
+    border-radius: 9px;
+    overflow-wrap: anywhere;
+}
+
+.hist-key:hover,
+.hist-key:focus-visible {
+    color: #eaeaea;
+    border-color: #3d3d3d;
+}
+
+.hist-key.is-revealed {
+    color: #0f0f0f;
+    background: var(--accent, #4caf50);
+    border-color: var(--accent, #4caf50);
+    font-weight: 600;
+}
+
+.hist-qr {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    background: #202020;
+    border: 1px solid #2e2e2e;
+    border-radius: 9px;
+}
+
+.hist-qr img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+
+.hist-qr:hover,
+.hist-qr:focus-visible {
+    border-color: #3d3d3d;
+}
+
+.hist-key__timer {
+    flex: 0 0 auto;
+    font-size: 11.5px;
+    color: var(--accent, #4caf50);
+}
+
+/* ---------------------------------------------------------------- notes */
+
+.hist-notes {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.hist-note {
+    padding: 10px 12px;
+    background: #161616;
+    border: 1px solid #242424;
+    border-left: 2px solid var(--id-color);
+    border-radius: 10px;
+}
+
+.hist-note__when {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+    color: #8d8d8d;
+}
+
+.hist-note__kind {
+    padding: 1px 7px;
+    font-size: 10.5px;
+    color: #a9a9a9;
+    background: #222;
+    border-radius: 999px;
+}
+
+.hist-note__text {
+    margin: 6px 0 0;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: #dedede;
+    overflow-wrap: anywhere;
+}
+
+.hist-note__raw {
+    margin-top: 8px;
+}
+
+.hist-note__raw summary {
+    display: inline-block;
+    padding: 5px 0;
+    font-size: 12px;
+    color: #a9a9a9;
+    cursor: pointer;
+    list-style: none;
+}
+
+.hist-note__raw summary::-webkit-details-marker {
+    display: none;
+}
+
+.hist-note__raw summary::before {
+    content: "› ";
+    display: inline-block;
+    transition: transform 120ms ease;
+}
+
+.hist-note__raw[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.hist-note__raw summary:hover {
+    color: #cfcfcf;
+}
+
+.hist-note__raw pre {
+    margin: 6px 0 0;
+    padding: 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    line-height: 1.45;
+    color: #b9b9b9;
+    background: #101010;
+    border: 1px solid #232323;
+    border-radius: 8px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-height: 260px;
+    overflow: auto;
+}
+
+/* a native scrollbar on a dark sheet is a white stripe down the side */
+
+#notesModalContent,
+.hist__list,
+.hist-note__raw pre {
+    scrollbar-width: thin;
+    scrollbar-color: #3a3a3a transparent;
+}
+
+#notesModalContent::-webkit-scrollbar,
+.hist__list::-webkit-scrollbar,
+.hist-note__raw pre::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+#notesModalContent::-webkit-scrollbar-track,
+.hist__list::-webkit-scrollbar-track,
+.hist-note__raw pre::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#notesModalContent::-webkit-scrollbar-thumb,
+.hist__list::-webkit-scrollbar-thumb,
+.hist-note__raw pre::-webkit-scrollbar-thumb {
+    background: #333333;
+    border: 3px solid #141414;
+    border-radius: 999px;
+}
+
+#notesModalContent::-webkit-scrollbar-thumb:hover,
+.hist__list::-webkit-scrollbar-thumb:hover,
+.hist-note__raw pre::-webkit-scrollbar-thumb:hover {
+    background: #454545;
+}
+
+/* ---------------------------------------------------------------- the foot */
+
+.hist__foot {
+    flex: 0 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 14px;
+    border-top: 1px solid #232323;
+    background: #141414;
+}
+
+/* the shared sheet styles these two BY ID (`#wipeStorageBtn` red block, `#downloadDataBtn` 1rem), and an id beats a
+   class — hence the id-level selectors here rather than `.hist__action` alone */
+
+.hist__action,
+.hist__danger,
+#notesModalContent #downloadDataBtn,
+#notesModalContent #wipeStorageBtn {
+    min-height: 44px;
+    padding: 11px 16px;
+    font-family: inherit;
+    font-size: 13.5px;
+    border-radius: 10px;
+    font-weight: 500;
+}
+
+#notesModalContent #downloadDataBtn,
+.hist__action {
+    color: #101010;
+    background: var(--accent, #4caf50);
+    border: 1px solid var(--accent, #4caf50);
+    font-weight: 600;
+}
+
+#notesModalContent #downloadDataBtn:hover {
+    filter: brightness(1.06);
+}
+
+#notesModalContent #wipeStorageBtn,
+.hist__danger {
+    color: #ff8a8a;
+    background: transparent;
+    border: 1px solid #5a2b2b;
+    margin-left: auto;
+}
+
+#notesModalContent #wipeStorageBtn:hover,
+#notesModalContent #wipeStorageBtn:focus-visible {
+    color: #ffd7d7;
+    border-color: #8a3c3c;
+    background: rgba(255, 77, 77, 0.08);
+}
+
+/* the reveal timer lives in the key row now (`.hist-key__timer`); the viewport-anchored chip it replaced covered
+   the footer buttons, so only the in-row slot is styled */
+
+.hist-key__timer {
+    flex: 0 0 auto;
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+    color: var(--accent, #4caf50);
+    white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- phones */
+
+@media (max-width: 560px) {
+    #notesModal {
+        padding: 0;
+    }
+
+    #notesModalContent {
+        width: 100%;
+        height: 100dvh;
+        border: 0;
+        border-radius: 0;
+    }
+
+    .hist__bar {
+        padding: 14px 14px 10px;
+    }
+
+    .hist__list {
+        padding: 12px;
+    }
+
+    .hist__foot {
+        /* the two actions share the width on a phone, both still 44px tall */
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .hist__danger {
+        margin-left: 0;
+    }
+
+    .hist-id__pub {
+        font-size: 11px;
+    }
+}

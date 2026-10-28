@@ -31,6 +31,7 @@
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=17">
     <link rel="stylesheet" href="room.css?v=8">
+    <link rel="stylesheet" href="history.css?v=2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="background.js"></script>
@@ -125,18 +126,21 @@
         <button id="showHistoryBtn"  title="a History data of all the posted notes from this device">Show History</button>
     </footer>
 
-<!-- Modal for viewing notes -->
-<div id="notesModal">
+<!-- History: the notes this device posted, straight out of localStorage -->
+<div id="notesModal" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
     <div id="notesModalContent">
-        <div id="notesHeader">
-            <button id="downloadDataBtn">Download Data</button>
-        </div>
-        <div id="dynamicContent"></div> <!-- Dynamic content (notes) goes here -->
-        <div class="panic-container">
-            <button id="wipeStorageBtn">
-                ❌ Delete All Data (Panic Btn) ❌
-            </button>
-        </div>
+        <header class="hist__bar">
+            <div class="hist__headings">
+                <h2 class="hist__title" id="historyTitle">History</h2>
+                <p class="hist__sub" id="historySummary">What this browser posted, and nothing else.</p>
+            </div>
+            <button type="button" class="hist__close" id="closeHistoryBtn" aria-label="Close history">&times;</button>
+        </header>
+        <div class="hist__list" id="historyList"><!-- one card per identity, filled by loadStoredEvents() --></div>
+        <footer class="hist__foot">
+            <button type="button" class="hist__action" id="downloadDataBtn">Download history</button>
+            <button type="button" class="hist__danger" id="wipeStorageBtn">Delete all data</button>
+        </footer>
     </div>
 </div>
 
@@ -2171,26 +2175,11 @@ function generateColorFromPubKey(pubkey) {
 }
 
 function loadStoredEvents() {
-    const keys = Object.keys(localStorage).filter((key) =>
-        key.startsWith("HEX")
-    );
-    const notesModalContent = document.getElementById("notesModalContent"); // Only dynamic content is affected
-    const panicContainer = document.querySelector(".panic-container");
-
-    // Clear modal content
-    notesModalContent.innerHTML = "";
-
-    // Re-add the download button
-    const downloadButton = document.createElement("button");
-    downloadButton.id = "downloadDataBtn";
-    downloadButton.textContent = "Download history";
-    downloadButton.style =
-        "background-color: #ff00006e; color: #efefef; border: none; border-radius: 5px; cursor: pointer;";
-    downloadButton.onclick = function () {
-        // console.log("Download button clicked");
-        downloadData();
-    };
-    notesModalContent.appendChild(downloadButton);
+    const keys = Object.keys(localStorage).filter((key) => key.startsWith("HEX"));
+    const list = document.getElementById("historyList");
+    const summary = document.getElementById("historySummary");
+    if (!list) return;
+    list.innerHTML = "";
 
     // Gather and prepare all events sorted by public key's latest event timestamp
     let allIdentities = [];
@@ -2201,141 +2190,178 @@ function loadStoredEvents() {
         const storedPk = storedData.pk;
         const pubkey = key.replace("HEX", "");
 
-        // Extract nostr_name from the first event, fallback if not available
         const nostrName = events.length > 0
             ? events[0].nostr_name || "Unknown Nostr User"
             : "Unknown Nostr User";
 
-        // Attach public key and color to each identity
         if (events.length > 0) {
-            const latestTimestamp = Math.max(
-                ...events.map((e) => e.created_at)
-            );
+            const latestTimestamp = Math.max(...events.map((e) => e.created_at));
             allIdentities.push({
                 pubkey: pubkey,
-                events: events.sort((a, b) => b.created_at - a.created_at), // Sort events within the identity
+                events: events.sort((a, b) => b.created_at - a.created_at),
                 pk: storedPk,
                 color: generateColorFromPubKey(pubkey),
                 latestTimestamp: latestTimestamp,
-                nostrName: nostrName,  // Attach nostr_name from the first event
+                nostrName: nostrName,
             });
         }
     });
 
-    // Sort identities by the latest note timestamp (newest first)
     allIdentities.sort((a, b) => b.latestTimestamp - a.latestTimestamp);
 
-    // Display each identity and its sorted notes
+    if (summary) {
+        const notes = allIdentities.reduce((total, identity) => total + identity.events.length, 0);
+        summary.textContent = allIdentities.length === 0
+            ? "Nothing posted from this browser yet."
+            : allIdentities.length + (allIdentities.length === 1 ? " identity" : " identities") +
+              " · " + notes + (notes === 1 ? " note" : " notes") +
+              " · stored in this browser only";
+    }
+
+    if (allIdentities.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "hist__empty";
+        empty.textContent = "No notes on this device. Anything you post as an anonymous ID is kept here, in this browser, and nowhere else.";
+        list.appendChild(empty);
+        return;
+    }
+
     allIdentities.forEach((identity) => {
         const { pubkey, events, pk, color, nostrName } = identity;
 
-        // Create div for this identity
-        const keyDiv = document.createElement("div");
-        keyDiv.innerHTML = `<h5>(${events.length}) posted notes as ${nostrName}@snofl.com\n
-${pubkey}</h5>`;
-        keyDiv.style.color = color;
+        const card = document.createElement("section");
+        card.className = "hist-id";
+        card.style.setProperty("--id-color", color);
 
-        // Create wrapper div for flex alignment
-        const pkContainer = document.createElement("div");
-        pkContainer.style.display = "flex";
-        pkContainer.style.alignItems = "center";  // Vertically align
-        pkContainer.style.justifyContent = "space-between";  // Push QR to the right
-        pkContainer.style.width = "100%";        
+        const top = document.createElement("div");
+        top.className = "hist-id__top";
 
-        // Add private key span right after the identity label
+        const who = document.createElement("div");
+        who.className = "hist-id__who";
+        const dot = document.createElement("span");
+        dot.className = "hist-id__dot";
+        const name = document.createElement("span");
+        name.className = "hist-id__name";
+        // a name comes out of storage: text, never HTML
+        name.textContent = nostrName + "@snofl.com";
+        const count = document.createElement("span");
+        count.className = "hist-id__count";
+        count.textContent = events.length + (events.length === 1 ? " note" : " notes");
+        who.appendChild(dot);
+        who.appendChild(name);
+        who.appendChild(count);
+        top.appendChild(who);
+
+        const pub = document.createElement("code");
+        pub.className = "hist-id__pub";
+        pub.textContent = pubkey;
+        pub.title = "Your public key — click to copy";
+        pub.addEventListener("click", () => {
+            navigator.clipboard && navigator.clipboard.writeText(pubkey).then(() => {
+                pub.classList.add("is-copied");
+                setTimeout(() => pub.classList.remove("is-copied"), 1200);
+            });
+        });
+        top.appendChild(pub);
+        card.appendChild(top);
+
         if (pk) {
-            const pkSpan = document.createElement("span");
-            pkSpan.textContent =
-                "Hidden private key ******************************";
-            pkSpan.title = "Click to reveal the private key";
-            pkSpan.style.cursor = "pointer";
-            pkSpan.style.display = "block";
-            pkSpan.style.marginTop = "10px";
-            pkSpan.style.flex = "1";  // Allow span to take up remaining space
+            const keyRow = document.createElement("div");
+            keyRow.className = "hist-id__key";
 
-            // QR code icon
-            const qrIcon = document.createElement("img");
-            qrIcon.src = "img/QRcode_logo/qr-code-icon.png";  // Use your QR icon path
-            qrIcon.style.width = "75px";
-            qrIcon.style.cursor = "pointer";
-            qrIcon.style.marginLeft = "10px";
-            qrIcon.title = "Generate QR Code for easy import into your nostr app";
-            qrIcon.style.zIndex = "10001";
+            const reveal = document.createElement("button");
+            reveal.type = "button";
+            reveal.className = "hist-key";
+            reveal.textContent = "Reveal private key";
+            reveal.title = "Shown for ten seconds, then hidden again";
 
-            qrIcon.onclick = () => {
-                generateQRCode(pk);
-            };
+            const countdown = document.createElement("span");
+            countdown.className = "hist-key__timer";
+            countdown.id = `countdown-${pubkey}`;
 
-            // Countdown span (for visual countdown)
-            const countdownSpan = document.createElement("span");
-            countdownSpan.style.marginLeft = "10px";
-            countdownSpan.style.color = "red";
-            countdownSpan.id = `countdown-${pubkey}`;
+            reveal.addEventListener("click", () => {
+                if (!confirm(`Reveal secret key for ${pubkey}?`)) return;
+                reveal.textContent = pk;
+                reveal.classList.add("is-revealed");
+                let seconds = 10;
 
-            pkSpan.onclick = () => {
-                if (confirm(`Reveal secret key for ${pubkey}?`)) {
-                    pkSpan.textContent = pk;
-                    let countdown = 10;
+                // the countdown belongs beside the button, not floating over the sheet: a viewport-anchored chip sat
+                // on top of the footer buttons and hid them
+                countdown.textContent = `hides in ${seconds}s`;
 
-                    // Show countdown at the top
-                    let countdownOverlay =
-                        document.getElementById("countdownOverlay");
-                    if (!countdownOverlay) {
-                        countdownOverlay = document.createElement("div");
-                        countdownOverlay.id = "countdownOverlay";
-                        countdownOverlay.style.position = "fixed";
-                        countdownOverlay.style.top = "50%";
-                        countdownOverlay.style.left = "50%";
-                        countdownOverlay.style.transform = "translateX(-50%)";
-                        countdownOverlay.style.fontSize = "2rem";
-                        countdownOverlay.style.color = "#ff0000";
-                        countdownOverlay.style.zIndex = "1001";
-                        countdownOverlay.style.display = "block";
-                        document.body.appendChild(countdownOverlay);
+                const tick = setInterval(() => {
+                    seconds -= 1;
+                    if (seconds > 0) {
+                        countdown.textContent = `hides in ${seconds}s`;
+                    } else {
+                        clearInterval(tick);
+                        reveal.textContent = "Reveal private key";
+                        reveal.classList.remove("is-revealed");
+                        countdown.textContent = "";
                     }
+                }, 1000);
+            });
 
-                    countdownOverlay.textContent = `${countdown}s`;
+            const qr = document.createElement("button");
+            qr.type = "button";
+            qr.className = "hist-qr";
+            qr.title = "Show this key as a QR code to import it into a signer";
+            qr.setAttribute("aria-label", "Show the private key as a QR code");
+            // inline SVG: the PNG mark is a red 512px icon, loud on a dark row and one request for a glyph
+            qr.innerHTML = '<svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false">' +
+                '<path fill="currentColor" d="M1 1h5v5H1V1zm1 1v3h3V2H2zm1 1h1v1H3V3zM10 1h5v5h-5V1zm1 1v3h3V2h-3zm1 1h1v1h-1V3zM1 10h5v5H1v-5zm1 1v3h3v-3H2zm1 1h1v1H3v-1zM7 1h1v2h1v1H8v1H7V1zM7 6h2v1H8v1H7V6zm3 3h1v2h-1V9zm2 0h1v1h1v1h-2V9zM7 9h1v1H7V9zm1 2h1v1H8v-1zm2 0h2v1h-1v2h-1v-3zm3 1h1v2h-2v-1h1v-1zM9 13h1v2H9v-2zm3 0h1v1h-1v-1z"/></svg>';
+            qr.setAttribute("aria-hidden", "false");
+            qr.addEventListener("click", () => generateQRCode(pk));
 
-                    const countdownInterval = setInterval(() => {
-                        countdown -= 1;
-                        if (countdown > 0) {
-                            countdownOverlay.textContent = `${countdown}s`;
-                        } else {
-                            clearInterval(countdownInterval);
-                            pkSpan.textContent =
-                                "Hidden private key ******************************";
-                            countdownOverlay.style.display = "none";
-                        }
-                    }, 1000);
-                }
-            };
-
-        // Append private key and QR icon to the flex container
-        pkContainer.appendChild(pkSpan);
-        pkContainer.appendChild(qrIcon);
-
-        // Append the flex container to the modal content
-        keyDiv.appendChild(pkContainer);
+            keyRow.appendChild(reveal);
+            keyRow.appendChild(qr);
+            keyRow.appendChild(countdown);
+            card.appendChild(keyRow);
         }
 
-        // Append each event under the identity
+        const notes = document.createElement("div");
+        notes.className = "hist-notes";
         events.forEach((event) => {
-            const eventPre = document.createElement("pre");
-            eventPre.textContent = JSON.stringify(event, null, 2);
-            eventPre.style.borderLeft = `5px solid ${color}`; // Color left border of each event
-            keyDiv.appendChild(eventPre);
+            const row = document.createElement("article");
+            row.className = "hist-note";
+
+            const when = document.createElement("div");
+            when.className = "hist-note__when";
+            const stamp = event.created_at ? new Date(event.created_at * 1000) : null;
+            when.textContent = stamp
+                ? stamp.toLocaleString("en-GB", {day: "2-digit", month: "short", year: "numeric",
+                                                 hour: "2-digit", minute: "2-digit"})
+                : "no timestamp";
+            if (event.kind !== undefined) {
+                const kind = document.createElement("span");
+                kind.className = "hist-note__kind";
+                kind.textContent = "kind " + event.kind;
+                when.appendChild(kind);
+            }
+            row.appendChild(when);
+
+            if (event.content) {
+                const text = document.createElement("p");
+                text.className = "hist-note__text";
+                text.textContent = event.content;
+                row.appendChild(text);
+            }
+
+            const raw = document.createElement("details");
+            raw.className = "hist-note__raw";
+            const summaryRow = document.createElement("summary");
+            summaryRow.textContent = "Raw event";
+            const pre = document.createElement("pre");
+            pre.textContent = JSON.stringify(event, null, 2);
+            raw.appendChild(summaryRow);
+            raw.appendChild(pre);
+            row.appendChild(raw);
+
+            notes.appendChild(row);
         });
-
-        notesModalContent.appendChild(keyDiv);
+        card.appendChild(notes);
+        list.appendChild(card);
     });
-
-    // Ensure the panic button is always at the bottom
-    if (panicContainer) {
-        notesModalContent.parentNode.appendChild(panicContainer);
-    }
-
-    // console.log("Checking button after loadStoredEvents:");
-    // console.log(document.getElementById("downloadDataBtn"));
 }
 
 document.getElementById("wipeStorageBtn").onclick = function () {
@@ -2371,13 +2397,27 @@ document.getElementById("showHistoryBtn").onclick = function () {
     loadStoredEvents();
     const modal = document.getElementById("notesModal");
     modal.style.display = "block";
-    // console.log("Modal visibility:", modal.style.display);
+    document.body.style.overflow = "hidden";
 };
+
+document.getElementById("closeHistoryBtn").onclick = function () {
+    document.getElementById("notesModal").style.display = "none";
+    document.body.style.overflow = "";
+};
+
+document.addEventListener("keydown", function (event) {
+    const modal = document.getElementById("notesModal");
+    if (event.key === "Escape" && modal && modal.style.display === "block") {
+        modal.style.display = "none";
+        document.body.style.overflow = "";
+    }
+});
 
 // Close modal when clicking outside the content
 document.getElementById("notesModal").onclick = function (event) {
     if (event.target === this) {
         this.style.display = "none";
+        document.body.style.overflow = "";
     }
 };
 
