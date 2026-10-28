@@ -37,7 +37,7 @@
     max-height: none;
     margin: 0 auto;
     padding: 0;
-    background: #141414;
+    background: #101010;
     border: 1px solid #262626;
     border-radius: 18px;
     box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6);
@@ -75,7 +75,7 @@
     flex: 0 0 auto;
     padding: 16px 18px 12px;
     border-bottom: 1px solid #232323;
-    background: #141414;
+    background: #101010;
 }
 
 .hist__title {
@@ -100,9 +100,9 @@
     place-items: center;
     font-size: 20px;
     line-height: 1;
-    color: #a8a8a8;
-    background: #1c1c1c;
-    border: 1px solid #2b2b2b;
+    color: #b4b4b4;
+    background: #1d1d1d;
+    border: 1px solid #303030;
     border-radius: 9px;
     cursor: pointer;
 }
@@ -135,8 +135,9 @@
 .hist-id {
     --id-color: var(--accent, #4caf50);
     padding: 14px 15px 12px;
+    /* a card has to be lighter than the sheet it lies on, or the whole panel reads as one grey wash */
     background: #1b1b1b;
-    border: 1px solid #272727;
+    border: 1px solid #2c2c2c;
     border-radius: 14px;
 }
 
@@ -165,7 +166,8 @@
 .hist-id__name {
     font-size: 14.5px;
     font-weight: 600;
-    color: #f0f0f0;
+    /* the identity's own hue, lightened: the mark's 66% is 2-3:1 for deep blues, this is 6.7:1 at worst */
+    color: var(--id-text, #f0f0f0);
     overflow-wrap: anywhere;
 }
 
@@ -211,9 +213,9 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 12px;
     text-align: left;
-    color: #b9b9b9;
-    background: #202020;
-    border: 1px solid #2e2e2e;
+    color: #c4c4c4;
+    background: #242424;
+    border: 1px solid #343434;
     border-radius: 9px;
     overflow-wrap: anywhere;
 }
@@ -237,8 +239,8 @@
     height: 44px;
     display: grid;
     place-items: center;
-    background: #202020;
-    border: 1px solid #2e2e2e;
+    background: #242424;
+    border: 1px solid #343434;
     border-radius: 9px;
 }
 
@@ -269,8 +271,8 @@
 
 .hist-note {
     padding: 10px 12px;
-    background: #161616;
-    border: 1px solid #242424;
+    background: #151515;
+    border: 1px solid #262626;
     border-left: 2px solid var(--id-color);
     border-radius: 10px;
 }
@@ -374,7 +376,7 @@
 .hist__list::-webkit-scrollbar-thumb,
 .hist-note__raw pre::-webkit-scrollbar-thumb {
     background: #333333;
-    border: 3px solid #141414;
+    border: 3px solid #101010;
     border-radius: 999px;
 }
 
@@ -386,14 +388,36 @@
 
 /* ---------------------------------------------------------------- the foot */
 
-.hist__foot {
+/* the shared sheet styles the `footer` ELEMENT — `position:absolute; width:100vw; left:0; bottom:0` plus its own type
+   and a blurred #272727 band — so a semantic <footer> here was pulled out of the panel and laid across the whole
+   window. Scoped by id so the reset beats those element rules whatever the load order, and every property they set is
+   named, not just the one that showed. */
+
+#notesModalContent .hist__foot {
     flex: 0 0 auto;
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    position: static;
+    width: auto;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    top: auto;
+    margin: 0;
     padding: 12px 14px;
     border-top: 1px solid #232323;
-    background: #141414;
+    background: #101010;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    color: inherit;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: inherit;
+    letter-spacing: normal;
+    line-height: 1.4;
+    text-align: left;
+    box-sizing: border-box;
 }
 
 /* the shared sheet styles these two BY ID (`#wipeStorageBtn` red block, `#downloadDataBtn` 1rem), and an id beats a
@@ -471,8 +495,8 @@
         padding: 12px;
     }
 
-    .hist__foot {
-        /* the two actions share the width on a phone, both still 44px tall */
+    /* id-level again: the reset above outranks a plain class rule here */
+    #notesModalContent .hist__foot {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;

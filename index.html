@@ -31,7 +31,7 @@
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=17">
     <link rel="stylesheet" href="room.css?v=8">
-    <link rel="stylesheet" href="history.css?v=2">
+    <link rel="stylesheet" href="history.css?v=5">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="background.js"></script>
@@ -2161,17 +2161,30 @@ document.getElementById('close_qr_button').addEventListener('click', function ()
     document.getElementById("nostrNameDisplay").style.display = "block";
 });
 
-// Function to generate bright colors from public key
-function generateColorFromPubKey(pubkey) {
-    const hash = Array.from(pubkey).reduce(
-        (acc, char) => acc + char.charCodeAt(0),
-        0
-    );
-    const hue = hash % 360; // Full spectrum of colors
-    const saturation = 70 + (hash % 20); // Bright saturation (70-90%)
-    const lightness = 50 + ((hash >> 3) % 20); // Mid brightness (50-70%)
+// One hue per identity, from its public key.
+//
+// This used to be a SUM of character codes, which is order-blind: two keys made of the same characters in a different
+// order got the identical colour, and a single character swap often changed nothing. FNV-1a is what roomlib.js already
+// uses to fingerprint a poll, and it makes the order matter.
+function hueFromPubKey(pubkey) {
+    let hash = 2166136261;
+    for (let index = 0; index < pubkey.length; index += 1) {
+        hash ^= pubkey.charCodeAt(index);
+        hash = Math.imul(hash, 16777619) >>> 0;
+    }
+    return hash % 360;
+}
 
-    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+// The mark: the dot beside the name and the edge of each note. Decorative, so it stays vivid.
+function generateColorFromPubKey(pubkey) {
+    return `hsl(${hueFromPubKey(pubkey)}, 75%, 66%)`;
+}
+
+// The name itself needs to be readable, and a raw hue is not: at lightness 50-66% the deep blues sit at 2-3:1 on the
+// card. Measured across all 360 hues, hsl(h, 75%, 72%) never drops below 5.2:1 on that #1b1b1b card — readable, and
+// saturated enough that two identities are told apart without hunting for the dot.
+function textColorFromPubKey(pubkey) {
+    return `hsl(${hueFromPubKey(pubkey)}, 75%, 72%)`;
 }
 
 function loadStoredEvents() {
@@ -2201,6 +2214,7 @@ function loadStoredEvents() {
                 events: events.sort((a, b) => b.created_at - a.created_at),
                 pk: storedPk,
                 color: generateColorFromPubKey(pubkey),
+                colorText: textColorFromPubKey(pubkey),
                 latestTimestamp: latestTimestamp,
                 nostrName: nostrName,
             });
@@ -2227,11 +2241,12 @@ function loadStoredEvents() {
     }
 
     allIdentities.forEach((identity) => {
-        const { pubkey, events, pk, color, nostrName } = identity;
+        const { pubkey, events, pk, color, colorText, nostrName } = identity;
 
         const card = document.createElement("section");
         card.className = "hist-id";
         card.style.setProperty("--id-color", color);
+        card.style.setProperty("--id-text", colorText);
 
         const top = document.createElement("div");
         top.className = "hist-id__top";
