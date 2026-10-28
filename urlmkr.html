@@ -23,7 +23,7 @@
     <link rel="manifest" href="/img/favicon_io/site.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.6.1/dist/easy.qrcode.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=20">
-    <link rel="stylesheet" href="urlmkr.css?v=60">
+    <link rel="stylesheet" href="urlmkr.css?v=61">
     <script src="urlmkrAgreement.js?v=2"></script>
     <script src="backgroundImages.js"></script>
     <script src="crypto-js.min.js"></script>
@@ -247,7 +247,7 @@
                             <button type="button" class="mk__cmd mk__cmd--qr" data-cmd="ecash" title="eCash: ecash:&lt;address&gt; draws a QR with the eCash mark"><span class="mk__cmd-glyph">XEC</span><span class="mk__cmd-name">eCash</span></button>
                             <button type="button" class="mk__cmd mk__cmd--qr" data-cmd="monero" title="Monero: monero:&lt;address&gt; draws a QR with the Monero mark"><span class="mk__cmd-glyph">XMR</span><span class="mk__cmd-name">Monero</span></button>
                             <button type="button" class="mk__cmd mk__cmd--qr" data-cmd="qrcode" title="Any QR: anything after qr: becomes a plain QR"><span class="mk__cmd-glyph">QR</span><span class="mk__cmd-name">Any QR</span></button>
-                            <button type="button" class="mk__cmd mk__cmd--poll" data-cmd="poll" title="Poll: [poll:Question|Choice|Choice], or [poll2:…] for two answers each"><span class="mk__cmd-glyph">▁▄█</span><span class="mk__cmd-name">Poll</span></button>
+                            <button type="button" class="mk__cmd mk__cmd--poll" data-cmd="poll" title="Poll: opens a form — the question, two to six answers, and how many each person may give"><span class="mk__cmd-glyph">▁▄█</span><span class="mk__cmd-name">Poll</span></button>
                             </div>
                             <button type="button" class="mk__strip-more" id="strip_more" aria-label="More commands" title="More commands">&#8250;</button>
                             </div>
@@ -1992,7 +1992,7 @@ document.getElementById('close_qr_button').addEventListener('click', function ()
         ecash: {name: 'eCash', explain: 'type or paste the eCash address straight after ecash: for a QR with the eCash mark.', insert: 'ecash:', ownLine: true, prefix: true},
         monero: {name: 'Monero', explain: 'type or paste the Monero address straight after monero: for a QR with the Monero mark.', insert: 'monero:', ownLine: true, prefix: true},
         qrcode: {name: 'Any QR', explain: 'anything after qr: becomes a plain QR — a link, a message, a key. Four other prefixes draw their own mark.', insert: 'qr:', ownLine: true, prefix: true},
-        poll: {name: 'Poll', explain: '[poll:Question|Choice|Choice] — up to six, or [poll2:…] to let each person pick two. The poll exists only if the link carries one, so this is where it comes from.', insert: '[poll:Your question here|First choice|Second choice]', ownLine: true, selectFrom: 'Your question'},
+        poll: {name: 'Poll', explain: 'Opens a form: the question, two to six answers, and how many each person may give. It writes [poll:Question|Choice|Choice] into the content — the poll exists only if the link carries one.', insert: '[poll:Your question here|First choice|Second choice]', ownLine: true, selectFrom: 'Your question'},
     };
 
     const field = () => document.getElementById('p_input');
@@ -2117,6 +2117,25 @@ document.getElementById('close_qr_button').addEventListener('click', function ()
                 // reference for whoever already has one
                 if (button.dataset.cmd === 'event' && window.snoflCalendarComposer) {
                     window.snoflCalendarComposer.open();
+                    return;
+                }
+                // Poll writes a declaration into the content; with the caret on one that is already there, the form
+                // opens on it, so the button edits rather than only creates
+                if (button.dataset.cmd === 'poll' && window.snoflPollComposer) {
+                    const field = document.getElementById('p_input');
+                    let existing = '';
+                    if (field) {
+                        const caret = field.selectionStart == null ? 0 : field.selectionStart;
+                        const pattern = /\[poll\d?:[^\[\]|]+(?:\|[^\[\]|]*){1,5}\]/g;
+                        for (const match of field.value.matchAll(pattern)) {
+                            if (caret >= match.index && caret <= match.index + match[0].length) {
+                                existing = match[0];
+                                break;
+                            }
+                        }
+                    }
+                    if (existing) window.snoflPollComposer.openWith(existing);
+                    else window.snoflPollComposer.open();
                     return;
                 }
                 apply(button.dataset.cmd);
@@ -2383,6 +2402,13 @@ document.addEventListener('DOMContentLoaded', function () {
     <script src="urlmkrPreview.js?v=1" defer></script>
     <script src="urlmkrContent.js?v=6" defer></script>
     <script src="urlmkrCalendar.js?v=1" defer></script>
+    <!-- The poll composer writes the same token the page reads, through the same builder the page's parser is
+         tested against; roomlib.js is a module, so this is the one line that hands it to the classic scripts. -->
+    <script type="module">
+        import {buildPollDeclaration} from './roomlib.js';
+        window.snoflBuildPollDeclaration = buildPollDeclaration;
+    </script>
+    <script src="urlmkrPoll.js?v=1" defer></script>
 </body>
 
 

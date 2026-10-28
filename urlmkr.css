@@ -1674,7 +1674,120 @@ body.mk .mk-cal__status {
     color: #b0b0b0;
 }
 
-body.mk .mk-cal__actions {
+body.mk /* The poll form borrows the calendar composer's shell (overlay, card, fields, sticky actions) and adds only the
+   option rows, because the two dialogs must look like one maker. */
+.mk-poll__options {
+    margin: 18px 0 0;
+    padding: 0;
+    border: 0;
+}
+
+.mk-poll__options legend {
+    padding: 0 0 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #efefef;
+}
+
+.mk-poll__rows {
+    display: grid;
+    gap: 10px;
+}
+
+.mk-poll__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    gap: 8px;
+    align-items: center;
+}
+
+.mk-poll__row input {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    background: #1d1d1d;
+    color: #efefef;
+    font: inherit;
+    font-size: 16px;   /* below 16px iOS zooms the page when the field takes focus */
+    box-sizing: border-box;
+}
+
+.mk-poll__row input::placeholder {
+    color: #bcbcbc;
+    opacity: 1;
+}
+
+.mk-poll__remove {
+    min-height: 44px;
+    width: 44px;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    background: none;
+    color: #bdbdbd;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.mk-poll__remove:hover,
+.mk-poll__remove:focus-visible {
+    color: #ff6b6b;
+    border-color: rgba(255, 107, 107, 0.6);
+}
+
+.mk-poll__add {
+    margin-top: 10px;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px dashed #3a3a3a;
+    border-radius: 6px;
+    background: none;
+    color: #efefef;
+    font: inherit;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.mk-poll__add:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.mk-poll__ceiling {
+    margin-top: 16px;
+}
+
+.mk-poll__hint {
+    margin: 12px 0 0;
+    min-height: 1.2em;
+    font-size: 14px;
+    color: #a9a9a9;
+}
+
+.mk-poll__previewwrap {
+    margin: 10px 0 0;
+    display: grid;
+    gap: 4px;
+}
+
+.mk-poll__preview {
+    display: block;
+    padding: 8px 10px;
+    border-left: 2px solid var(--accent, #4caf50);
+    background: #1a1a1a;
+    color: #efefef;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+
+.mk-poll__cost {
+    font-size: 12px;
+    color: #a9a9a9;
+}
+
+.mk-cal__actions {
     position: sticky;
     bottom: -16px;
     display: flex;

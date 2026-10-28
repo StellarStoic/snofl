@@ -2,11 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import {
-  packPoll, packPollVote, unpackRoomMessage, tallyPoll, pollIsClosed, pollMaxAnswers, newPollId,
-  parsePollDeclaration, parseDeclaredPolls, stripPollDeclarations, declaredPollId,
-  POLL_MAX_OPTIONS, POLL_MIN_OPTIONS,
-} from '../roomlib.js';
+import {packPoll, packPollVote, unpackRoomMessage, tallyPoll, pollIsClosed, pollMaxAnswers, newPollId, parsePollDeclaration, parseDeclaredPolls, stripPollDeclarations, declaredPollId, POLL_MAX_OPTIONS, POLL_MIN_OPTIONS, buildPollDeclaration} from '../roomlib.js';
 
 const PUB = 'a'.repeat(64);
 const EVENT = { pubkey: PUB, created_at: 1_700_000_000 };
@@ -217,4 +213,54 @@ test('markup indentation is not a line break on the page', async () => {
   // a list written with newlines between its items must not put an empty line between them
   assert.match(page, /const BLOCK = new Set\(\['ADDRESS'/);
   assert.match(page, /if \(\/\^\\s\*\$\/\.test\(node\.textContent\) && \(isBlock\(prev\) \|\| isBlock\(next\)\)\)/);
+});
+
+// ------------------------------------------------------------------- the maker writes what the page reads
+test('a built declaration parses back into the same poll', () => {
+  const token = buildPollDeclaration({question: 'Pineapple on pizza?', options: ['Yay', 'Nay']});
+  assert.equal(token, '[poll:Pineapple on pizza?|Yay|Nay]');
+  const poll = parsePollDeclaration(token);
+  assert.equal(poll.question, 'Pineapple on pizza?');
+  assert.deepEqual(poll.options.map(o => o.label), ['Yay', 'Nay']);
+  assert.equal(poll.max, 1, 'NIP-88: no digit means one answer each');
+  assert.equal(poll.type, 'single');
+});
+
+test('more than one answer each is the digit, as the parser reads it', () => {
+  const token = buildPollDeclaration({question: 'Pick two', options: ['a', 'b', 'c'], max: 2});
+  assert.equal(token, '[poll2:Pick two|a|b|c]');
+  const poll = parsePollDeclaration(token);
+  assert.equal(poll.max, 2);
+  assert.equal(poll.type, 'multi');
+  // and a ceiling beyond what the options allow is clamped rather than dropped
+  assert.equal(parsePollDeclaration(buildPollDeclaration({question: 'q', options: ['a', 'b'], max: 9})).max, 2);
+});
+
+test('the delimiters of the syntax are replaced, not escaped', () => {
+  const token = buildPollDeclaration({
+    question: 'Tea | coffee? [really]',
+    options: ['one | two', 'three ]four'],
+  });
+  const poll = parsePollDeclaration(token);
+  assert.equal(poll.question, 'Tea coffee? really');
+  assert.deepEqual(poll.options.map(o => o.label), ['one two', 'three four']);
+});
+
+test('a poll needs a question and two options, and the counts are capped', () => {
+  assert.equal(buildPollDeclaration({question: '', options: ['a', 'b']}), '');
+  assert.equal(buildPollDeclaration({question: 'q', options: ['a']}), '');
+  assert.equal(buildPollDeclaration({question: 'q', options: []}), '');
+  assert.equal(buildPollDeclaration({}), '');
+  // six at most, empties dropped, label length capped
+  const many = buildPollDeclaration({question: 'q', options: ['a', 'b', '', 'c', 'd', 'e', 'f', 'g']});
+  assert.equal(parsePollDeclaration(many).options.length, 6);
+  const long = buildPollDeclaration({question: 'q', options: ['x'.repeat(200), 'b']});
+  assert.equal(parsePollDeclaration(long).options[0].label.length, 90);
+});
+
+test('the id a built poll gets is the one its text says', () => {
+  const a = buildPollDeclaration({question: 'Q', options: ['a', 'b']});
+  const b = buildPollDeclaration({question: 'Q', options: ['a', 'b'], max: 1});
+  assert.equal(declaredPollId(a), declaredPollId(b), 'a redundant ceiling is not a different poll');
+  assert.notEqual(declaredPollId(a), declaredPollId(buildPollDeclaration({question: 'Q', options: ['a', 'c']})));
 });

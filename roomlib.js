@@ -441,6 +441,29 @@ export function parsePollDeclaration(token, {withId = true} = {}) {
   return {...poll, id: declaredPollId(token)};
 }
 
+/**
+ * The token a page carries for a poll: `[poll:Question|Choice|Choice]`, or `[poll3:…]` when a person may give three
+ * answers. This is the maker's side of `parsePollDeclaration` and it lives here, beside it, so a builder and a parser
+ * cannot drift: `|` `[` `]` are the syntax itself, so they are replaced rather than escaped, and the counts are clamped
+ * to what the parser accepts instead of producing a token that silently drops an option.
+ */
+export function buildPollDeclaration({question, options, max = 1} = {}) {
+  const clean = (text) => String(text == null ? '' : text)
+    .replace(/[|[\]]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const asked = clean(question).slice(0, POLL_MAX_QUESTION);
+  const labels = (Array.isArray(options) ? options : [])
+    .map(clean)
+    .filter(Boolean)
+    .slice(0, POLL_MAX_OPTIONS)
+    .map((label) => label.slice(0, POLL_MAX_LABEL));
+  if (!asked || labels.length < POLL_MIN_OPTIONS) return '';
+  // NIP-88 says a poll with no `polltype`, or one that says singlechoice, means one answer per person
+  const ceiling = Math.min(Math.max(1, Math.round(Number(max) || 1)), labels.length);
+  return `[${ceiling === 1 ? 'poll' : 'poll' + ceiling}:${[asked, ...labels].join('|')}]`;
+}
+
 /** Every poll a page declares, in the order written. */
 export function parseDeclaredPolls(text) {
   const polls = [];
